@@ -1,0 +1,5 @@
+*data/*
+*logs/* 
+*wandb/*
+*vscode*
+*pycache*
