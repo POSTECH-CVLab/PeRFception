@@ -52,7 +52,7 @@ if __name__ == "__main__":
     model_fn = select_model(args)
     model = model_fn(args, info)
 
-    lr_monitor = LearningRateMonitor(logging_interval="step")
+    lr_monitor = LearningRateMonitor(logging_interval="epoch")
     model_checkpoint = ModelCheckpoint(
         dirpath=logdir, filename="model", save_last=True
     )
