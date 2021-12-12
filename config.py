@@ -234,6 +234,10 @@ def config_parser():
         help="frequency of storing weights"
     )
     metadata.add_argument(
+        "--i_validation", type=int, default=50000,
+        help="frequency of validation"
+    )
+    metadata.add_argument(
         "--debug", action="store_true", default=False,
         help="run with debug mode"
     )
@@ -255,10 +259,19 @@ def config_parser():
         "--master_port", type=str, default="12345",
         help="master port to run DDP"
     )
-    metadata.add_argument(
-        "--eval", action="store_true", default=False,
-        help="run with eval mode"
-    )
 
+    runmode = parser.add_argument_group("running mode")
+    runmode.add_argument(
+        "--train", action="store_true", default=False, help="run with train mode"
+    )
+    runmode.add_argument(
+        "--eval", action="store_true", default=False, help="run with eval mode"
+    )
+    runmode.add_argument(
+        "--bake", action="store_true", default=False, help="bake the trained model"
+    )
+    runmode.add_argument(
+        "--skip_validation", action="store_true", default=False, 
+    )
 
     return parser.parse_args()

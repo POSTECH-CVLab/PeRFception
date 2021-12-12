@@ -7,7 +7,7 @@ from piqa.lpips import LPIPS
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
 clip_0_1 = lambda x: torch.clip(x, 0, 1)
 
-def psnr(pred, gt, i_train, i_test):
+def psnr(pred, gt, i_train, i_val, i_test):
     pred, gt = reshape_2d(pred), reshape_2d(gt)
     mse = np.mean((pred - gt) ** 2, axis=1)
     psnr = -10.0 * np.log(mse) / np.log(10)
@@ -16,10 +16,11 @@ def psnr(pred, gt, i_train, i_test):
         "scene_wise": psnr, 
         "mean": psnr.mean(), 
         "train_mean": psnr[i_train].mean(), 
+        "val_mean": psnr[i_val].mean(), 
         "test_mean": psnr[i_test].mean()
     }
 
-def ssim(pred, gt, i_train, i_test):
+def ssim(pred, gt, i_train, i_val, i_test):
     
     ssim_model = SSIM().cuda()
     pred = torch.from_numpy(pred).to("cuda")
@@ -38,18 +39,19 @@ def ssim(pred, gt, i_train, i_test):
         "scene_wise": ssim,
         "mean": ssim.mean(),
         "train_mean": ssim[i_train].mean(), 
+        "val_mean": ssim[i_val].mean(), 
         "test_mean": ssim[i_test].mean()
     }
 
-def lpips_a(pred, gt, i_train, i_test):
+def lpips_a(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="alex").cuda()
-    return lpips(lpips_model, pred, gt, i_train, i_test, "LPIPS-Alex")
+    return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-Alex")
 
-def lpips_v(pred, gt, i_train, i_test):
+def lpips_v(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="vgg").cuda()
-    return lpips(lpips_model, pred, gt, i_train, i_test, "LPIPS-VGG")
+    return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-VGG")
 
-def lpips(lpips_model, pred, gt, i_train, i_test, name):
+def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
     pred = torch.from_numpy(pred).to("cuda")
     gt = torch.from_numpy(gt).to("cuda")
     pred, gt = clip_0_1(pred), clip_0_1(gt)
@@ -66,6 +68,7 @@ def lpips(lpips_model, pred, gt, i_train, i_test, name):
         "scene_wise": lpips,
         "mean": lpips.mean(),
         "train_mean": lpips[i_train].mean(), 
+        "val_mean": lpips[i_val].mean(), 
         "test_mean": lpips[i_test].mean()
     }
 

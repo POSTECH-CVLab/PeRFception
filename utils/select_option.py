@@ -1,10 +1,10 @@
 from jaxnerf_torch.model import LitJaxNeRF
 from dataloader.llff import LitLLFF 
 
-def select_trainer(args, info):
+def select_model(args):
 
     if args.model == "jaxnerf_torch":
-        return LitJaxNeRF(args, info)
+        return LitJaxNeRF
 
 def select_dataloader(args):
 

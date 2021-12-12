@@ -1,6 +1,7 @@
 import numpy as np
 
 import torch
+from torch._C import device
 import torch.utils.data as data
 from torch.utils.data.dataloader import DataLoader
 import dataloader.data_util.llff as llff
@@ -82,20 +83,30 @@ class LitLLFF(pl.LightningDataModule):
         self.image_len = h * w
         self.h, self.w = h, w
 
-        self.train_dset = self.split(images, extrinsics, i_train)
-        self.val_dset = self.split(images, extrinsics, i_val)
-        self.test_dset = self.split(images, extrinsics, i_test)
-        self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
+        self.i_train, self.i_val = i_train, i_val
+        self.i_test = np.arange(len(images))
+        # self.i_test = i_test
+        self.train_dset, _ = self.split(images, extrinsics, self.i_train)
+        self.val_dset, self.val_dummy = self.split(images, extrinsics, self.i_val)
+        self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_test)
         
-    def split(self, images, extrinsics, idx):
-        images_idx = images[idx].reshape(-1, 3)
+    def split(self, _images, extrinsics, idx):
+        images_idx = _images[idx].reshape(-1, 3)
         extrinsics_idx = extrinsics[idx]
         rays_o, rays_d = jaxnerf_torch_utils.batchfied_get_rays(
             self.h, self.w, self.intrinsics, extrinsics_idx, 
             self.args.use_pixel_centers
         )
-        rays = np.stack([rays_o, rays_d], axis=1)
-        return LLFFImageRaySet(images_idx, rays)
+        _rays = np.stack([rays_o, rays_d], axis=1)
+        device_count = torch.cuda.device_count()
+        n = len(images_idx)
+        dummy_num = (device_count - len(images_idx) % device_count) % device_count
+        images = np.zeros((len(images_idx) + dummy_num, 3))
+        rays = np.zeros((len(images_idx) + dummy_num, 2, 3))
+        images[:n], rays[:n] = images_idx, _rays
+        images[n:], rays[n:] = images[:dummy_num], rays[:dummy_num]  
+        
+        return LLFFImageRaySet(images_idx, rays), dummy_num
     
     def train_dataloader(self):
 
@@ -113,13 +124,19 @@ class LitLLFF(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_dset, batch_size=self.chunk, num_workers=12, pin_memory=True
+            self.val_dset, batch_size=self.chunk, num_workers=12, 
+            pin_memory=True, drop_last=False
         )
 
     def test_dataloader(self):
         return DataLoader(
-            self.test_dset, batch_size=self.chunk, num_workers=12, pin_memory=True
+            self.test_dset, batch_size=self.chunk, num_workers=12, 
+            pin_memory=True, drop_last=False
         )
 
     def get_info(self):
-        return {"h": self.h, "w": self.w, "intrinsics": self.intrinsics}
+        return {
+            "h": self.h, "w": self.w, "intrinsics": self.intrinsics,
+            "i_train": self.i_train, "i_val": self.i_val, "i_test": self.i_test,
+            "val_dummy": self.val_dummy, "test_dummy": self.test_dummy
+        }
