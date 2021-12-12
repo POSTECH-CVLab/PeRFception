@@ -16,10 +16,16 @@ We are living on the generation of NeRF. Researchers in NeRF communities have di
     - Comming Soon
 
 
-
 ## Acknowledgement
 
 We have referred and borrowed the implementations of 
 - PyTorch-NeRF ()
 - Jax-NeRF ()
-- Jax-SNeRG
+- Jax-SNeRG ()
+
+## Requirements
+```
+conda create -n nerf_factory -c anaconda python=3.8
+conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cudatoolkit=11.1 -c pytorch -c conda-forge
+pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg piqa wandb pytorch_lightning==1.5.5 opencv-python
+```

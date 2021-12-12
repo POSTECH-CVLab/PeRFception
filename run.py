@@ -5,12 +5,21 @@ import os
 from utils.select_option import select_model, select_dataloader
 
 import torch
+import pytorch_lightning as pl
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.plugins import DDPPlugin
 import utils.metrics as metrics
 import utils.store_image as store_image
+
+class ValEveryNSteps(pl.Callback):
+    def __init__(self, every_n_step):
+        self.every_n_step = every_n_step
+
+    def on_batch_end(self, trainer, pl_module):
+        if trainer.global_step % self.every_n_step == 0 and trainer.global_step != 0:
+            trainer.run_evaluation(test_mode=False)
 
 if __name__ == "__main__":
 
@@ -47,6 +56,7 @@ if __name__ == "__main__":
     model_checkpoint = ModelCheckpoint(
         dirpath=logdir, filename="model", save_last=True
     )
+    each_n_step = ValEveryNSteps(args.i_validation)
 
     trainer = Trainer(
         logger=wandb_logger if args.train and not args.debug else None, 
@@ -58,8 +68,7 @@ if __name__ == "__main__":
         deterministic=True,
         precision=16, 
         num_sanity_val_steps=-1 if args.debug else 0,
-        callbacks=[lr_monitor, model_checkpoint], 
-        val_check_interval=args.i_validation
+        callbacks=[lr_monitor, model_checkpoint, each_n_step], 
     )
 
     if args.train:
