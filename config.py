@@ -38,9 +38,9 @@ def config_parser():
         help="number of pts sent through network in parallel, decrease if running out of memory",
     )
     model.add_argument(
-        "--no_batching",
-        action="store_true",
-        help="only take random rays from 1 image at a time",
+        "--batching",
+        choices=["single_image", "all_images"], type=str,
+        help="strategy to select rays",
     )
     model.add_argument(
         "--no_reload", action="store_true", help="do not reload weights from saved ckpt"

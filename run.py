@@ -5,7 +5,6 @@ import os
 from utils.select_option import select_model, select_dataloader
 
 import torch
-import pytorch_lightning as pl
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
@@ -57,16 +56,15 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        logger=wandb_logger if args.train and not args.debug else None, 
+        logger=wandb_logger, 
         log_every_n_steps=args.i_print,
         devices=n_gpus,
         max_steps=args.max_steps,
         accelerator="gpu",
-        replace_sampler_ddp=args.no_batching,
+        replace_sampler_ddp=False,
         strategy=DDPPlugin(find_unused_parameters=False),
-        deterministic=True,
-        check_val_every_n_epoch=50,
-        precision=16, 
+        check_val_every_n_epoch=1,
+        precision=32, 
         num_sanity_val_steps=-1 if args.debug else 0,
         callbacks=[lr_monitor, model_best_checkpoint, model_last_checkpoint], 
     )
@@ -89,7 +87,8 @@ if __name__ == "__main__":
             store_image.store_image(imgdir, rgbs, depths)
         
         metrics.write_stats(
-            os.path.join(logdir, "results.txt"), ret["psnr"], ret["ssim"], ret["lpips"]
+            os.path.join(logdir, "results.txt"), 
+            ret["psnr"], ret["ssim"], ret["lpips"]
         )
     if args.bake:
         pass

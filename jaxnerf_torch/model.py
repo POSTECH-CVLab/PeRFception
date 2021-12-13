@@ -86,14 +86,16 @@ class LitJaxNeRF(pl.LightningModule):
     def __init__(self, args, info):
         super(LitJaxNeRF, self).__init__()
         self.args = args
-        self.create_model()
         (
             self.h, self.w, self.intrinsics, self.i_train, 
-            self.i_val, self.i_test, self.val_dummy, self.test_dummy
+            self.i_val, self.i_test, self.val_dummy, self.test_dummy, 
+            self.near, self.far
         ) = info["h"], info["w"], info["intrinsics"], info["i_train"], \
-            info["i_val"], info["i_test"], info["val_dummy"], info["test_dummy"]
+            info["i_val"], info["i_test"], info["val_dummy"], info["test_dummy"], \
+            info["near"], info["far"]
         
         self.img_size = self.h * self.w
+        self.create_model()
 
     def on_train_start(self):
         self.logger.log_hyperparams(self.args)
@@ -115,7 +117,6 @@ class LitJaxNeRF(pl.LightningModule):
             output_ch=output_ch, skips=skips, input_ch_views=input_ch_views,
             use_viewdirs=args.use_viewdirs,
         )
-        grad_vars = list(self.model.parameters())
 
         self.model_fine = None
         if args.num_fine_samples > 0:
@@ -124,7 +125,6 @@ class LitJaxNeRF(pl.LightningModule):
                 output_ch=output_ch, skips=skips, input_ch_views=input_ch_views,
                 use_viewdirs=args.use_viewdirs,
             )
-            grad_vars += list(self.model_fine.parameters())
 
         network_query_fn = lambda inputs, viewdirs, network_fn: utils.run_network(
             inputs,
@@ -145,6 +145,8 @@ class LitJaxNeRF(pl.LightningModule):
             "use_viewdirs": args.use_viewdirs,
             "white_bkgd": args.white_bkgd,
             "raw_noise_std": args.raw_noise_std,
+            "near": self.near, 
+            "far": self.far
         }
 
         # NDC only good for LLFF-style forward facing data
@@ -171,8 +173,9 @@ class LitJaxNeRF(pl.LightningModule):
         kwargs = self.render_kwargs_train if self.mode == "train" \
             else self.render_kwargs_test
         return utils.render(
-            self.h, self.w, self.intrinsics, self.args.chunk,
-            batch_rays, use_pixel_centers=self.args.use_pixel_centers, **kwargs
+            self.h, self.w, self.intrinsics, chunk=self.args.chunk,
+            rays=batch_rays, use_pixel_centers=self.args.use_pixel_centers, 
+            **kwargs
         )
 
     def on_train_start(self):
