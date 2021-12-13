@@ -1,7 +1,6 @@
 import numpy as np
 
 import torch
-from torch._C import device
 import torch.utils.data as data
 from torch.utils.data.dataloader import DataLoader
 import dataloader.data_util.llff as llff

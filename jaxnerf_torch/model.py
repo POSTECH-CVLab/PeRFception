@@ -270,4 +270,3 @@ class LitJaxNeRF(pl.LightningModule):
         psnr = -10.0 * torch.log(mse) / np.log(10)
         psnr_mean = psnr.mean()
         self.log("validation/psnr", psnr_mean, on_epoch=True, sync_dist=True)
-        return psnr.mean()

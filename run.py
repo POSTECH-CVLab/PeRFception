@@ -13,14 +13,6 @@ from pytorch_lightning.plugins import DDPPlugin
 import utils.metrics as metrics
 import utils.store_image as store_image
 
-class ValEveryNSteps(pl.Callback):
-    def __init__(self, every_n_step):
-        self.every_n_step = every_n_step
-
-    def on_batch_end(self, trainer, pl_module):
-        if trainer.global_step % self.every_n_step == 0 and trainer.global_step != 0:
-            trainer.run_evaluation(test_mode=False)
-
 if __name__ == "__main__":
 
     args = config.config_parser()
@@ -53,10 +45,16 @@ if __name__ == "__main__":
     model = model_fn(args, info)
 
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
-    model_checkpoint = ModelCheckpoint(
+    model_last_checkpoint = ModelCheckpoint(
         dirpath=logdir, filename="model", save_last=True
     )
-    each_n_step = ValEveryNSteps(args.i_validation)
+    model_best_checkpoint = ModelCheckpoint(
+        monitor="validation/psnr",
+        dirpath=logdir,
+        filename="sample-mnist-{epoch:02d}-{val_psnr:.2f}",
+        save_top_k=1,
+        mode="max",
+    )
 
     trainer = Trainer(
         logger=wandb_logger if args.train and not args.debug else None, 
@@ -64,11 +62,13 @@ if __name__ == "__main__":
         devices=n_gpus,
         max_steps=args.max_steps,
         accelerator="gpu",
+        replace_sampler_ddp=args.no_batching,
         strategy=DDPPlugin(find_unused_parameters=False),
         deterministic=True,
+        check_val_every_n_epoch=50,
         precision=16, 
         num_sanity_val_steps=-1 if args.debug else 0,
-        callbacks=[lr_monitor, model_checkpoint, each_n_step], 
+        callbacks=[lr_monitor, model_best_checkpoint, model_last_checkpoint], 
     )
 
     if args.train:
