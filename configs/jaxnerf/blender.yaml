@@ -6,7 +6,7 @@ factor: 0
 num_coarse_samples: 64
 num_fine_samples: 128
 
-N_rand: 4096
+N_rand: 2048
 use_viewdirs: true
 white_bkgd: true
 perturb: 1.0
@@ -26,4 +26,3 @@ netwidth: 256
 netwidth_fine: 256
 
 no_ndc: true
-half_res: true

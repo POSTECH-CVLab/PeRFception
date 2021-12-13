@@ -1,8 +1,10 @@
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+from torch.utils.data.distributed import DistributedSampler
+import torch.distributed as dist
 
-class SingleImageBatchSampler:
+class SingleImageBatchSampler(DistributedSampler):
 
     def __init__(self, batch_size, N_img, N_pixels, i_validation):
         self.batch_size = batch_size
@@ -19,9 +21,11 @@ class SingleImageBatchSampler:
             np.random.choice(np.arange(self.N_pixels), self.batch_size) \
                 for _ in range(self.i_validation)
         ]
+        rank = dist.get_rank()
+        num_replicas = dist.get_world_size()
         for (image_idx, idx) in zip(image_choice, idx_choice):
             idx_ret = image_idx * self.N_pixels + idx
-            yield idx_ret
+            yield idx_ret[rank::num_replicas]
 
     def __len__(self):
         return self.i_validation
@@ -39,8 +43,10 @@ class MultipleImageBatchSampler:
             np.random.choice(full_index, self.batch_size) \
                 for _ in range(self.i_validation)
         ]
+        rank = dist.get_rank()
+        num_replicas = dist.get_world_size()   
         for batch in indices:
-            yield batch
+            yield batch[rank::num_replicas]
 
     def __len__(self):
         return self.i_validation

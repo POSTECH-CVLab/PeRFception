@@ -268,8 +268,9 @@ class LitJaxNeRF(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)
-        rgbs, target = rgbs.reshape(-1, self.img_size * 3), target.reshape(-1, self.img_size * 3)
-        mse = torch.mean((target - rgbs) ** 2, dim=1)
-        psnr = -10.0 * torch.log(mse) / np.log(10)
-        psnr_mean = psnr.mean()
-        self.log("validation/psnr", psnr_mean, on_epoch=True, sync_dist=True)
+        if self.trainer.is_global_zero:
+            rgbs, target = rgbs.reshape(-1, self.img_size * 3), target.reshape(-1, self.img_size * 3)
+            mse = torch.mean((target - rgbs) ** 2, dim=1)
+            psnr = -10.0 * torch.log(mse) / np.log(10)
+            psnr_mean = psnr.mean()
+            self.log("validation/psnr", psnr_mean, on_epoch=True, sync_dist=True)

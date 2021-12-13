@@ -38,10 +38,6 @@ if __name__ == "__main__":
     )
 
     seed_everything(args.seed, workers=True)
-    dataloader = select_dataloader(args)
-    info = dataloader.get_info()
-    model_fn = select_model(args)
-    model = model_fn(args, info)
 
     lr_monitor = LearningRateMonitor(logging_interval="epoch")
     model_last_checkpoint = ModelCheckpoint(
@@ -68,6 +64,10 @@ if __name__ == "__main__":
         num_sanity_val_steps=-1 if args.debug else 0,
         callbacks=[lr_monitor, model_best_checkpoint, model_last_checkpoint], 
     )
+    dataloader = select_dataloader(args)
+    info = dataloader.get_info()
+    model_fn = select_model(args)
+    model = model_fn(args, info)
 
     if args.train:
         trainer.fit(
