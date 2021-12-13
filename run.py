@@ -58,6 +58,7 @@ if __name__ == "__main__":
         max_steps=args.max_steps,
         accelerator="gpu",
         replace_sampler_ddp=False,
+        deterministic=True,
         strategy=DDPPlugin(find_unused_parameters=False),
         check_val_every_n_epoch=1,
         precision=32, 
