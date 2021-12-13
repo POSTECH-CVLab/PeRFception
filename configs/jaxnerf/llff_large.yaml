@@ -17,7 +17,7 @@ raw_noise_std: 1.
 lr_init: 5.0e-4
 lr_final: 5.0e-6
 max_steps: 200000
-lr_delay_steps: 0.
+lr_delay_steps: 0
 lr_delay_mult: 1.
 
 i_print: 100
