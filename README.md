@@ -9,7 +9,7 @@ This project is created and maintained by Yoonwoo Jeong, Jinoh Cho, and Seungjoo
 ## Available Modules
 - JaxNeRF (Torch Version) 
     - Several options are different from the original NeRF (TensorFlow)
-    - NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis [Code](https://github.com/google-research/google-research/tree/master/jaxnerf) | [Paper](https://arxiv.org/pdf/2003.08934) | [Arxiv](https://arxiv.org/abs/2003.08934)
+    - NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis: [[Code](https://github.com/google-research/google-research/tree/master/jaxnerf) | [Paper](https://arxiv.org/pdf/2003.08934) | [Arxiv](https://arxiv.org/abs/2003.08934)]
     - Document: [Link](./docs/jaxnerf.md)
 - SNeRG (Torch Version)
     - Coming Soon
