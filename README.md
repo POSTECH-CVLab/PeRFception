@@ -6,8 +6,9 @@ We are living on the generation of NeRF. Researchers in NeRF communities have di
 ## Available Modules
 - JaxNeRF (Torch Version) 
     - Several options are different from the original NeRF (TensorFlow)
+    - Document: [Link](./docs/jaxnerf.md)
 - SNeRG (Torch Version)
-    - PyTorch version of 
+    - Coming Soon
 - MipNeRF (Torch Version)
     - Comming Soon
 - MipNeRF360 (Torch Version)
