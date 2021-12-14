@@ -1,27 +1,27 @@
 model: jaxnerf_torch
 dataset_type: llff
 batching: all_images
+factor: 4
 
 num_coarse_samples: 192
 num_fine_samples: 384
 
-use_viewdirs: true
-
 N_rand: 4096
 perturb: 1.0
+use_viewdirs: true
 
-factor: 4
 llffhold: 8
 raw_noise_std: 1.
 
 lr_init: 5.0e-4
 lr_final: 5.0e-6
-max_steps: 200000
 lr_delay_steps: 0
 lr_delay_mult: 1.
+max_steps: 200000
 
 i_print: 100
 i_weights: 50000
+i_validation: 50000
 use_pixel_centers: true
 
 netwidth: 512

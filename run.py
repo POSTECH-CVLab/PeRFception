@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     args = config.config_parser()
     basedir = args.basedir
-    expname = args.expname
+    expname = args.model + "_" + args.expname
     logdir = os.path.join(basedir, expname)
 
     n_gpus = torch.cuda.device_count()

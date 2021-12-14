@@ -7,9 +7,9 @@ num_coarse_samples: 192
 num_fine_samples: 384
 
 N_rand: 4096
+perturb: 1.0
 use_viewdirs: true
 white_bkgd: true
-perturb: 1.0
 
 lr_init: 5.0e-4
 lr_final: 5.0e-6
