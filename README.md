@@ -1,7 +1,7 @@
 # NeRF-Factory
 
 ## Motivation
-We are living on the generation of NeRF. Researchers in NeRF communities have difficulties of fairly comparing NeRF models. Since the evaluation steps of NeRF models are similar and often share the dataset, this project attempts to collect various NeRF models for convenient evaluation. Currently, we only supports the PyTorch framework but planning to extend Jax supports.
+We are living on the generation of NeRF. Researchers in NeRF communities have difficulties of fairly comparing NeRF models. Since the evaluation steps of NeRF models are similar and often share the dataset, this project attempts to collect various NeRF models for convenient evaluation. Currently, we only support the PyTorch framework but planning to enable Jax supports.
 
 ## Contributor
 This project is created and maintained by Yoonwoo Jeong, Jinoh Cho, and Seungjoo Shin.
