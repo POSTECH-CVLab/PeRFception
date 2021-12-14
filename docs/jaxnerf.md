@@ -75,7 +75,6 @@ This section compares the JaxNeRF and the original NeRF.
 # Prerequisite
 mkdir data && cd data
 
-
 ## LLFF
 ln -s [path to nerf_llff_data] llff
 
