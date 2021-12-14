@@ -3,6 +3,9 @@
 ## Motivation
 We are living on the generation of NeRF. Researchers in NeRF communities have difficulties of fairly comparing NeRF models. Since the evaluation steps of NeRF models are similar and often share the dataset, this project attempts to collect various NeRF models for convenient evaluation. Currently, we only supports the PyTorch framework but planning to extend Jax supports.
 
+## Contributor
+This project is created and maintained by Yoonwoo Jeong, Jinoh Cho, and Seungjoo Shin.
+
 ## Available Modules
 - JaxNeRF (Torch Version) 
     - Several options are different from the original NeRF (TensorFlow)
@@ -19,7 +22,7 @@ We are living on the generation of NeRF. Researchers in NeRF communities have di
 
 ## Acknowledgement
 
-We have referred and borrowed the implementations of 
+We have reffered to and borrowed the implementations of 
 - PyTorch-NeRF (https://github.com/yenchenlin/nerf-pytorch)
 - Jax-NeRF (https://github.com/google-research/google-research/tree/master/jaxnerf)
 - Jax-SNeRG (https://github.com/google-research/google-research/tree/master/snerg)
