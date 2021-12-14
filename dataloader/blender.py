@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import DataLoader
 import dataloader.data_util.blender as blender
 
-import jaxnerf_torch.utils as jaxnerf_torch_utils
+import model.jaxnerf_torch.utils as jaxnerf_torch_utils
 import pytorch_lightning as pl
 
 from dataloader.sampler import MultipleImageBatchSampler, SingleImageBatchSampler, RaySet

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import jaxnerf_torch.utils as utils
+import model.jaxnerf_torch.utils as utils
 import utils.embedder as embedder
 import logging
 import pytorch_lightning as pl

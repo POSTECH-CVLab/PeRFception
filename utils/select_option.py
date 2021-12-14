@@ -1,4 +1,4 @@
-from jaxnerf_torch.model import LitJaxNeRF
+from model.jaxnerf_torch.model import LitJaxNeRF
 from dataloader.llff import LitLLFF
 from dataloader.blender import LitBlender
 

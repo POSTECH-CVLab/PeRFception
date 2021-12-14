@@ -1,11 +1,7 @@
 import os
-import time
 import imageio
-import random
 
 import torch
-from torch._C import device
-import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
