@@ -52,7 +52,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        logger=wandb_logger, 
+        logger=wandb_logger if args.train else None, 
         log_every_n_steps=args.i_print,
         devices=n_gpus,
         max_steps=args.max_steps,

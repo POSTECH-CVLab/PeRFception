@@ -29,8 +29,8 @@ def ssim(pred, gt, i_train, i_val, i_test):
     ssim = []
     for i in range(len(pred)):
         score = ssim_model(
-            pred[None, i].permute((0, 3, 1, 2)), 
-            gt[None, i].permute((0, 3, 1, 2))
+            pred[None, i].permute((0, 3, 1, 2)).float(), 
+            gt[None, i].permute((0, 3, 1, 2)).float()
         )
         ssim.append(score)
     ssim = torch.stack(ssim).cpu().numpy()
@@ -58,8 +58,8 @@ def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
     lpips = []
     for i in range(len(pred)):
         score = lpips_model(
-            pred[None, i].permute((0, 3, 1, 2)), 
-            gt[None, i].permute((0, 3, 1, 2))
+            pred[None, i].permute((0, 3, 1, 2)).float(), 
+            gt[None, i].permute((0, 3, 1, 2)).float()
         )
         lpips.append(score)
     lpips = torch.stack(lpips).cpu().numpy()
