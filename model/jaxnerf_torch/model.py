@@ -10,9 +10,6 @@ import logging
 import pytorch_lightning as pl
 import utils.metrics as metrics
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
 class NeRF(nn.Module):
     def __init__(
         self,
