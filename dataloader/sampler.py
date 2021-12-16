@@ -28,7 +28,7 @@ class SingleImageSampler:
                 yield ray_num
 
     def __len__(self):
-        return self.i_validation
+        return self.i_validation * self.batch_size
 
 
 class SingleImageDDPSampler(DistributedSampler):
@@ -76,7 +76,7 @@ class MultipleImageSampler:
                 yield idx
 
     def __len__(self):
-        return self.i_validation
+        return self.i_validation * self.batch_size
 
 class MultipleImageDDPSampler:
 
