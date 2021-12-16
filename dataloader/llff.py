@@ -78,7 +78,7 @@ class LitLLFF(pl.LightningDataModule):
             self.args.use_pixel_centers
         )
         _rays = np.stack([rays_o, rays_d], axis=1)
-        device_count = torch.cuda.device_count()
+        device_count = torch.cuda.device_count() if not self.args.tpu else self.args.tpu_num
         n = len(images_idx)
         if dummy:
             dummy_num = (device_count - len(images_idx) % device_count) % device_count
