@@ -273,6 +273,12 @@ def config_parser():
     runmode.add_argument(
         "--skip_validation", action="store_true", default=False, 
     )
+    runmode.add_argument(
+        "--tpu", action="store_true", default=False, help="run with tpus"
+    )
+    runmode.add_argument(
+        "--tpu_num", type=int, default=8, help="number of tpu"
+    )
 
     snerg = parser.add_argument_group("snerg specific args")
     snerg.add_argument(
