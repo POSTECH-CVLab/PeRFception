@@ -78,7 +78,7 @@ class LitBlender(pl.LightningDataModule):
         if self.args.batching == "single_image":
             sampler = SingleImageBatchSampler(
                 self.batch_size, len(self.i_train), self.image_len, 
-                self.args.i_validation
+                self.args.i_validation, self.args.tpu
             )
             return DataLoader(
                 self.train_dset, batch_sampler=sampler, num_workers=12, 

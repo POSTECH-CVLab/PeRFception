@@ -6,12 +6,13 @@ import torch.distributed as dist
 
 class SingleImageBatchSampler(DistributedSampler):
 
-    def __init__(self, batch_size, N_img, N_pixels, i_validation):
+    def __init__(self, batch_size, N_img, N_pixels, i_validation, tpu):
         self.batch_size = batch_size
         self.N_pixels = N_pixels
         self.N_img = N_img
         self.drop_last = False
         self.i_validation = i_validation
+        self.tpu = tpu
 
     def __iter__(self): 
         image_choice = np.random.choice(
@@ -21,7 +22,12 @@ class SingleImageBatchSampler(DistributedSampler):
             np.random.choice(np.arange(self.N_pixels), self.batch_size) \
                 for _ in range(self.i_validation)
         ]
-        rank = dist.get_rank()
+        if self.tpu:
+            import torch_xla.core.xla_model as xm
+            rank = xm.parse_xla_device(xm.xla_device())
+            print(rank)
+        else:
+            rank = dist.get_rank()
         num_replicas = dist.get_world_size()
         for (image_idx, idx) in zip(image_choice, idx_choice):
             idx_ret = image_idx * self.N_pixels + idx
@@ -32,10 +38,11 @@ class SingleImageBatchSampler(DistributedSampler):
 
 class MultipleImageBatchSampler:
 
-    def __init__(self, batch_size, total_len, i_validation):
+    def __init__(self, batch_size, total_len, i_validation, tpu):
         self.batch_size = batch_size
         self.total_len = total_len
         self.i_validation = i_validation
+        self.tpu = tpu
 
     def __iter__(self): 
         full_index = np.arange(self.total_len)
@@ -43,7 +50,12 @@ class MultipleImageBatchSampler:
             np.random.choice(full_index, self.batch_size) \
                 for _ in range(self.i_validation)
         ]
-        rank = dist.get_rank()
+        if self.tpu:
+            import torch_xla.core.xla_model as xm
+            rank = xm.parse_xla_device(xm.xla_device())
+            print(rank)
+        else:
+            rank = dist.get_rank()
         num_replicas = dist.get_world_size()   
         for batch in indices:
             yield batch[rank::num_replicas]
