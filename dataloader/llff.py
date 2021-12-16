@@ -102,19 +102,19 @@ class LitLLFF(pl.LightningDataModule):
             self.batch_size, len(self.train_dset), self.args.i_validation, self.args.tpu_num
         ),  batch_size=self.batch_size // self.args.tpu_num, drop_last=False)
         return DataLoader(
-            self.train_dset, batch_sampler=sampler, num_workers=12, 
+            self.train_dset, batch_sampler=sampler, num_workers=self.args.num_workers, 
             pin_memory=True, shuffle=False
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_dset, batch_size=self.chunk, num_workers=12, 
+            self.val_dset, batch_size=self.chunk, num_workers=self.args.num_workers,
             pin_memory=True, drop_last=False
         )
 
     def test_dataloader(self):
         return DataLoader(
-            self.test_dset, batch_size=self.chunk, num_workers=12, 
+            self.test_dset, batch_size=self.chunk, num_workers=self.args.num_workers, 
             pin_memory=True, drop_last=False
         )
 
