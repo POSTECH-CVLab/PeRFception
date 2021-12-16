@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
-# Positional encoding (section 5.1)
 
 class Embedder:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
+        self.embed_fns, self.out_dim = None, None
         self.create_embedding_fn()
 
     def create_embedding_fn(self):
@@ -17,12 +17,12 @@ class Embedder:
             out_dim += d
 
         max_freq = self.kwargs["max_freq_log2"]
-        N_freqs = self.kwargs["num_freqs"]
+        n_freqs = self.kwargs["num_freqs"]
 
         if self.kwargs["log_sampling"]:
-            freq_bands = 2.0 ** torch.linspace(0.0, max_freq, steps=N_freqs)
+            freq_bands = 2.0 ** torch.linspace(0.0, max_freq, steps=n_freqs)
         else:
-            freq_bands = torch.linspace(2.0 ** 0.0, 2.0 ** max_freq, steps=N_freqs)
+            freq_bands = torch.linspace(2.0 ** 0.0, 2.0 ** max_freq, steps=n_freqs)
 
         for freq in freq_bands:
             for p_fn in self.kwargs["periodic_fns"]:

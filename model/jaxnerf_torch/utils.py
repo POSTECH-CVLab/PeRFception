@@ -7,18 +7,23 @@ import numpy as np
 
 from tqdm import tqdm
 
+
 def img2mse(x, y): 
     return torch.mean((x - y) ** 2)
+
 
 def mse2psnr(x):
     return -10.0 * torch.log(x) / np.log(10)
 
+
 def to8b(x):
     return (255 * np.clip(x, 0, 1)).astype(np.uint8)
+
 
 def depth8b(x):
     x = (x - x.min()) / (x.max() - x.min())
     return to8b(x)
+
 
 # Ray helpers
 def get_rays(H, W, K, c2w, use_pixel_centers):

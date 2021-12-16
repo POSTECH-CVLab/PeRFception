@@ -3,4 +3,5 @@
 *wandb/*
 *vscode*
 *pycache*
-swap-pane
+*swap-pane*
+*.idea*

@@ -2,12 +2,15 @@ from PIL import Image
 import os
 import numpy as np
 
+
 def to8b(x):
     return (255 * np.clip(x, 0, 1)).astype(np.uint8)
+
 
 def norm8b(x):
     x = (x - x.min()) / (x.max() - x.min())
     return to8b(x)
+
 
 def store_image(dirpath, rgbs, depths):
     for (i, (rgb, depth)) in enumerate(zip(rgbs, depths)):
