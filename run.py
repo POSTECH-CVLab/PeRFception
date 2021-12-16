@@ -34,7 +34,7 @@ if __name__ == "__main__":
     wandb_logger = pl_loggers.WandbLogger(
         name=expname, entity="postech_cvlab", project=args.model
     ) if not args.tpu else pl_loggers.TestTubeLogger(
-        name=expname, savedir=logdir,
+        name=expname, save_dir=logdir,
     )
 
     seed_everything(args.seed, workers=True)
