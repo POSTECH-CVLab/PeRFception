@@ -106,7 +106,7 @@ class LitLLFF(pl.LightningDataModule):
             )
         else:
             sampler = MultipleImageBatchSampler(
-                self.batch_size, len(self.train_dset), self.args.i_validation
+                self.batch_size, len(self.train_dset), self.args.i_validation, self.args.tpu
             )
             return DataLoader(
                 self.train_dset, batch_sampler=sampler, num_workers=12, 
