@@ -255,10 +255,6 @@ def config_parser():
         "--datadir", type=str, default="./data/llff/fern", 
         help="input data directory"
     )
-    metadata.add_argument(
-        "--master_port", type=str, default="12345",
-        help="master port to run DDP"
-    )
 
     runmode = parser.add_argument_group("running mode")
     runmode.add_argument(
@@ -277,7 +273,10 @@ def config_parser():
         "--tpu", action="store_true", default=False, help="run with tpus"
     )
     runmode.add_argument(
-        "--tpu_num", type=int, default=8, help="number of tpu"
+        "--tpu_num", type=int, default=0, help="number of tpu"
+    )
+    runmode.add_argument(
+        "--num_workers", type=int, default=8, help="number of workers in dataloaders"
     )
 
     snerg = parser.add_argument_group("snerg specific args")

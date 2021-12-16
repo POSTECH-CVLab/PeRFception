@@ -3,12 +3,13 @@ import numpy as np
 
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data.sampler import BatchSampler
 import dataloader.data_util.blender as blender
 
 import model.jaxnerf_torch.utils as jaxnerf_torch_utils
 import pytorch_lightning as pl
 
-from dataloader.sampler import MultipleImageBatchSampler, SingleImageBatchSampler, RaySet
+from dataloader.sampler import SingleImageSampler, SingleImageDDPSampler, RaySet
 
 class LitBlender(pl.LightningDataModule):
 
@@ -75,23 +76,18 @@ class LitBlender(pl.LightningDataModule):
 
     def train_dataloader(self):
 
-        if self.args.batching == "single_image":
-            sampler = SingleImageBatchSampler(
-                self.batch_size, len(self.i_train), self.image_len, 
-                self.args.i_validation, self.args.tpu
-            )
-            return DataLoader(
-                self.train_dset, batch_sampler=sampler, num_workers=12, 
-                pin_memory=True, shuffle=False
-            )
-        else:
-            sampler = MultipleImageBatchSampler(
-                self.batch_size, len(self.train_dset), self.args.i_validation, self.args.tpu
-            )
-            return DataLoader(
-                self.train_dset, batch_sampler=sampler, num_workers=12, 
-                pin_memory=True, shuffle=False
-            )
+        assert self.args.batching == "single_image"
+        sampler = SingleImageDDPSampler(
+            self.batch_size, len(self.i_train), self.image_len, 
+            self.args.i_validation
+        ) if not self.args.tpu else BatchSampler(SingleImageSampler(
+            self.batch_size, len(self.i_train), self.image_len, 
+            self.args.i_validation,
+        ), batch_size=self.batch_size // self.args.tpu_num, drop_last=False)
+        return DataLoader(
+            self.train_dset, batch_sampler=sampler, num_workers=12, 
+            pin_memory=True, shuffle=False
+        )
 
     def val_dataloader(self):
         return DataLoader(

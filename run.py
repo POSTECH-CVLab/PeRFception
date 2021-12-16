@@ -54,7 +54,7 @@ if __name__ == "__main__":
         devices=n_gpus,
         max_steps=args.max_steps,
         accelerator="gpu" if not args.tpu else "tpu",
-        tpu_cores=args.tpu_num if args.tpu else 0,
+        tpu_cores=args.tpu_num if args.tpu else None,
         replace_sampler_ddp=False,
         deterministic=True,
         strategy=DDPPlugin(find_unused_parameters=False) if not args.tpu else None,
