@@ -274,4 +274,30 @@ def config_parser():
         "--skip_validation", action="store_true", default=False, 
     )
 
+    snerg = parser.add_argument_group("snerg specific args")
+    snerg.add_argument(
+        "--num_view_dir_channels", type=int, default=4, 
+        help="dimension of specular features"
+    )
+    snerg.add_argument(
+        "--viewdir_netdepth", type=int, default=2, 
+        help="depth of the view-dependence MLP"
+    )
+    snerg.add_argument(
+        "--viewdir_netwidth", type=int, default=16,
+        help="width of the view-dependence MLP"
+    )
+    snerg.add_argument(
+        "--sparsity_strength", type=float, default=0.,
+        help="lambda for sparsity loss"
+    )
+    snerg.add_argument(
+        "--deg_view", type=int, default=4, 
+        help="degree for positional encoding  of view direction"
+    )
+    snerg.add_argument(
+        "--voxel_resolution", type=int, default=1000,
+        help="resolution of voxel while baking"
+    )
+
     return parser.parse_args()
