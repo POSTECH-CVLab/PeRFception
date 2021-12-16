@@ -7,12 +7,13 @@ import torch.distributed as dist
 
 class SingleImageSampler:
 
-    def __init__(self, batch_size, N_img, N_pixels, i_validation):
+    def __init__(self, batch_size, N_img, N_pixels, i_validation, tpu_num):
         self.batch_size = batch_size
         self.N_pixels = N_pixels
         self.N_img = N_img
         self.drop_last = False
         self.i_validation = i_validation
+        self.tpu_num = tpu_num
 
     def __iter__(self):
         image_choice = np.random.choice(
@@ -28,7 +29,7 @@ class SingleImageSampler:
                 yield ray_num
 
     def __len__(self):
-        return self.i_validation * self.batch_size
+        return self.i_validation * self.batch_size // self.tpu_num
 
 
 class SingleImageDDPSampler(DistributedSampler):
@@ -60,10 +61,11 @@ class SingleImageDDPSampler(DistributedSampler):
 
 class MultipleImageSampler:
 
-    def __init__(self, batch_size, total_len, i_validation):
+    def __init__(self, batch_size, total_len, i_validation, tpu_num):
         self.batch_size = batch_size
         self.total_len = total_len
         self.i_validation = i_validation
+        self.tpu_num = tpu_num
 
     def __iter__(self): 
         full_index = np.arange(self.total_len)
