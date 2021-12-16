@@ -78,7 +78,7 @@ class MultipleImageSampler:
                 yield idx
 
     def __len__(self):
-        return self.i_validation * self.batch_size
+        return self.i_validation * self.batch_size // self.tpu_num
 
 class MultipleImageDDPSampler:
 
@@ -99,7 +99,7 @@ class MultipleImageDDPSampler:
             yield batch[rank::num_replicas]
 
     def __len__(self):
-        return self.i_validation
+        return self.i_validation 
 
 
 class RaySet(Dataset):
