@@ -33,6 +33,8 @@ if __name__ == "__main__":
 
     wandb_logger = pl_loggers.WandbLogger(
         name=expname, entity="postech_cvlab", project=args.model
+    ) if args.gpu else pl_loggers.TestTubeLogger(
+        name=expname, savedir=logdir,
     )
 
     seed_everything(args.seed, workers=True)
