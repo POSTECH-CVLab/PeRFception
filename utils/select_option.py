@@ -1,16 +1,16 @@
-from model.jaxnerf_torch.model import LitJaxNeRF
+from model.jaxnerf_torch.model import LitJaxNeRFLLFF, LitJaxNeRFBlender
 
 from dataloader.llff import LitLLFF
 from dataloader.blender import LitBlender
 
+
 def select_model(args):
 
     if args.model == "jaxnerf_torch":
-        return LitJaxNeRF
 
-def select_dataloader(args):
-
-    if args.dataset_type == "llff":
-        return LitLLFF(args)
-    elif args.dataset_type == "blender":
-        return LitBlender(args)
+        if args.dataset_type == "blender":
+            return LitJaxNeRFBlender
+        elif args.dataset_type == "llff":
+            return LitJaxNeRFLLFF
+        else:
+            raise f"Unknown dataset named {args.dataset}"

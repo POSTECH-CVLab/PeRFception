@@ -2,7 +2,7 @@ from torch.utils import data
 import config
 import os
 
-from utils.select_option import select_model, select_dataloader
+from utils.select_option import select_model
 
 import torch
 from pytorch_lightning import Trainer, seed_everything
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     n_gpus = torch.cuda.device_count()
 
     os.makedirs(logdir, exist_ok=True)
-    
+
     f = os.path.join(logdir, "args.txt")
     with open(f, "w") as file:
         for arg in sorted(vars(args)):
@@ -32,8 +32,9 @@ if __name__ == "__main__":
         file.write(open(args.config, "r").read())
 
     wandb_logger = pl_loggers.WandbLogger(
-        name=expname, entity="postech_cvlab", project=args.model
-    ) if not args.tpu else pl_loggers.TensorBoardLogger(save_dir=logdir, name=expname)
+        name=expname, entity="postech_cvlab",
+        project=args.model) if not args.tpu else pl_loggers.TensorBoardLogger(
+            save_dir=logdir, name=expname)
 
     seed_everything(args.seed, workers=True)
 
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     )
 
     trainer = Trainer(
-        logger=wandb_logger if args.train else None, 
+        logger=wandb_logger if args.train else None,
         log_every_n_steps=args.i_print,
         devices=n_gpus,
         max_steps=args.max_steps,
@@ -55,25 +56,22 @@ if __name__ == "__main__":
         tpu_cores=args.tpu_num if args.tpu else None,
         replace_sampler_ddp=False,
         deterministic=True,
-        strategy=DDPPlugin(find_unused_parameters=False) if not args.tpu else None,
+        strategy=DDPPlugin(
+            find_unused_parameters=False) if not args.tpu else None,
         check_val_every_n_epoch=1,
-        precision=32, 
+        precision=32,
         num_sanity_val_steps=-1 if args.debug else 0,
         callbacks=[lr_monitor, model_best_checkpoint],
     )
-    dataloader = select_dataloader(args)
-    info = dataloader.get_info()
-    info["logdir"] = logdir
-    model_fn = select_model(args)
-    model = model_fn(args, info)
 
+    model_fn = select_model(args)
+    model = model_fn(args)
+    
     if args.train:
-        trainer.fit(
-            model, dataloader.train_dataloader(), dataloader.val_dataloader()
-        )
+        trainer.fit(model)
     if args.eval:
         best_path = os.path.join(logdir, "best.ckpt")
-        trainer.test(model, dataloader.test_dataloader(), ckpt_path=best_path)
+        trainer.test(model, ckpt_path=best_path)
 
     if args.bake:
         pass

@@ -89,6 +89,12 @@ def write_stats(fpath, *stats):
             name, mean = stat["name"], stat["train_mean"]
             fp.write(f"   {name}: {mean}\n")
 
+        # VAL MEAN
+        fp.write("\nVAL MEAN SCORE\n")
+        for stat in stats:
+            name, mean = stat["name"], stat["val_mean"]
+            fp.write(f"   {name}: {mean}\n")
+
         # TEST MEAN
         fp.write("\nTEST MEAN SCORE\n")
         for stat in stats:
