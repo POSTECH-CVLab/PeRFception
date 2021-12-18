@@ -98,7 +98,7 @@ class LitLLFF(pl.LightningDataModule):
             import torch_xla.core.xla_model as xm
             sampler = MultipleImageDDPSampler(
                 self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
-                len(self.train_dset), self.i_validation
+                len(self.train_dset), self.args.i_validation
             )
         else:
             sampler = MultipleImageDDPSampler(
