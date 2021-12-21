@@ -34,6 +34,7 @@ python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/room
     --expname room_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/trex \
     --expname trex_large --eval
+    
 # BLENDER
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/chair \
     --expname chair --eval
@@ -52,7 +53,7 @@ python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/mic 
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/ship \
     --expname ship --eval
     
-BLENDER LARGE
+# BLENDER LARGE
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/chair \
     --expname chair_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/drums \
