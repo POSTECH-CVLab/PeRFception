@@ -63,11 +63,11 @@ class LitLLFF(pl.LightningDataModule):
         self.image_len = h * w
         self.h, self.w = h, w
 
-        self.i_train, self.i_val = i_train, i_val
-        self.i_test = np.arange(len(images))
+        self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
+        self.i_all = np.arange(len(images))
         self.train_dset, _ = self.split(images, extrinsics, self.i_train, False)
         self.val_dset, self.val_dummy = self.split(images, extrinsics, self.i_val)
-        self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_test)
+        self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_all)
 
     def split(self, _images, extrinsics, idx, dummy=True):
         images_idx = _images[idx].reshape(-1, 3)
