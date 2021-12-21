@@ -1,72 +1,71 @@
 
 # LLFF
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/fern \
-    --expname fern --train --eval
+    --expname fern --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/flower \
-    --expname flower --train --eval
+    --expname flower --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/fortress \
-    --expname fortress --train --eval
+    --expname fortress --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/horns \
-    --expname horns --train --eval
+    --expname horns --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/leaves \
-    --expname leaves --train --eval
+    --expname leaves --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/orchids \
-    --expname orchids --train --eval
+    --expname orchids --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/room \
-    --expname room --train --eval
+    --expname room --eval
 python3 -m run --config configs/jaxnerf/llff.yaml --datadir data/llff/trex \
-    --expname trex --train --eval
+    --expname trex --eval
 
 # LLFF_LARGE
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/fern \
-    --expname fern_large --train --eval
+    --expname fern_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/flower \
-    --expname flower_large --train --eval
+    --expname flower_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/fortress \
-    --expname fortress_large --train --eval
+    --expname fortress_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/horns \
-    --expname horns_large --train --eval
+    --expname horns_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/leaves \
-    --expname leaves_large --train --eval
+    --expname leaves_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/orchids \
-    --expname orchids_large --train --eval
+    --expname orchids_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/room \
-    --expname room_large --train --eval
+    --expname room_large --eval
 python3 -m run --config configs/jaxnerf/llff_large.yaml --datadir data/llff/trex \
-    --expname trex_large --train --eval
-
+    --expname trex_large --eval
 # BLENDER
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/chair \
-    --expname chair --train --eval
+    --expname chair --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/drums \
-    --expname drums --train --eval
+    --expname drums --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/ficus \
-    --expname ficus --train --eval
+    --expname ficus --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/hotdog \
-    --expname hotdog --train --eval
+    --expname hotdog --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/lego \
-    --expname lego --train --eval
+    --expname lego --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/materials \
-    --expname materials --train --eval
+    --expname materials --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/mic \
-    --expname mic --train --eval
+    --expname mic --eval
 python3 -m run --config configs/jaxnerf/blender.yaml --datadir data/blender/ship \
-    --expname ship --train --eval
+    --expname ship --eval
     
-# BLENDER LARGE
+BLENDER LARGE
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/chair \
-    --expname chair_large --train --eval
+    --expname chair_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/drums \
-    --expname drums_large --train --eval
+    --expname drums_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/ficus \
-    --expname ficus_large --train --eval
+    --expname ficus_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/hotdog \
-    --expname hotdog_large --train --eval
+    --expname hotdog_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/lego \
-    --expname lego_large --train --eval
+    --expname lego_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/materials \
-    --expname materials_large --train --eval
+    --expname materials_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/mic \
-    --expname mic_large --train --eval
+    --expname mic_large --eval
 python3 -m run --config configs/jaxnerf/blender_large.yaml --datadir data/blender/ship \
-    --expname ship_large --train --eval
+    --expname ship_large --eval
