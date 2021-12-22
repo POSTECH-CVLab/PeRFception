@@ -26,6 +26,9 @@ This section compares the JaxNeRF and the original NeRF.
 
 ## Reproduced Performance
 
+The results below are from the setting in our repository. Due to limited resources, we only trained 200K iterations. JaxNeRF is trained with 1M iterations. 
+For any performance comparison, please set the `max_steps` to be equal in experiments.  
+
 ### Blender (NeRF-Synthetic)
 
 #### Base Model (JaxNeRF)
@@ -82,15 +85,4 @@ ln -s [path to nerf_llff_data] llff
 ln -s [path to nerf_blender_data] blender
 ```
 
-
-```
-# Blender - (Base, Large)
-
-python3 -m run --config configs/jaxnerf/blender.yaml --expname [scene] --datadir data/blender/[scene] --train --eval
-python3 -m run --config configs/jaxnerf/blender_large.yaml --expname [scene]_large --datadir data/blender/[scene] --train --eval
-
-# LLFF - (Base, Large)
-
-python3 -m run --config configs/jaxnerf/llff.yaml --expname [scene] --datadir data/llff/[scene] --train --eval
-python3 -m run --config configs/jaxnerf/llff_large.yaml --expname [scene]_large --datadir data/llff/[scene] --train --eval
-```
+All the scripts are written in `scripts/jaxnerf_torch/[scripts].sh`
