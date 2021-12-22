@@ -2,10 +2,11 @@ import os
 
 import numpy as np
 
+import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch_lightning.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
+from model.interface import LitModel
 
 import model.jaxnerf_torch.utils as utils
 import model.jaxnerf_torch.embedder as embedder
@@ -77,38 +78,15 @@ class NeRF(nn.Module):
         return outputs
 
 
-class LitJaxNeRF(pl.LightningModule):
+class LitJaxNeRF(LitModel):
 
     # The external dataset will be called.
-    def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return self.dataset.train_dataloader()
-
-    def test_dataloader(self) -> EVAL_DATALOADERS:
-        return self.dataset.test_dataloader()
-
-    def val_dataloader(self) -> EVAL_DATALOADERS:
-        return self.dataset.val_dataloader()
-
-    def predict_dataloader(self) -> EVAL_DATALOADERS:
-        pass
-
     def __init__(self, args):
-        super(LitJaxNeRF, self).__init__()
-        assert hasattr(self, "dataset")
-        self.args = args
-        self.model = None
-        self.model_fine = None
-        self.logdir = os.path.join(args.basedir, args.model + "_" + args.expname)
-        self.h, self.w = self.dataset.h, self.dataset.w
-        self.intrinsics = self.dataset.intrinsics
-        self.i_train, self.i_val, self.i_test = self.dataset.i_train, self.dataset.i_val, self.dataset.i_test
-        self.val_dummy, self.test_dummy = self.dataset.val_dummy, self.dataset.test_dummy
-        self.near, self.far = self.dataset.near, self.dataset.far,
-        self.img_size = self.h * self.w
-        self.create_model()
-
-    def on_train_start(self):
-        self.logger.log_hyperparams(self.args)
+        super(LitJaxNeRF, self).__init__(args)
+        self.forward_fun = functools.partial(
+            utils.render, H=self.h, W=self.w, K=self.intrinsics,
+            use_pixel_centers=self.args.use_pixel_centers
+        )
 
     def create_model(self):
         args = self.args
@@ -186,19 +164,13 @@ class LitJaxNeRF(pl.LightningModule):
                                 lr=self.args.lr_init,
                                 betas=(0.9, 0.999))
 
+
     def forward_train(self, batch_rays):
-        return utils.render(
-            self.h, self.w, self.intrinsics, rays=batch_rays, 
-            use_pixel_centers=self.args.use_pixel_centers,
-            **self.render_kwargs_train
-        )
+        return self.forward_fun(rays=batch_rays, **self.render_kwargs_train)
+
 
     def forward_eval(self, batch_rays):
-        return utils.render(
-            self.h, self.w, self.intrinsics, rays=batch_rays, 
-            use_pixel_centers=self.args.use_pixel_centers,
-            **self.render_kwargs_test
-        )
+        return self.forward_fun(rays=batch_rays, **self.render_kwargs_test)
 
 
     def training_step(self, batch, batch_idx):
@@ -220,9 +192,10 @@ class LitJaxNeRF(pl.LightningModule):
         self.log("train_loss", loss, on_step=True)
         return loss
 
-    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_idx,
-                       optimizer_closure, on_tpu, using_native_amp,
-                       using_lbfgs):
+    def optimizer_step(
+        self, epoch, batch_idx, optimizer, optimizer_idx,
+        optimizer_closure, on_tpu, using_native_amp, using_lbfgs
+    ):
         step = self.trainer.global_step
         if self.args.lr_delay_steps > 0:
             delay_rate = self.args.lr_delay_mult + (
@@ -243,10 +216,14 @@ class LitJaxNeRF(pl.LightningModule):
         optimizer.step(closure=optimizer_closure)
 
     def render_rays(self, batch, batch_idx):
+        ret = {}
         batch_rays = batch["ray"]
-        target = batch["target"]
         rgb, disparity, acc, depth, extras = self.forward_eval(batch_rays)
-        return {"rgb": rgb, "depth": depth, "target": target}
+        ret["rgb"] = rgb
+        ret["depth"] = depth
+        if "target" in batch:
+            ret["target"] = batch["target"]
+        return ret
 
     def validation_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
@@ -254,14 +231,8 @@ class LitJaxNeRF(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
-    def gather_results(self, outputs, dummy_num):
-        outputs_gather = self.all_gather(outputs)
-        rgbs = store_image.alter_cat(outputs_gather, "rgb")
-        target = store_image.alter_cat(outputs_gather, "target")
-        depths = store_image.alter_cat(outputs_gather, "depth")
-        if dummy_num != 0:
-            rgbs, target, depths = rgbs[:-dummy_num], target[:-dummy_num], depths[:-dummy_num]
-        return rgbs, target, depths
+    def predict_step(self, batch, batch_idx):
+        return self.render_rays(batch, batch_idx)
 
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
@@ -278,6 +249,18 @@ class LitJaxNeRF(pl.LightningModule):
             store_image.store_image(image_dir, rgbs, depths)
 
             metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr, ssim, lpips)
+
+    def on_predict_epoch_end(self, outputs):
+        # In the prediction step, be sure to use outputs[0]
+        # instead of outputs. 
+        rgbs, _, depths = self.gather_results(outputs[0], self.pred_dummy) 
+        if self.trainer.is_global_zero: 
+            rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
+            depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy() 
+            image_dir = os.path.join(self.logdir, "render_video")
+            os.makedirs(image_dir, exist_ok=True)
+            store_image.store_image(image_dir, rgbs, depths)
+            store_image.store_video(image_dir, rgbs, depths)
 
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)

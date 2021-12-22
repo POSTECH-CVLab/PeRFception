@@ -6,3 +6,4 @@ logs
 *pycache*
 *swap-pane*
 *.idea*
+logs_collection

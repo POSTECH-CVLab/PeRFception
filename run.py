@@ -10,8 +10,11 @@ from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.plugins import DDPPlugin
 
-if __name__ == "__main__":
+import logging
 
+if __name__ == "__main__":
+    
+    logging.getLogger("lightning").setLevel(logging.ERROR)
     args = config.config_parser()
     basedir = args.basedir
     expname = args.model + "_" + args.expname
@@ -60,7 +63,7 @@ if __name__ == "__main__":
             find_unused_parameters=False) if not args.tpu else None,
         check_val_every_n_epoch=1,
         precision=32,
-        num_sanity_val_steps=-1 if args.debug else 0,
+        num_sanity_val_steps=0,
         callbacks=[lr_monitor, model_best_checkpoint],
     )
 
@@ -72,6 +75,8 @@ if __name__ == "__main__":
     if args.eval:
         best_path = os.path.join(logdir, "best.ckpt")
         trainer.test(model, ckpt_path=best_path)
-
+    if args.render:
+        best_path = os.path.join(logdir, "best.ckpt")
+        trainer.predict(model, ckpt_path=best_path)
     if args.bake:
         pass

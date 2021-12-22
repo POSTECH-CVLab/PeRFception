@@ -269,7 +269,7 @@ def spherify_poses(poses, bds):
 
 
 def load_llff_data(
-    basedir, factor=8, recenter=True, bd_factor=0.75, path_zflat=False
+    basedir, factor=8, recenter=True, bd_factor=0.75, path_zflat=False, spherify=False,
 ):
 
     poses, bds, imgs = _load_data(basedir, factor=factor)  
@@ -290,33 +290,39 @@ def load_llff_data(
     if recenter:
         poses = recenter_poses(poses)
 
-    c2w = poses_avg(poses)
+    if spherify:
+        poses, render_poses, bds = spherify_poses(poses, bds)
 
-    ## Get spiral
-    # Get average pose
-    up = normalize(poses[:, :3, 1].sum(0))
+    else:
+        c2w = poses_avg(poses)
 
-    # Find a reasonable "focus depth" for this dataset
-    close_depth, inf_depth = bds.min() * 0.9, bds.max() * 5.0
-    dt = 0.75
-    mean_dz = 1.0 / (((1.0 - dt) / close_depth + dt / inf_depth))
-    focal = mean_dz
+        ## Get spiral
+        # Get average pose
+        up = normalize(poses[:, :3, 1].sum(0))
 
-    # Get radii for spiral path
-    shrink_factor = 0.8
-    zdelta = close_depth * 0.2
-    tt = poses[:, :3, 3]  
-    rads = np.percentile(np.abs(tt), 90, 0)
-    c2w_path = c2w
-    N_views = 120
-    N_rots = 2
-    
-    if path_zflat:
-        zloc = -close_depth * 0.1
-        c2w_path[:3, 3] = c2w_path[:3, 3] + zloc * c2w_path[:3, 2]
-        rads[2] = 0.0
-        N_rots = 1
-        N_views /= 2
+        # Find a reasonable "focus depth" for this dataset
+        close_depth, inf_depth = bds.min() * 0.9, bds.max() * 5.0
+        dt = 0.75
+        mean_dz = 1.0 / (((1.0 - dt) / close_depth + dt / inf_depth))
+        focal = mean_dz
+
+        # Get radii for spiral path
+        shrink_factor = 0.8
+        zdelta = close_depth * 0.2
+        tt = poses[:, :3, 3]  
+        rads = np.percentile(np.abs(tt), 90, 0)
+        c2w_path = c2w
+        N_views = 120
+        N_rots = 2
+        
+        if path_zflat:
+            zloc = -close_depth * 0.1
+            c2w_path[:3, 3] = c2w_path[:3, 3] + zloc * c2w_path[:3, 2]
+            rads[2] = 0.0
+            N_rots = 1
+            N_views /= 2
+        
+        render_poses = render_path_spiral(c2w_path, up, rads, focal, zdelta, zrate=.5, rots=N_rots, N=N_views)
 
     c2w = poses_avg(poses)
 
@@ -326,5 +332,5 @@ def load_llff_data(
     images = images.astype(np.float32)
     poses = poses.astype(np.float32)
 
-    return images, poses, bds, i_test
+    return images, poses, bds, render_poses, i_test
 

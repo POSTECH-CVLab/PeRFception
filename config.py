@@ -267,6 +267,9 @@ def config_parser():
         "--bake", action="store_true", default=False, help="bake the trained model"
     )
     runmode.add_argument(
+        "--render", action="store_true", default=False, help="render to generate video"
+    )
+    runmode.add_argument(
         "--skip_validation", action="store_true", default=False, 
     )
     runmode.add_argument(

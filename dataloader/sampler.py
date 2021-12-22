@@ -98,16 +98,19 @@ class MultipleImageDDPSampler(DistributedSampler):
 
 
 class RaySet(Dataset):
-    def __init__(self, images, rays):
+
+    def __init__(self, images=None, rays=None):
         self.images = images
+        self.images_exist = self.images is not None
+        assert rays is not None
         self.rays = rays
-        self.N = len(images)
+        self.N = len(rays)
 
     def __getitem__(self, index):
-        return {
-            "target": torch.from_numpy(self.images[index]),
-            "ray": torch.from_numpy(self.rays[index])
-        }
+        ret = {"ray": torch.from_numpy(self.rays[index])}
+        if self.images_exist: 
+            ret["target"] = torch.from_numpy(self.images[index])
+        return ret
 
     def __len__(self):
-        return len(self.images)
+        return self.N
