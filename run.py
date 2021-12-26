@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
     seed_everything(args.seed, workers=True)
 
-    lr_monitor = LearningRateMonitor(logging_interval="epoch")
+    lr_monitor = LearningRateMonitor(logging_interval="step")
     model_best_checkpoint = ModelCheckpoint(
         monitor="val_psnr",
         dirpath=logdir,
