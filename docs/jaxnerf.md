@@ -35,7 +35,7 @@ The results below are from the setting in our repository. Due to limited resourc
 For any performance comparison, please set the `max_steps` to be equal in experiments. As explained in the official implementation of JaxNeRF, ficus and mic scenes are
 sensitive to seeds, resulting in unstable training. Thus, we have slightly modified the "lr_delay_mult" in our large model. Please refer to the scripts in `scripts/jaxnerf_torch`
 
-We provide the pretrained checkpoints, per-scene quality, and mean qualities for each scene in the [[link]](https://drive.google.com/file/d/1qmFZdN80lyOmAiiJLV06_4uRKm0CfUXB/view?usp=sharing) 
+We provide the pretrained checkpoints, per-scene qualities, and mean qualities for each scene in the [[link]](https://drive.google.com/file/d/1qmFZdN80lyOmAiiJLV06_4uRKm0CfUXB/view?usp=sharing) 
 
 ### Blender (NeRF-Synthetic)
 
@@ -69,9 +69,9 @@ Although we only ran 200K iterations(1M in the official JaxNeRF+), our implement
 | PSNR (Test) | 25.32 | 28.13 | 31.72 | 28.47 | 21.12 | 20.17 | 33.46 | 27.51 |
 | SSIM (Test) | 0.8161 | 0.8601 | 0.9001 | 0.8761 | 0.7250 | 0.6520 | 0.9594 | 0.9126 |
 | LPIPS (Test) | 0.2397 | 0.1734 | 0.1410 | 0.1948 | 0.2615 | 0.3030 | 0.1418 | 0.2044 |
-| PSNR (Overall) | 27.49 | 31.83 | 33.55 | 30.02 | 23.11 | 23.23 | 38.20 | 30.03 |
-| SSIM (Overall) | 0.8555 | 0.9084 | 0.9183 | 0.8891 | 0.7828 | 0.7434 | 0.9724 | 0.9315 |
-| LPIPS (Overall) | 0.2145 | 0.1348 | 0.1275 | 0.1835 | 0.2316 | 0.2661| 0.1243 | 0.1730 |
+| PSNR (All) | 27.49 | 31.83 | 33.55 | 30.02 | 23.11 | 23.23 | 38.20 | 30.03 |
+| SSIM (All) | 0.8555 | 0.9084 | 0.9183 | 0.8891 | 0.7828 | 0.7434 | 0.9724 | 0.9315 |
+| LPIPS (All) | 0.2145 | 0.1348 | 0.1275 | 0.1835 | 0.2316 | 0.2661| 0.1243 | 0.1730 |
 
 #### Base Model (JaxNeRF)
 | | Fern | Flower | Fortress | Horns | Leaves | Orchids | Room | Trex |
@@ -79,9 +79,9 @@ Although we only ran 200K iterations(1M in the official JaxNeRF+), our implement
 | PSNR (Test) | 24.83 | 27.06 | 30.89 | 26.79 | 20.75 | 20.24 | 31.94 | 26.08 |
 | SSIM (Test) | 0.7710 | 0.8110 | 0.8643 | 0.7990 | 0.6690 | 0.6296 | 0.9436 | 0.8614 |
 | LPIPS (Test) | 0.3169 | 0.2459 | 0.2047 | 0.3171 | 0.3409 | 0.3385 | 0.1937 | 0.2804 |
-| PSNR (Overall) | 25.74 | 29.07 | 31.68 | 27.58 | 21.77 | 22.43 | 34.84 | 27.54 |
-| SSIM (Overall) | 0.7900 | 0.8507 | 0.8737 | 0.8052 | 0.7049 | 0.6948 | 0.9551 | 0.8824|
-| LPIPS (Overall) | 0.3029 | 0.2112 | 0.1958 | 0.3107 | 0.3213 | 0.3130 | 0.1778 | 0.2536 |
+| PSNR (All) | 25.74 | 29.07 | 31.68 | 27.58 | 21.77 | 22.43 | 34.84 | 27.54 |
+| SSIM (All) | 0.7900 | 0.8507 | 0.8737 | 0.8052 | 0.7049 | 0.6948 | 0.9551 | 0.8824|
+| LPIPS (All) | 0.3029 | 0.2112 | 0.1958 | 0.3107 | 0.3213 | 0.3130 | 0.1778 | 0.2536 |
 
 
 ## Running the code
