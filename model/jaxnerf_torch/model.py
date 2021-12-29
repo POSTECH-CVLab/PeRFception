@@ -26,7 +26,6 @@ class NeRF(nn.Module):
         input_ch_views=3,
         output_ch=4,
         skips=[4],
-        use_viewdirs=False,
     ):
         super(NeRF, self).__init__()
         self.D = D
@@ -34,7 +33,6 @@ class NeRF(nn.Module):
         self.input_ch = input_ch
         self.input_ch_views = input_ch_views
         self.skips = skips
-        self.use_viewdirs = use_viewdirs
 
         self.pts_linears = nn.ModuleList([nn.Linear(input_ch, W)] + [
             nn.Linear(W, W) if i not in
@@ -44,12 +42,9 @@ class NeRF(nn.Module):
         self.views_linears = nn.ModuleList(
             [nn.Linear(input_ch_views + W, W // 2)])
 
-        if use_viewdirs:
-            self.feature_linear = nn.Linear(W, W)
-            self.alpha_linear = nn.Linear(W, 1)
-            self.rgb_linear = nn.Linear(W // 2, 3)
-        else:
-            self.output_linear = nn.Linear(W, output_ch)
+        self.feature_linear = nn.Linear(W, W)
+        self.alpha_linear = nn.Linear(W, 1)
+        self.rgb_linear = nn.Linear(W // 2, 3)
 
     def forward(self, x):
         input_pts, input_views = torch.split(
@@ -61,19 +56,16 @@ class NeRF(nn.Module):
             if i in self.skips:
                 h = torch.cat([input_pts, h], -1)
 
-        if self.use_viewdirs:
-            alpha = self.alpha_linear(h)
-            feature = self.feature_linear(h)
-            h = torch.cat([feature, input_views], -1)
+        alpha = self.alpha_linear(h)
+        feature = self.feature_linear(h)
+        h = torch.cat([feature, input_views], -1)
 
-            for i, l in enumerate(self.views_linears):
-                h = self.views_linears[i](h)
-                h = F.relu(h)
+        for i, l in enumerate(self.views_linears):
+            h = self.views_linears[i](h)
+            h = F.relu(h)
 
-            rgb = self.rgb_linear(h)
-            outputs = torch.cat([rgb, alpha], -1)
-        else:
-            outputs = self.output_linear(h)
+        rgb = self.rgb_linear(h)
+        outputs = torch.cat([rgb, alpha], -1)
 
         return outputs
 
@@ -88,15 +80,107 @@ class LitJaxNeRF(LitModel):
             use_pixel_centers=self.args.use_pixel_centers
         )
 
+    @staticmethod
+    def add_model_specific_args(parser):
+        
+        # ray option
+        ray = parser.add_argument_group("rays") 
+        ray.add_argument(
+            "--use_pixel_centers", action="store_true", default=False,
+            help="add a half pixel while generating rays"
+        )
+
+        net = parser.add_argument_group("networks")
+        net.add_argument("--netdepth", type=int, default=8, help="layers in network")
+        net.add_argument("--netwidth", type=int, default=256, help="channels per layer")
+        net.add_argument(
+            "--netdepth_fine", type=int, default=8, help="layers in fine network"
+        )
+        net.add_argument(
+            "--netwidth_fine", type=int, default=256, help="channels per layer in fine network"
+        )
+
+        # rendering options
+        rendering = parser.add_argument_group("rendering")
+        rendering.add_argument(
+            "--num_coarse_samples", type=int, default=64, help="number of coarse samples per ray"
+        )
+        rendering.add_argument(
+            "--num_fine_samples",
+            type=int,
+            default=0,
+            help="number of additional fine samples per ray",
+        )
+        rendering.add_argument(
+            "--perturb",
+            type=float,
+            default=1.0,
+            help="set to 0. for no jitter, 1. for jitter",
+        )
+        rendering.add_argument(
+            "--i_embed",
+            type=int,
+            default=0,
+            help="set 0 for default positional encoding, -1 for none",
+        )
+        rendering.add_argument(
+            "--multires",
+            type=int,
+            default=10,
+            help="log2 of max freq for positional encoding (3D location)",
+        )
+        rendering.add_argument(
+            "--multires_views",
+            type=int,
+            default=4,
+            help="log2 of max freq for positional encoding (2D direction)",
+        )
+        rendering.add_argument(
+            "--raw_noise_std",
+            type=float,
+            default=0.0,
+            help="std dev of noise added to regularize sigma_a output, 1e0 recommended",
+        )
+
+        # training options
+        train = parser.add_argument_group("train")
+
+        train.add_argument(
+            "--lr_init", type=float, default=2.0e-4,
+            help="initial learning rate"
+        )
+        train.add_argument(
+            "--lr_final", type=float, default=2.5e-6, 
+            help="the final learning rate"
+        )
+        train.add_argument(
+            "--max_steps", type=int, default=1000000,
+            help="the maximum number of steps"
+        )
+        train.add_argument(
+            "--lr_delay_steps", type=int, default=2500, 
+            help="learning rate delay step"
+        )
+        train.add_argument(
+            "--lr_delay_mult", type=float, default=0.1,
+            help="delay factor"
+        )
+
+        config = parser.add_argument_group("config")
+        config.add_argument(
+            "--config", is_config_file=True, help="config file path"
+        )
+        return parser.parse_args()
+
     def create_model(self):
         args = self.args
         embed_fn, input_ch = embedder.get_embedder(args.multires, args.i_embed)
 
         input_ch_views = 0
         embed_viewdirs_fn = None
-        if args.use_viewdirs:
-            embed_viewdirs_fn, input_ch_views = embedder.get_embedder(
-                args.multires_views, args.i_embed)
+        embed_viewdirs_fn, input_ch_views = embedder.get_embedder(
+            args.multires_views, args.i_embed
+        )
         output_ch = 5 if args.num_fine_samples > 0 else 4
         skips = [4]
         self.model = NeRF(
@@ -106,7 +190,6 @@ class LitJaxNeRF(LitModel):
             output_ch=output_ch,
             skips=skips,
             input_ch_views=input_ch_views,
-            use_viewdirs=args.use_viewdirs,
         )
 
         if args.num_fine_samples > 0:
@@ -117,7 +200,6 @@ class LitJaxNeRF(LitModel):
                 output_ch=output_ch,
                 skips=skips,
                 input_ch_views=input_ch_views,
-                use_viewdirs=args.use_viewdirs,
             )
 
         network_query_fn = lambda inputs, viewdirs, network_fn: utils.run_network(
@@ -136,7 +218,6 @@ class LitJaxNeRF(LitModel):
             "network_fine": self.model_fine,
             "num_coarse_samples": args.num_coarse_samples,
             "network_fn": self.model,
-            "use_viewdirs": args.use_viewdirs,
             "white_bkgd": args.white_bkgd,
             "raw_noise_std": args.raw_noise_std,
             "near": self.near,

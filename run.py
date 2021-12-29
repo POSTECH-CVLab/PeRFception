@@ -15,7 +15,11 @@ import logging
 if __name__ == "__main__":
     
     logging.getLogger("lightning").setLevel(logging.ERROR)
-    args = config.config_parser()
+    parser = config.config_parser()
+    args, unknown_args = parser.parse_known_args()
+    model_fn = select_model(args)
+    args = model_fn.add_model_specific_args(parser)
+
     basedir = args.basedir
     expname = args.model + "_" + args.expname
     logdir = os.path.join(basedir, expname)
@@ -23,16 +27,15 @@ if __name__ == "__main__":
     n_gpus = torch.cuda.device_count()
 
     os.makedirs(logdir, exist_ok=True)
+    assert not os.path.exists(os.path.join(logdir, "best.ckpt")), \
+        f"the ckpt file already exists in {logdir}."
 
-    f = os.path.join(logdir, "args.txt")
-    with open(f, "w") as file:
-        for arg in sorted(vars(args)):
-            attr = getattr(args, arg)
-            file.write("{} = {}\n".format(arg, attr))
-
-    f = os.path.join(logdir, "config.txt")
-    with open(f, "w") as file:
-        file.write(open(args.config, "r").read())
+    if args.train:
+        f = os.path.join(logdir, "args.txt")
+        with open(f, "w") as file:
+            for arg in sorted(vars(args)):
+                attr = getattr(args, arg)
+                file.write("{} = {}\n".format(arg, attr))
 
     wandb_logger = pl_loggers.WandbLogger(
         name=expname, entity="postech_cvlab",
@@ -67,7 +70,6 @@ if __name__ == "__main__":
         callbacks=[lr_monitor, model_best_checkpoint],
     )
 
-    model_fn = select_model(args)
     model = model_fn(args)
     
     if args.train:

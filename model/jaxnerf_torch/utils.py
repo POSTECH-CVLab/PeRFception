@@ -379,7 +379,6 @@ def render(
     ndc=True,
     near=0.0,
     far=1.0,
-    use_viewdirs=False,
     c2w_staticcam=None,
     use_pixel_centers=False,
     **kwargs,
@@ -397,7 +396,6 @@ def render(
         ndc: bool. If True, represent ray origin, direction in NDC coordinates.
         near: float or array of shape [batch_size]. Nearest distance for a ray.
         far: float or array of shape [batch_size]. Farthest distance for a ray.
-        use_viewdirs: bool. If True, use viewing direction of a point in space in model.
         c2w_staticcam: array of shape [3, 4]. If not None, use this transformation matrix for
         camera while using other c2w argument for viewing directions.
     Returns:
@@ -413,14 +411,13 @@ def render(
         # use provided ray batch
         rays_o, rays_d = rays[:, 0], rays[:, 1]
 
-    if use_viewdirs:
-        # provide ray directions as input
-        viewdirs = rays_d
-        if c2w_staticcam is not None:
-            # special case to visualize effect of viewdirs
-            rays_o, rays_d = get_rays(H, W, K, c2w_staticcam, use_pixel_centers)
-        viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
-        viewdirs = torch.reshape(viewdirs, [-1, 3]).float()
+    # provide ray directions as input
+    viewdirs = rays_d
+    if c2w_staticcam is not None:
+        # special case to visualize effect of viewdirs
+        rays_o, rays_d = get_rays(H, W, K, c2w_staticcam, use_pixel_centers)
+    viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
+    viewdirs = torch.reshape(viewdirs, [-1, 3]).float()
 
     sh = rays_d.shape  # [..., 3]
     if ndc:
@@ -434,8 +431,7 @@ def render(
     near, far = near * torch.ones_like(rays_d[...,:1]), far * torch.ones_like(rays_d[...,:1])
 
     rays = torch.cat([rays_o, rays_d, near, far], -1)
-    if use_viewdirs:
-        rays = torch.cat([rays, viewdirs], -1)
+    rays = torch.cat([rays, viewdirs], -1)
 
     # Render and reshape
     all_ret = batchify_rays(rays, chunk, **kwargs)
@@ -448,52 +444,3 @@ def render(
     ret_dict = {k: all_ret[k] for k in all_ret if k not in k_extract}
     return ret_list + [ret_dict]
 
-
-def render_path(
-    render_poses,
-    hwf,
-    K,
-    chunk,
-    render_kwargs,
-    savedir=None,
-    use_pixel_centers=False,
-    render_factor=0,
-):
-
-    H, W, focal = hwf
-
-    if render_factor != 0:
-        # Render downsampled for speed
-        H = H // render_factor
-        W = W // render_factor
-        focal = focal / render_factor
-
-    rgbs = []
-    disps = []
-    depths = []
-
-    for i, c2w in enumerate(tqdm(render_poses)):
-        rgb, disp, acc, depth_render, _ = render(
-            H, W, K, chunk=chunk, c2w=c2w[:3, :4], 
-            use_pixel_centers=use_pixel_centers
-            **render_kwargs
-        )
-        rgbs.append(rgb.cpu().numpy())
-        disps.append(disp.cpu().numpy())
-        depths.append(depth_render.cpu().numpy())
-
-        if savedir is not None:
-            if not os.path.exists(savedir):
-                os.makedirs(savedir, exist_ok=True)
-            rgb8 = to8b(rgbs[-1])
-            depth8 = depth8b(depths[-1])
-            imgname = os.path.join(savedir, "image{:03d}.png".format(i+1))
-            depthname = os.path.join(savedir, "depth{:03d}.png".format(i+1))
-            imageio.imwrite(imgname, rgb8)
-            imageio.imwrite(depthname, depth8)
-
-    rgbs = np.stack(rgbs, 0)
-    disps = np.stack(disps, 0)
-    depths = np.stack(depths, 0)
-
-    return rgbs, disps, depths

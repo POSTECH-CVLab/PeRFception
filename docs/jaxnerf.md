@@ -32,10 +32,9 @@ This section compares the JaxNeRF and the original NeRF. In addition, we also pr
 ## Reproduced Performance
 
 The results below are from the setting in our repository. Due to limited resources, we only trained 200K iterations. JaxNeRF is trained with 1M iterations. 
-For any performance comparison, please set the `max_steps` to be equal in experiments. As explained in the official implementation of JaxNeRF, ficus and mic scenes are
-sensitive to seeds, resulting in unstable training. Thus, we have slightly modified the "lr_delay_mult" in our large model. Please refer to the scripts in `scripts/jaxnerf_torch`
+For any performance comparison, please set the `max_steps` to be equal in experiments. Please refer to the scripts in `scripts/jaxnerf_torch`
 
-We provide the pretrained checkpoints, per-scene qualities, and mean qualities for each scene in the [[link]](https://drive.google.com/file/d/1qmFZdN80lyOmAiiJLV06_4uRKm0CfUXB/view?usp=sharing) 
+We provide the pretrained checkpoints, per-scene qualities, and mean qualities for each scene in the [[link]](https://drive.google.com/file/d/1bBDwLyxQBe4JE_0zsYxtb_3sXnpkGxM7/view?usp=sharing) 
 
 ### Blender (NeRF-Synthetic)
 
@@ -44,12 +43,12 @@ Although we only ran 200K iterations(1M in the official JaxNeRF+), our implement
 #### Large Model (JaxNeRF+)
 | | Chair | Drums | Ficus | Hotdog | Lego | Materials | Mic | Ship |
 |--- |---|---|---|---|---|---|---|---|
-| PSNR (Test) | 35.23 | 26.12 | 34.45 | 37.83 | 36.36 | 30.49 | 35.85 | 31.04 |
-| SSIM (Test) | 0.9816 | 0.9409 | 0.9842 | 0.9820 | 0.9804 | 0.9579 | 0.9892 | 0.8882 |
-| LPIPS (Test) | 0.02719 | 0.06794 | 0.01892 | 0.03233 | 0.02264 | 0.05291 | 0.01407 | 0.1517 |
-| PSNR (All) | 36.13 | 28.99 | 36.32 | 38.81 | 38.12 | 33.02 | 37.13 | 31.78 |
-| SSIM (All) | 0.9842 | 0.9542 | 0.9887 | 0.9830 | 0.9834 | 0.9694 | 0.9915 | 0.8802 |
-| LPIPS (All) | 0.02363 | 0.06327 | 0.01603 | 0.03185 | 0.01994 | 0.04575 | 0.01165 | 0.1621 |
+| PSNR (Test) | 35.26 | 26.17 | 34.45 | 37.73 | 36.35 | 30.52 | 35.85 | 30.95 |
+| SSIM (Test) | 0.9817 | 0.9417 | 0.9842 | 0.9818 | 0.9803 | 0.9582 | 0.9892 | 0.8878 |
+| LPIPS (Test) | 0.02711 | 0.06676 | 0.01892 | 0.03351 | 0.02273 | 0.05283 | 0.01407 | 0.1522 |
+| PSNR (All) | 36.21 | 29.01 | 36.32 | 38.77 | 38.09 | 33.05 | 37.13 | 31.70 |
+| SSIM (All) | 0.9845 | 0.9548 | 0.9887 | 0.9830 | 0.9833 | 0.9696 | 0.9915 | 0.8795 |
+| LPIPS (All) | 0.02344 | 0.06243 | 0.01603 | 0.03284 | 0.01997 | 0.04582 | 0.01165 | 0.1630 |
 
 #### Base Model (JaxNeRF)
 | | Chair | Drums | Ficus | Hotdog | Lego | Materials | Mic | Ship |

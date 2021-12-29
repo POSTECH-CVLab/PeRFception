@@ -1,4 +1,3 @@
-model: jaxnerf_torch
 dataset_type: blender
 batching: single_image
 factor: 0
@@ -8,7 +7,6 @@ num_fine_samples: 128
 
 N_rand: 4096
 perturb: 1.0
-use_viewdirs: true
 white_bkgd: true
 
 lr_init: 5.0e-4
