@@ -33,6 +33,12 @@ def config_parser():
         help="strategy to select rays",
     )
 
+    optim = parser.add_argument_group("optimization")
+    optim.add_argument(
+        "--max_steps", type=int, default=100000,
+        help="number of iterations"
+    )
+
     # dataset options
     dataset = parser.add_argument_group("dataset option")
     dataset.add_argument(

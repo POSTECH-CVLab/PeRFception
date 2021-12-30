@@ -154,10 +154,6 @@ class LitJaxNeRF(LitModel):
             help="the final learning rate"
         )
         train.add_argument(
-            "--max_steps", type=int, default=1000000,
-            help="the maximum number of steps"
-        )
-        train.add_argument(
             "--lr_delay_steps", type=int, default=2500, 
             help="learning rate delay step"
         )
