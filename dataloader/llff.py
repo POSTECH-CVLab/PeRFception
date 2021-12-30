@@ -28,6 +28,7 @@ class LitLLFF(LitData):
         hwf = [h, w, focal]
         self.intrinsics = np.array([[focal, 0., 0.5 * w], [0., focal, 0.5 * h],
                                     [0., 0., 1.]])
+        self.extrinsics = extrinsics
 
         if not isinstance(i_test, list):
             i_test = [i_test]

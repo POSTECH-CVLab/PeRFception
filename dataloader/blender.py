@@ -36,6 +36,7 @@ class LitBlender(LitData):
         self.intrinsics = np.array(
             [[focal, 0., 0.5 * w], [0., focal, 0.5 * h], [0., 0., 1.]]
         )
+        self.extrinsics = poses
 
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))
