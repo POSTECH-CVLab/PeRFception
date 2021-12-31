@@ -83,13 +83,6 @@ class LitJaxNeRF(LitModel):
     @staticmethod
     def add_model_specific_args(parser):
         
-        # ray option
-        ray = parser.add_argument_group("rays") 
-        ray.add_argument(
-            "--use_pixel_centers", action="store_true", default=False,
-            help="add a half pixel while generating rays"
-        )
-
         net = parser.add_argument_group("networks")
         net.add_argument("--netdepth", type=int, default=8, help="layers in network")
         net.add_argument("--netwidth", type=int, default=256, help="channels per layer")

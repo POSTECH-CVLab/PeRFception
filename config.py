@@ -39,6 +39,12 @@ def config_parser():
         help="number of iterations"
     )
 
+    ray = parser.add_argument_group("rays") 
+    ray.add_argument(
+        "--use_pixel_centers", action="store_true", default=False,
+        help="add a half pixel while generating rays"
+    )
+
     # dataset options
     dataset = parser.add_argument_group("dataset option")
     dataset.add_argument(
