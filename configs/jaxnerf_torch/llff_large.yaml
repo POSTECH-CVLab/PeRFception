@@ -1,4 +1,5 @@
 dataset_type: llff
+model: jaxnerf_torch
 batching: all_images
 factor: 4
 

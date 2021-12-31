@@ -1,4 +1,5 @@
 dataset_type: blender
+model: jaxnerf_torch
 batching: single_image
 factor: 0
 

@@ -1,6 +1,7 @@
 from torch.utils import data
 import config
 import os
+import yaml
 
 from utils.select_option import select_model
 
@@ -15,11 +16,17 @@ import logging
 if __name__ == "__main__":
     
     logging.getLogger("lightning").setLevel(logging.ERROR)
-    parser = config.config_parser()
-    args, unknown_args = parser.parse_known_args()
-    model_fn = select_model(args)
-    args = model_fn.add_model_specific_args(parser)
+    args, parser = config.config_parser()
 
+    with open(args.config, "r") as fp: 
+        config_file = yaml.load(fp, Loader=yaml.FullLoader)
+
+    model_name = config_file["model"]
+    dataset_type = config_file["dataset_type"]
+    model_fn = select_model(model_name, dataset_type)
+    args = model_fn.add_model_specific_args(parser)
+    args.__dict__.update(config_file)
+    
     basedir = args.basedir
     expname = args.model + "_" + args.expname
     logdir = os.path.join(basedir, expname)

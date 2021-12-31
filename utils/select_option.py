@@ -4,13 +4,13 @@ from dataloader.llff import LitLLFF
 from dataloader.blender import LitBlender
 
 
-def select_model(args):
+def select_model(model_name, dataset_type):
 
-    if args.model == "jaxnerf_torch":
+    if model_name == "jaxnerf_torch":
 
-        if args.dataset_type == "blender":
+        if dataset_type == "blender":
             return LitJaxNeRFBlender
-        elif args.dataset_type == "llff":
+        elif dataset_type == "llff":
             return LitJaxNeRFLLFF
         else:
-            raise f"Unknown dataset named {args.dataset}"
+            raise f"Unknown dataset named {dataset_type}"

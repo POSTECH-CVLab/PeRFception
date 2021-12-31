@@ -162,10 +162,6 @@ class LitJaxNeRF(LitModel):
             help="delay factor"
         )
 
-        config = parser.add_argument_group("config")
-        config.add_argument(
-            "--config", is_config_file=True, help="config file path"
-        )
         return parser.parse_args()
 
     def create_model(self):

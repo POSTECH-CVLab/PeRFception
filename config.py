@@ -1,8 +1,8 @@
-import configargparse
+import argparse
 
 def config_parser():
 
-    parser = configargparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
     # model options
     model = parser.add_argument_group("model shared")
@@ -147,4 +147,9 @@ def config_parser():
         "--seed", type=int, default=0, help="seed to fix"
     )
 
-    return parser
+    config = parser.add_argument_group("config")
+    config.add_argument(
+        "--config", type=str, default=None, help="path to config file"
+    )
+
+    return parser.parse_args(), parser
