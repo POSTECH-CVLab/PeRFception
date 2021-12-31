@@ -57,12 +57,12 @@ class LitBlender(LitData):
             import torch_xla.core.xla_model as xm
             sampler = SingleImageDDPSampler(
                 self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
-                len(self.i_train), self.image_len, self.args.i_validation
+                len(self.i_train), self.image_len, self.args.i_validation, True
             )
         else:
             sampler = SingleImageDDPSampler(
                 self.batch_size, None, None, len(self.i_train), 
-                self.image_len, self.args.i_validation
+                self.image_len, self.args.i_validation, False
             )
         return DataLoader(
             self.train_dset, batch_sampler=sampler, num_workers=self.args.num_workers,
@@ -73,9 +73,13 @@ class LitBlender(LitData):
         
         if self.args.tpu: 
             import torch_xla.core.xla_model as xm
-            sampler = DDPSequnetialSampler(self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.val_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.val_dset), True
+            )
         else:
-            sampler = DDPSequnetialSampler(self.chunk, None, None, len(self.val_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, None, None, len(self.val_dset), False
+            )
         
         return DataLoader(
             self.val_dset, batch_size=self.chunk, sampler=sampler, 
@@ -86,9 +90,13 @@ class LitBlender(LitData):
         
         if self.args.tpu: 
             import torch_xla.core.xla_model as xm
-            sampler = DDPSequnetialSampler(self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.test_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.test_dset), True
+            )
         else:
-            sampler = DDPSequnetialSampler(self.chunk, None, None, len(self.test_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, None, None, len(self.test_dset), False
+            )
         
         return DataLoader(
             self.test_dset, batch_size=self.chunk, sampler=sampler,
@@ -98,9 +106,13 @@ class LitBlender(LitData):
     def predict_dataloader(self):
         if self.args.tpu: 
             import torch_xla.core.xla_model as xm
-            sampler = DDPSequnetialSampler(self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.predict_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, xm.xrt_world_size(), xm.get_ordinal(), len(self.predict_dset), True
+            )
         else:
-            sampler = DDPSequnetialSampler(self.chunk, None, None, len(self.predict_dset))
+            sampler = DDPSequnetialSampler(
+                self.chunk, None, None, len(self.predict_dset), False
+            )
         
         return DataLoader(
             self.predict_dset, batch_size=self.args.chunk, sampler=sampler,

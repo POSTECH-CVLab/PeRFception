@@ -69,8 +69,8 @@ if __name__ == "__main__":
         tpu_cores=args.tpu_num if args.tpu else None,
         replace_sampler_ddp=False,
         deterministic=True,
-        strategy=DDPPlugin(
-            find_unused_parameters=False) if not args.tpu else None,
+        strategy=DDPPlugin(find_unused_parameters=False) \
+            if n_gpus > 1 and not args.tpu else None,
         check_val_every_n_epoch=1,
         precision=32,
         num_sanity_val_steps=0,
