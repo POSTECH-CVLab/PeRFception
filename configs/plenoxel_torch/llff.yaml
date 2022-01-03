@@ -1,0 +1,29 @@
+dataset_type: llff
+model: plenoxel_torch
+batching: all_images
+
+N_rand: 5000
+max_steps: 102400
+
+llffhold: 8
+factor: 4
+
+i_print: 100
+i_weights: 38400
+i_validation: 38400
+use_pixel_centers: true
+
+no_ndc: false
+
+reso: "[[256, 256, 128], [512, 512, 128], [1408, 1156, 128]]"
+upsamp_every: 38400
+lr_sigma: 3.0e+1
+lr_sh: 1.0e-2
+thresh_type: "sigma"
+density_thresh: 5.0
+lambda_tv: 5.0e-4
+lambda_tv_sh: 5.0e-3
+lambda_sparsity: 1.0e-12
+background_brightness: 0.5
+last_sample_opaque: false,
+tv_early_only: 0

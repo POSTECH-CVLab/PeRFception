@@ -23,11 +23,14 @@ class LitModel(pl.LightningModule):
         self.args = args
         self.h, self.w = self.dataset.h, self.dataset.w
         self.logdir = os.path.join(args.basedir, args.model + "_" + args.expname)
+        if args.debug:
+            self.logdir += "_debug"
         self.i_train, self.i_val, self.i_test = self.dataset.i_train, self.dataset.i_val, self.dataset.i_test
         self.val_dummy, self.test_dummy, self.pred_dummy = self.dataset.val_dummy, self.dataset.test_dummy, self.dataset.pred_dummy
         self.near, self.far = self.dataset.near, self.dataset.far,
         self.img_size = self.h * self.w
         self.intrinsics = self.dataset.intrinsics
+        self.extrinsics = self.dataset.extrinsics
         self.create_model()
 
     def on_train_start(self):
@@ -44,6 +47,8 @@ class LitModel(pl.LightningModule):
     def alter_cat(self, outputs_gather, key):
         if not key in outputs_gather[0].keys():
             return None
+        if torch.cuda.device_count() == 1 and not self.args.tpu:
+            return torch.cat([out[key] for out in outputs_gather])
         dim = outputs_gather[0][key].shape[-1] if outputs_gather[0][key].dim() == 3 else 1 
         ret = torch.cat([out[key].transpose(1, 0).reshape(-1, dim) for out in outputs_gather]) 
         return ret

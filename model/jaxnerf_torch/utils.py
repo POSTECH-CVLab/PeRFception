@@ -1,11 +1,6 @@
-import os
-import imageio
-
 import torch
 import torch.nn.functional as F
 import numpy as np
-
-from tqdm import tqdm
 
 
 def img2mse(x, y): 
@@ -63,6 +58,7 @@ def batchfied_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers):
     rays_d = np.einsum(
         "nhwc, nrc -> nhwr", dirs, extrinsics[:, :3, :3]
     ).reshape(-1, 3)
+    rays_d = rays_d / np.linalg.norm(rays_d, axis=-1, keepdims=True)
     rays_o = np.tile(
         extrinsics[:, np.newaxis, :3, -1], (1, h * w, 1)
     ).reshape(-1, 3)

@@ -55,6 +55,14 @@ def config_parser():
         "--testskip", type=int, default=8,
         help="will load 1/N images from test/val sets, useful for large datasets like deepvoxels",
     )
+    dataset.add_argument(
+        "--scene_scale", type=float, default=1,
+        help="resize the scale of scenes"
+    )
+    dataset.add_argument(
+        "--shuffle_train", action="store_true", default=False,
+        help="shuffle the train set"
+    )
 
     ## blender flags
     blender = parser.add_argument_group("blender")
@@ -62,11 +70,6 @@ def config_parser():
         "--white_bkgd",
         action="store_true",
         help="set to render synthetic data on a white bkgd (always use for dvoxels)",
-    )
-    blender.add_argument(
-        "--half_res",
-        action="store_true",
-        help="load blender synthetic data at 400x400 instead of 800x800",
     )
 
     ## llff flags
@@ -152,10 +155,14 @@ def config_parser():
     runmode.add_argument(
         "--seed", type=int, default=0, help="seed to fix"
     )
+    runmode.add_argument(
+        "--use_custom_optim", action="store_true", default=False, 
+        help="Run with a custom optimization step"
+    )
 
     config = parser.add_argument_group("config")
     config.add_argument(
         "--config", type=str, default=None, help="path to config file"
     )
 
-    return parser.parse_args(), parser
+    return parser.parse_known_args()[0], parser

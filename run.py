@@ -1,9 +1,8 @@
-from torch.utils import data
 import config
 import os
 import yaml
 
-from utils.select_option import select_model
+from utils.select_option import select_model, select_callback
 
 import torch
 from pytorch_lightning import Trainer, seed_everything
@@ -29,6 +28,8 @@ if __name__ == "__main__":
     
     basedir = args.basedir
     expname = args.model + "_" + args.expname
+    if args.debug:
+        expname += "_debug"
     logdir = os.path.join(basedir, expname)
 
     n_gpus = torch.cuda.device_count()
@@ -60,6 +61,9 @@ if __name__ == "__main__":
         mode="max",
     )
 
+    callbacks = [lr_monitor, model_best_checkpoint]
+    callbacks = select_callback(callbacks, model_name, args)
+
     trainer = Trainer(
         logger=wandb_logger if args.train else None,
         log_every_n_steps=args.i_print,
@@ -74,7 +78,7 @@ if __name__ == "__main__":
         check_val_every_n_epoch=1,
         precision=32,
         num_sanity_val_steps=0,
-        callbacks=[lr_monitor, model_best_checkpoint],
+        callbacks=callbacks,
     )
 
     model = model_fn(args)

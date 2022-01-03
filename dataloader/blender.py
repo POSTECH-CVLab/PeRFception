@@ -5,7 +5,10 @@ from torch.utils.data import DataLoader
 
 import dataloader.data_util.blender as blender
 
-from dataloader.sampler import SingleImageDDPSampler, DDPSequnetialSampler
+from dataloader.sampler import (
+    SingleImageDDPSampler, DDPSequnetialSampler, MultipleImageDDPSampler,
+    MultipleImageWOReplaceDDPSampler
+)
 from dataloader.interface import LitData
 
 class LitBlender(LitData):
@@ -14,7 +17,8 @@ class LitBlender(LitData):
         super(LitBlender, self).__init__(args)
 
         images, poses, render_poses, hwf, i_split = blender.load_blender_data(
-            args.datadir, args.half_res, args.testskip)
+            args.datadir, args.testskip
+        )
         i_train, i_val, i_test = i_split
 
         self.near = 2.
@@ -41,7 +45,7 @@ class LitBlender(LitData):
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))
 
-        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False)
+        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False, args.scene_scale)
         self.val_dset, self.val_dummy = self.split(images, extrinsics, self.i_val)
         self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_all)
 
@@ -51,19 +55,42 @@ class LitBlender(LitData):
 
     def train_dataloader(self):
 
-        assert self.args.batching == "single_image"
+        if self.args.batching == "single_image":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = SingleImageDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.i_train), self.image_len, self.args.i_validation, True
+                )
+            else:
+                sampler = SingleImageDDPSampler(
+                    self.batch_size, None, None, len(self.i_train), 
+                    self.image_len, self.args.i_validation, False
+                )
+        elif self.args.batching == "all_images":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = MultipleImageDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.train_dset), self.args.i_validation, True
+                )
+            else:
+                sampler = MultipleImageDDPSampler(
+                    self.batch_size, None, None, len(self.train_dset), self.args.i_validation, False
+                )
 
-        if self.args.tpu:
-            import torch_xla.core.xla_model as xm
-            sampler = SingleImageDDPSampler(
-                self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
-                len(self.i_train), self.image_len, self.args.i_validation, True
-            )
-        else:
-            sampler = SingleImageDDPSampler(
-                self.batch_size, None, None, len(self.i_train), 
-                self.image_len, self.args.i_validation, False
-            )
+        elif self.args.batching == "all_images_wo_replace":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = MultipleImageWOReplaceDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.train_dset), self.args.i_validation, True
+                )
+            else:
+                sampler = MultipleImageWOReplaceDDPSampler(
+                    self.batch_size, None, None, len(self.train_dset), self.args.i_validation, False
+                )
+
         return DataLoader(
             self.train_dset, batch_sampler=sampler, num_workers=self.args.num_workers,
             pin_memory=True, shuffle=False
