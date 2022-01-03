@@ -3,14 +3,14 @@ model: plenoxel_torch
 batching: all_images
 
 N_rand: 5000
-max_steps: 102400
+max_steps: 200000
 
 llffhold: 8
 factor: 4
 
 i_print: 100
-i_weights: 38400
-i_validation: 38400
+i_weights: 50000
+i_validation: 50000
 use_pixel_centers: true
 
 no_ndc: false

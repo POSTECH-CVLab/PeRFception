@@ -2,7 +2,7 @@ dataset_type: blender
 model: plenoxel_torch
 batching: all_images_wo_replace
 
-N_rand: 5000
+N_rand: 4096
 
 max_steps: 200000
 
