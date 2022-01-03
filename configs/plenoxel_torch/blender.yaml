@@ -20,3 +20,5 @@ lambda_tv: 1.0e-5
 lambda_tv_sh: 1.0e-3
 
 use_pixel_centers: true
+white_bkgd: true
+scene_scale: 0.6666
