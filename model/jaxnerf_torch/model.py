@@ -238,7 +238,6 @@ class LitJaxNeRF(LitModel):
     def forward_eval(self, batch_rays):
         return self.forward_fun(rays=batch_rays, **self.render_kwargs_test)
 
-
     def training_step(self, batch, batch_idx):
         batch_rays = batch["ray"]
         target = batch["target"]

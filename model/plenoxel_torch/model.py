@@ -151,6 +151,36 @@ class LitPlenoxel(LitModel):
         ]
         return ret
 
+    def convert_to_ndc(self, origins, directions, ndc_coeffs, near: float = 1.0):
+        """Convert a set of rays to NDC coordinates."""
+        # Shift ray origins to near plane, not sure if needed
+        # t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+        t = -(near + origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+        origins = origins + t[Ellipsis, None] * directions
+
+        dx, dy, dz = directions.unbind(-1)
+        ox, oy, oz = origins.unbind(-1)
+
+        # Projection
+        # o0 = ndc_coeffs[0] * (ox / oz)
+        o0 = - ndc_coeffs[0] * (ox / oz)
+        # o1 = ndc_coeffs[1] * (oy / oz)
+        o1 =-  ndc_coeffs[1] * (oy / oz)
+        # o2 = 1 - 2 * near / oz
+        o2 = 1 + 2 * near / oz
+
+        # d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
+        d0 = - ndc_coeffs[0] * (dx / dz - ox / oz)
+        # d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
+        d1 = - ndc_coeffs[1] * (dy / dz - oy / oz)
+        # d2 = 2 * near / oz;
+        d2 = -2 * near / oz;
+
+        origins = torch.stack([o0, o1, o2], -1)
+        directions = torch.stack([d0, d1, d2], -1)
+        return origins, directions
+
+
     def training_step(self, batch, batch_idx):
         args = self.args
         gstep = self.trainer.global_step
@@ -164,6 +194,12 @@ class LitPlenoxel(LitModel):
         lr_color_bg = self.lr_color_bg_func(gstep - args.lr_basis_begin_step)
 
         rays, target = batch["ray"].to(torch.float32), batch["target"].to(torch.float32)
+
+        if self.ndc_coeffs[0] != -1:
+            rays_o, rays_d = self.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs)
+            rays_d /= torch.norm(rays_d, dim=-1, keepdim=True)
+            rays = torch.stack([rays_o, rays_d], dim=1)
+
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
             rays,
@@ -252,6 +288,10 @@ class LitPlenoxel(LitModel):
     def render_rays(self, batch, batch_idx):
         ret = {}
         rays = batch["ray"].to(torch.float32)
+        if self.ndc_coeffs[0] != -1:
+            rays_o, rays_d = self.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs)
+            rays_d /= torch.norm(rays_d, dim=-1, keepdim=True)
+            rays = torch.stack([rays_o, rays_d], dim=1)
         
         if "target" in batch.keys():
             target = batch["target"].to(torch.float32)

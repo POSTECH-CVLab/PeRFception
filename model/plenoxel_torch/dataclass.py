@@ -162,4 +162,5 @@ class Camera:
         if self.ndc_coeffs[0] > 0.0:
             origins, dirs = utils.convert_to_ndc(origins, dirs, self.ndc_coeffs)
             dirs /= torch.norm(dirs, dim=-1, keepdim=True)
+            
         return Rays(origins, dirs)

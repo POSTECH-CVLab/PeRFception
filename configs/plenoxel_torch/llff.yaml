@@ -16,7 +16,7 @@ use_pixel_centers: true
 no_ndc: false
 
 reso: "[[256, 256, 128], [512, 512, 128], [1408, 1156, 128]]"
-upsamp_every: 38400
+upsamp_every: 50000
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
 thresh_type: "sigma"
