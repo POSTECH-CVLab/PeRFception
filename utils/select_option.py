@@ -19,6 +19,8 @@ def select_model(model_name, dataset_type):
             return model.LitPlenoxelBlender
         elif dataset_type == "llff":
             return model.LitPlenoxelLLFF
+        elif dataset_type == "tanks_and_temples":
+            return model.LitPlenoxelTnT
         else:
             raise f"Unknown dataset named {dataset_type}"
 

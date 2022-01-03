@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import pytorch_lightning as pl
+from dataloader.tnt import LitTnT
 
 from model.interface import LitModel
 from dataloader.blender import LitBlender
@@ -791,3 +792,13 @@ class LitPlenoxelLLFF(LitPlenoxel):
         self.use_sphere_bound = False
         self.ndc_coeffs = (2 * K[0][0] / self.dataset.w, 2 * K[1][1] / self.dataset.h)
         super(LitPlenoxelLLFF, self).__init__(args)
+
+
+class LitPlenoxelTnT(LitPlenoxel):
+    def __init__(self, args):
+        self.dataset = LitTnT(args)
+        self.scene_center = [0.0, 0.0, 0.0]
+        self.scene_radius = [1.0, 1.0, 1.0]
+        self.use_sphere_bound = True
+        self.ndc_coeffs = (-1, -1)
+        super(LitPlenoxelTnT, self).__init__(args)
