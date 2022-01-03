@@ -7,7 +7,6 @@ N_rand: 4096
 max_steps: 200000
 
 i_print: 100
-i_weights: 50000
 i_validation: 50000
 
 no_ndc: true

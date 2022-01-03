@@ -104,10 +104,6 @@ def config_parser():
         help="frequency of console printout and metric logging",
     )
     metadata.add_argument(
-        "--i_weights", type=int, default=50000,
-        help="frequency of storing weights"
-    )
-    metadata.add_argument(
         "--i_validation", type=int, default=50000,
         help="frequency of validation"
     )

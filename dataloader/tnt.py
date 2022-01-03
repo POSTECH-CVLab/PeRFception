@@ -1,59 +1,73 @@
 import numpy as np
 
-from torch.utils.data.dataloader import DataLoader
+import torch
+from torch.utils.data import DataLoader
 
-import dataloader.data_util.llff as llff
+import dataloader.data_util.blender as blender
 
 from dataloader.sampler import (
-    MultipleImageDDPSampler, DDPSequnetialSampler, MultipleImageWOReplaceDDPSampler
+    SingleImageDDPSampler, DDPSequnetialSampler, MultipleImageDDPSampler,
+    MultipleImageWOReplaceDDPSampler
 )
 from dataloader.interface import LitData
 
-class LitLLFF(LitData):
-
+class LitBlender(LitData):
+    
     def __init__(self, args):
-        super(LitLLFF, self).__init__(args)
+        super(LitBlender, self).__init__(args)
 
-        images, poses, bds, render_poses, i_test = llff.load_llff_data(
-            args.datadir, args.factor, recenter=True, bd_factor=0.75
+        images, poses, render_poses, hwf, i_split = blender.load_blender_data(
+            args.datadir, args.testskip
         )
-        hwf = poses[0, :3, -1]
-        extrinsics = poses[:, :3, :4]
+        i_train, i_val, i_test = i_split
+
+        self.near = 2.
+        self.far = 6.
+
+        if args.white_bkgd:
+            images = images[..., :3] * images[..., -1:] + (1. - images[..., -1:])
+        else:
+            images = images[..., :3]
+
+        extrinsics = poses
         h, w, focal = hwf
         h, w = int(h), int(w)
         hwf = [h, w, focal]
-        self.intrinsics = np.array([[focal, 0., 0.5 * w], [0., focal, 0.5 * h],
-                                    [0., 0., 1.]])
-        self.extrinsics = extrinsics
-
-        if not isinstance(i_test, list):
-            i_test = [i_test]
-
-        if args.llffhold > 0:
-            i_test = np.arange(images.shape[0])[::args.llffhold]
-
-        i_val = i_test
-        is_train = lambda i: i not in i_test and i not in i_val
-        i_train = np.array([i for i in np.arange(len(images)) if is_train(i)])
-        self.near = np.ndarray.min(bds) * 0.9 if args.no_ndc else 0.
-        self.far = np.ndarray.max(bds) * 1.0 if args.no_ndc else 1.
 
         self.image_len = h * w
         self.h, self.w = h, w
 
+        self.intrinsics = np.array(
+            [[focal, 0., 0.5 * w], [0., focal, 0.5 * h], [0., 0., 1.]]
+        )
+        self.extrinsics = poses
+
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))
-        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False)
+
+        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False, args.scene_scale)
         self.val_dset, self.val_dummy = self.split(images, extrinsics, self.i_val)
         self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_all)
 
-        render_poses = np.stack(render_poses)[..., :4]
         N_render = len(render_poses)
         self.predict_dset, self.pred_dummy = self.split(None, render_poses, np.arange(N_render))
 
+
     def train_dataloader(self):
 
-        if self.args.batching == "all_images":
+        if self.args.batching == "single_image":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = SingleImageDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.i_train), self.image_len, self.args.i_validation, True
+                )
+            else:
+                sampler = SingleImageDDPSampler(
+                    self.batch_size, None, None, len(self.i_train), 
+                    self.image_len, self.args.i_validation, False
+                )
+        elif self.args.batching == "all_images":
             if self.args.tpu:
                 import torch_xla.core.xla_model as xm
                 sampler = MultipleImageDDPSampler(
@@ -78,7 +92,7 @@ class LitLLFF(LitData):
                 )
 
         return DataLoader(
-            self.train_dset, batch_sampler=sampler, num_workers=self.num_workers,
+            self.train_dset, batch_sampler=sampler, num_workers=self.args.num_workers,
             pin_memory=True, shuffle=False
         )
 
@@ -112,7 +126,7 @@ class LitLLFF(LitData):
             )
         
         return DataLoader(
-            self.test_dset, batch_size=self.chunk, sampler=sampler, 
+            self.test_dset, batch_size=self.chunk, sampler=sampler,
             num_workers=self.args.num_workers, pin_memory=True, shuffle=False
         )
 
@@ -128,6 +142,6 @@ class LitLLFF(LitData):
             )
         
         return DataLoader(
-            self.predict_dset, batch_size=self.chunk, sampler=sampler,
+            self.predict_dset, batch_size=self.args.chunk, sampler=sampler,
             num_workers=self.args.num_workers, pin_memory=True, shuffle=False
         )

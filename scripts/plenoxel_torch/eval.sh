@@ -8,4 +8,12 @@ python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blend
 python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/mic/ --expname mic --eval 
 python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/ship/ --expname ship --eval 
 
-
+# LLFF
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/fern --expname fern --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/flower --expname flower --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/fortress --expname fortress --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/horns --expname horns --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/leaves --expname leaves --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/orchids --expname orchids --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/room --expname room --eval 
+python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/trex --expname trex --eval 
