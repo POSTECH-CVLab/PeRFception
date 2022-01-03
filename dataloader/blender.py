@@ -16,6 +16,9 @@ class LitBlender(LitData):
     def __init__(self, args):
         super(LitBlender, self).__init__(args)
 
+        # OpenCV coordinate
+        self.GL = True
+
         images, poses, render_poses, hwf, i_split = blender.load_blender_data(
             args.datadir, args.testskip
         )
@@ -51,7 +54,6 @@ class LitBlender(LitData):
 
         N_render = len(render_poses)
         self.predict_dset, self.pred_dummy = self.split(None, render_poses, np.arange(N_render))
-
 
     def train_dataloader(self):
 

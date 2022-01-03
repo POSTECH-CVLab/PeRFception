@@ -2,6 +2,7 @@ import pytorch_lightning as pl
 
 import model.jaxnerf_torch.utils as jaxnerf_torch_utils
 from dataloader.sampler import RaySet
+from dataloader.data_util.ray import batchfied_get_rays
 
 import numpy as np
 import torch
@@ -76,8 +77,8 @@ class LitData(pl.LightningDataModule):
             _images = imgs_scaled_res
 
         extrinsics_idx = extrinsics[idx]
-        rays_o, rays_d = jaxnerf_torch_utils.batchfied_get_rays(
-            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers,
+        rays_o, rays_d = batchfied_get_rays(
+            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers, self.GL
         )
         _rays = np.stack([rays_o, rays_d], axis=1)
         device_count = torch.cuda.device_count() if not self.args.tpu else self.args.tpu_num

@@ -14,6 +14,9 @@ class LitLLFF(LitData):
     def __init__(self, args):
         super(LitLLFF, self).__init__(args)
 
+        # OpenCV coordinate
+        self.GL = True
+
         images, poses, bds, render_poses, i_test = llff.load_llff_data(
             args.datadir, args.factor, recenter=True, bd_factor=0.75
         )

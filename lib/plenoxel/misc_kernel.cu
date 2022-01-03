@@ -314,6 +314,7 @@ __global__ void grid_weight_render_kernel(
     float step_size,
     float stop_thresh,
     bool last_sample_opaque,
+    bool GL,
     const float* __restrict__ offset,
     const float* __restrict__ scaling,
     torch::PackedTensorAccessor32<float, 3, torch::RestrictPtrTraits>
@@ -321,7 +322,7 @@ __global__ void grid_weight_render_kernel(
     CUDA_GET_THREAD_ID(tid, cam.width * cam.height);
     int iy = tid / cam.width, ix = tid % cam.width;
     float dir[3], origin[3];
-    cam2world_ray(ix, iy, cam, dir, origin);
+    cam2world_ray(ix, iy, cam, GL, dir, origin);
     grid_trace_ray(
         data,
         SingleRaySpec(origin, dir),
@@ -420,6 +421,7 @@ void grid_weight_render(
     float step_size,
     float stop_thresh,
     bool last_sample_opaque,
+    bool GL,
     torch::Tensor offset, torch::Tensor scaling,
     torch::Tensor grid_weight_out) {
     DEVICE_GUARD(data);
@@ -438,6 +440,7 @@ void grid_weight_render(
         step_size,
         stop_thresh,
         last_sample_opaque,
+        GL,
         offset.data_ptr<float>(),
         scaling.data_ptr<float>(),
         grid_weight_out.packed_accessor32<float, 3, torch::RestrictPtrTraits>());

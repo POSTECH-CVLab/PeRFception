@@ -46,7 +46,8 @@ class ResampleCallBack(pl.Callback):
                 dilate=2, 
                 cameras=pl_module.generate_camera_list() if \
                     pl_module.args.thresh_type == 'weight' else None,
-                max_elements=pl_module.args.max_grid_elements
+                max_elements=pl_module.args.max_grid_elements,
+                GL=pl_module.GL
             )
 
             if pl_module.model.use_background and pl_module.reso_idx <= 1:
@@ -155,27 +156,31 @@ class LitPlenoxel(LitModel):
     def convert_to_ndc(self, origins, directions, ndc_coeffs, near: float = 1.0):
         """Convert a set of rays to NDC coordinates."""
         # Shift ray origins to near plane, not sure if needed
-        # t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
-        t = -(near + origins[Ellipsis, 2]) / directions[Ellipsis, 2]
-        origins = origins + t[Ellipsis, None] * directions
-
-        dx, dy, dz = directions.unbind(-1)
-        ox, oy, oz = origins.unbind(-1)
-
         # Projection
-        # o0 = ndc_coeffs[0] * (ox / oz)
-        o0 = - ndc_coeffs[0] * (ox / oz)
-        # o1 = ndc_coeffs[1] * (oy / oz)
-        o1 =-  ndc_coeffs[1] * (oy / oz)
-        # o2 = 1 - 2 * near / oz
-        o2 = 1 + 2 * near / oz
+        if self.GL:
+            t = -(near + origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+            origins = origins + t[Ellipsis, None] * directions
 
-        # d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
-        d0 = - ndc_coeffs[0] * (dx / dz - ox / oz)
-        # d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
-        d1 = - ndc_coeffs[1] * (dy / dz - oy / oz)
-        # d2 = 2 * near / oz;
-        d2 = -2 * near / oz;
+            dx, dy, dz = directions.unbind(-1)
+            ox, oy, oz = origins.unbind(-1)
+            o0 = - ndc_coeffs[0] * (ox / oz)
+            o1 =-  ndc_coeffs[1] * (oy / oz)
+            o2 = 1 + 2 * near / oz
+            d0 = - ndc_coeffs[0] * (dx / dz - ox / oz)
+            d1 = - ndc_coeffs[1] * (dy / dz - oy / oz)
+            d2 = -2 * near / oz;
+        else:
+            t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+            origins = origins + t[Ellipsis, None] * directions
+
+            dx, dy, dz = directions.unbind(-1)
+            ox, oy, oz = origins.unbind(-1)
+            o0 = ndc_coeffs[0] * (ox / oz)
+            o1 = ndc_coeffs[1] * (oy / oz)
+            o2 = 1 - 2 * near / oz
+            d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
+            d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
+            d2 = 2 * near / oz;
 
         origins = torch.stack([o0, o1, o2], -1)
         directions = torch.stack([d0, d1, d2], -1)

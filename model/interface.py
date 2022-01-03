@@ -31,6 +31,7 @@ class LitModel(pl.LightningModule):
         self.img_size = self.h * self.w
         self.intrinsics = self.dataset.intrinsics
         self.extrinsics = self.dataset.extrinsics
+        self.GL = self.dataset.GL
         self.create_model()
 
     def on_train_start(self):

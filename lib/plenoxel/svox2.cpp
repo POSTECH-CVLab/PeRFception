@@ -15,8 +15,8 @@ void sample_grid_backward(SparseGridSpec &, Tensor, Tensor, Tensor, Tensor,
 
 // ** NeRF rendering formula (trilerp)
 Tensor volume_render_cuvol(SparseGridSpec &, RaysSpec &, RenderOptions &);
-Tensor volume_render_cuvol_image(SparseGridSpec &, CameraSpec &,
-                                 RenderOptions &);
+// Tensor volume_render_cuvol_image(SparseGridSpec &, CameraSpec &,
+                                //  RenderOptions &);
 void volume_render_cuvol_backward(SparseGridSpec &, RaysSpec &, RenderOptions &,
                                   Tensor, Tensor, GridOutputGrads &);
 void volume_render_cuvol_fused(SparseGridSpec &, RaysSpec &, RenderOptions &,
@@ -52,7 +52,7 @@ void volume_render_svox1_fused(SparseGridSpec &, RaysSpec &, RenderOptions &,
 // Misc
 Tensor dilate(Tensor);
 void accel_dist_prop(Tensor);
-void grid_weight_render(Tensor, CameraSpec &, float, float, bool, Tensor,
+void grid_weight_render(Tensor, CameraSpec &, float, float, bool, bool, Tensor,
                         Tensor, Tensor);
 // void sample_cubemap(Tensor, Tensor, bool, Tensor);
 
@@ -76,7 +76,7 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   _REG_FUNC(sample_grid);
   _REG_FUNC(sample_grid_backward);
   _REG_FUNC(volume_render_cuvol);
-  _REG_FUNC(volume_render_cuvol_image);
+//   _REG_FUNC(volume_render_cuvol_image);
   _REG_FUNC(volume_render_cuvol_backward);
   _REG_FUNC(volume_render_cuvol_fused);
   _REG_FUNC(volume_render_expected_term);

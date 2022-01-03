@@ -14,6 +14,9 @@ class LitTnT(LitData):
     def __init__(self, args):
         super(LitTnT, self).__init__(args)
 
+        # OpenCV coordinate
+        self.GL = False
+
         images, extrinsics, render_poses, (h, w), intrinsics, i_split = tnt.load_tnt_data(args.datadir)
         i_train, i_val, i_test = i_split
 
@@ -35,7 +38,6 @@ class LitTnT(LitData):
 
         N_render = len(render_poses)
         self.predict_dset, self.pred_dummy = self.split(None, render_poses, np.arange(N_render))
-
 
     def train_dataloader(self):
 

@@ -646,47 +646,47 @@ __global__ void render_ray_kernel(
         log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
 }
 
-__launch_bounds__(TRACE_RAY_CUDA_THREADS, MIN_BLOCKS_PER_SM)
-__global__ void render_ray_image_kernel(
-        PackedSparseGridSpec grid,
-        PackedCameraSpec cam,
-        RenderOptions opt,
-        float* __restrict__ out,
-        float* __restrict__ log_transmit_out = nullptr) {
-    CUDA_GET_THREAD_ID(tid, cam.height * cam.width * WARP_SIZE);
-    const int ray_id = tid >> 5;
-    const int ray_blk_id = threadIdx.x >> 5;
-    const int lane_id = threadIdx.x & 0x1F;
+// __launch_bounds__(TRACE_RAY_CUDA_THREADS, MIN_BLOCKS_PER_SM)
+// __global__ void render_ray_image_kernel(
+//         PackedSparseGridSpec grid,
+//         PackedCameraSpec cam,
+//         RenderOptions opt,
+//         float* __restrict__ out,
+//         float* __restrict__ log_transmit_out = nullptr) {
+//     CUDA_GET_THREAD_ID(tid, cam.height * cam.width * WARP_SIZE);
+//     const int ray_id = tid >> 5;
+//     const int ray_blk_id = threadIdx.x >> 5;
+//     const int lane_id = threadIdx.x & 0x1F;
 
-    if (lane_id >= grid.sh_data_dim)
-        return;
+//     if (lane_id >= grid.sh_data_dim)
+//         return;
 
-    const int ix = ray_id % cam.width;
-    const int iy = ray_id / cam.width;
+//     const int ix = ray_id % cam.width;
+//     const int iy = ray_id / cam.width;
 
-    __shared__ float sphfunc_val[TRACE_RAY_CUDA_RAYS_PER_BLOCK][9];
-    __shared__ SingleRaySpec ray_spec[TRACE_RAY_CUDA_RAYS_PER_BLOCK];
-    __shared__ typename WarpReducef::TempStorage temp_storage[
-        TRACE_RAY_CUDA_RAYS_PER_BLOCK];
+//     __shared__ float sphfunc_val[TRACE_RAY_CUDA_RAYS_PER_BLOCK][9];
+//     __shared__ SingleRaySpec ray_spec[TRACE_RAY_CUDA_RAYS_PER_BLOCK];
+//     __shared__ typename WarpReducef::TempStorage temp_storage[
+//         TRACE_RAY_CUDA_RAYS_PER_BLOCK];
 
-    cam2world_ray(ix, iy, cam, ray_spec[ray_blk_id].dir, ray_spec[ray_blk_id].origin);
-    calc_sphfunc(grid, lane_id,
-                 ray_id,
-                 ray_spec[ray_blk_id].dir,
-                 sphfunc_val[ray_blk_id]);
-    ray_find_bounds(ray_spec[ray_blk_id], grid, opt, ray_id);
-    __syncwarp((1U << grid.sh_data_dim) - 1);
+//     cam2world_ray(ix, iy, cam, ray_spec[ray_blk_id].dir, ray_spec[ray_blk_id].origin);
+//     calc_sphfunc(grid, lane_id,
+//                  ray_id,
+//                  ray_spec[ray_blk_id].dir,
+//                  sphfunc_val[ray_blk_id]);
+//     ray_find_bounds(ray_spec[ray_blk_id], grid, opt, ray_id);
+//     __syncwarp((1U << grid.sh_data_dim) - 1);
 
-    trace_ray_cuvol(
-        grid,
-        ray_spec[ray_blk_id],
-        opt,
-        lane_id,
-        sphfunc_val[ray_blk_id],
-        temp_storage[ray_blk_id],
-        out + ray_id * 3,
-        log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
-}
+//     trace_ray_cuvol(
+//         grid,
+//         ray_spec[ray_blk_id],
+//         opt,
+//         lane_id,
+//         sphfunc_val[ray_blk_id],
+//         temp_storage[ray_blk_id],
+//         out + ray_id * 3,
+//         log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
+// }
 
 __launch_bounds__(TRACE_RAY_BKWD_CUDA_THREADS, MIN_BLOCKS_PER_SM)
 __global__ void render_ray_backward_kernel(
@@ -791,28 +791,28 @@ __global__ void render_background_kernel(
         out[ray_id].data());
 }
 
-__launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
-__global__ void render_background_image_kernel(
-        PackedSparseGridSpec grid,
-        PackedCameraSpec cam,
-        RenderOptions opt,
-        const float* __restrict__ log_transmit,
-        // Outputs
-        float* __restrict__ out) {
-    CUDA_GET_THREAD_ID(ray_id, cam.height * cam.width);
-    if (log_transmit[ray_id] < -25.f) return;
-    const int ix = ray_id % cam.width;
-    const int iy = ray_id / cam.width;
-    SingleRaySpec ray_spec;
-    cam2world_ray(ix, iy, cam, ray_spec.dir, ray_spec.origin);
-    ray_find_bounds_bg(ray_spec, grid, opt, ray_id);
-    render_background_forward(
-        grid,
-        ray_spec,
-        opt,
-        log_transmit[ray_id],
-        out + ray_id * 3);
-}
+// __launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
+// __global__ void render_background_image_kernel(
+//         PackedSparseGridSpec grid,
+//         PackedCameraSpec cam,
+//         RenderOptions opt,
+//         const float* __restrict__ log_transmit,
+//         // Outputs
+//         float* __restrict__ out) {
+//     CUDA_GET_THREAD_ID(ray_id, cam.height * cam.width);
+//     if (log_transmit[ray_id] < -25.f) return;
+//     const int ix = ray_id % cam.width;
+//     const int iy = ray_id / cam.width;
+//     SingleRaySpec ray_spec;
+//     cam2world_ray(ix, iy, cam, ray_spec.dir, ray_spec.origin);
+//     ray_find_bounds_bg(ray_spec, grid, opt, ray_id);
+//     render_background_forward(
+//         grid,
+//         ray_spec,
+//         opt,
+//         log_transmit[ray_id],
+//         out + ray_id * 3);
+// }
 
 __launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
 __global__ void render_background_backward_kernel(
@@ -956,55 +956,55 @@ torch::Tensor volume_render_cuvol(SparseGridSpec& grid, RaysSpec& rays, RenderOp
     return results;
 }
 
-torch::Tensor volume_render_cuvol_image(SparseGridSpec& grid, CameraSpec& cam, RenderOptions& opt) {
-    DEVICE_GUARD(grid.sh_data);
-    grid.check();
-    cam.check();
+// torch::Tensor volume_render_cuvol_image(SparseGridSpec& grid, CameraSpec& cam, RenderOptions& opt) {
+//     DEVICE_GUARD(grid.sh_data);
+//     grid.check();
+//     cam.check();
 
 
-    const auto Q = cam.height * cam.width;
-    auto options =
-        torch::TensorOptions()
-        .dtype(grid.sh_data.dtype())
-        .layout(torch::kStrided)
-        .device(grid.sh_data.device())
-        .requires_grad(false);
+//     const auto Q = cam.height * cam.width;
+//     auto options =
+//         torch::TensorOptions()
+//         .dtype(grid.sh_data.dtype())
+//         .layout(torch::kStrided)
+//         .device(grid.sh_data.device())
+//         .requires_grad(false);
 
-    torch::Tensor results = torch::empty({cam.height, cam.width, 3}, options);
+//     torch::Tensor results = torch::empty({cam.height, cam.width, 3}, options);
 
-    bool use_background = grid.background_links.defined() &&
-                          grid.background_links.size(0) > 0;
-    torch::Tensor log_transmit;
-    if (use_background) {
-        log_transmit = torch::empty({cam.height, cam.width}, options);
-    }
+//     bool use_background = grid.background_links.defined() &&
+//                           grid.background_links.size(0) > 0;
+//     torch::Tensor log_transmit;
+//     if (use_background) {
+//         log_transmit = torch::empty({cam.height, cam.width}, options);
+//     }
 
-    {
-        const int cuda_n_threads = TRACE_RAY_CUDA_THREADS;
-        const int blocks = CUDA_N_BLOCKS_NEEDED(Q * WARP_SIZE, cuda_n_threads);
-        device::render_ray_image_kernel<<<blocks, cuda_n_threads>>>(
-                grid,
-                cam,
-                opt,
-                // Output
-                results.data_ptr<float>(),
-                use_background ? log_transmit.data_ptr<float>() : nullptr);
-    }
+//     {
+//         const int cuda_n_threads = TRACE_RAY_CUDA_THREADS;
+//         const int blocks = CUDA_N_BLOCKS_NEEDED(Q * WARP_SIZE, cuda_n_threads);
+//         device::render_ray_image_kernel<<<blocks, cuda_n_threads>>>(
+//                 grid,
+//                 cam,
+//                 opt,
+//                 // Output
+//                 results.data_ptr<float>(),
+//                 use_background ? log_transmit.data_ptr<float>() : nullptr);
+//     }
 
-    if (use_background) {
-        // printf("RENDER BG\n");
-        const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
-        device::render_background_image_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
-                grid,
-                cam,
-                opt,
-                log_transmit.data_ptr<float>(),
-                results.data_ptr<float>());
-    }
+//     if (use_background) {
+//         // printf("RENDER BG\n");
+//         const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
+//         device::render_background_image_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
+//                 grid,
+//                 cam,
+//                 opt,
+//                 log_transmit.data_ptr<float>(),
+//                 results.data_ptr<float>());
+//     }
 
-    CUDA_CHECK_ERRORS;
-    return results;
-}
+//     CUDA_CHECK_ERRORS;
+//     return results;
+// }
 
 void volume_render_cuvol_backward(
         SparseGridSpec& grid,

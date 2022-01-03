@@ -793,49 +793,6 @@ class SparseGrid(nn.Module):
                     rays, return_raylen=return_raylen
                 )
 
-    def volume_render_image(
-        self,
-        camera: dataclass.Camera,
-        use_kernel: bool = True,
-        randomize: bool = False,
-        batch_size: int = 5000,
-        return_raylen: bool = False,
-    ):
-        """
-        Standard volume rendering (entire image version).
-        See grid.opt.* (RenderOptions) for configs.
-
-        :param camera: Camera
-        :param use_kernel: bool, if false uses pure PyTorch version even if on CUDA.
-        :param randomize: bool, whether to enable randomness
-        :return: (H, W, 3), predicted RGB image
-        """
-        imrend_fn_name = f"volume_render_{self.opt.backend}_image"
-        if (
-            self.basis_type != BASIS_TYPE_MLP
-            and imrend_fn_name in _C.__dict__
-            and not torch.is_grad_enabled()
-            and not return_raylen
-        ):
-            # Use the fast image render kernel if available
-            cu_fn = _C.__dict__[imrend_fn_name]
-            return cu_fn(self._to_cpp(), camera._to_cpp(), self.opt._to_cpp())
-        else:
-            # Manually generate rays for now
-            rays = camera.gen_rays()
-            all_rgb_out = []
-            for batch_start in range(0, camera.height * camera.width, batch_size):
-                rgb_out_part = self.volume_render(
-                    rays[batch_start : batch_start + batch_size],
-                    use_kernel=use_kernel,
-                    randomize=randomize,
-                    return_raylen=return_raylen,
-                )
-                all_rgb_out.append(rgb_out_part)
-
-            all_rgb_out = torch.cat(all_rgb_out, dim=0)
-            return all_rgb_out.view(camera.height, camera.width, -1)
-
     def volume_render_fused(
         self,
         rays: dataclass.Rays,
@@ -936,32 +893,6 @@ class SparseGrid(nn.Module):
                 self._to_cpp(), rays._to_cpp(), self.opt._to_cpp(), sigma_thresh
             )
 
-    def volume_render_depth_image(
-        self,
-        camera: dataclass.Camera,
-        sigma_thresh: Optional[float] = None,
-        batch_size: int = 5000,
-    ):
-        """
-        Volumetric depth rendering for full image
-
-        :param camera: Camera, a single camera
-        :param sigma_thresh: Optional[float]. If None then finds the standard expected termination
-                                              (NOTE: this is the absolute length along the ray, not the z-depth as usually expected);
-                                              else then finds the first point where sigma strictly exceeds sigma_thresh
-
-        :return: depth (H, W)
-        """
-        rays = camera.gen_rays()
-        all_depths = []
-        for batch_start in range(0, camera.height * camera.width, batch_size):
-            depths = self.volume_render_depth(
-                rays[batch_start : batch_start + batch_size], sigma_thresh
-            )
-            all_depths.append(depths)
-        all_depth_out = torch.cat(all_depths, dim=0)
-        return all_depth_out.view(camera.height, camera.width)
-
     def resample(
         self,
         reso: Union[int, List[int]],
@@ -973,6 +904,7 @@ class SparseGrid(nn.Module):
         accelerate: bool = True,
         weight_render_stop_thresh: float = 0.2,  # SHOOT, forgot to turn this off for main exps..
         max_elements: int = 0,
+        GL=False,
     ):
         """
         Resample and sparsify the grid; used to increase the resolution
@@ -1069,6 +1001,7 @@ class SparseGrid(nn.Module):
                         0.5,
                         weight_render_stop_thresh,
                         False,
+                        GL,
                         offset,
                         scaling,
                         max_wt_grid,
