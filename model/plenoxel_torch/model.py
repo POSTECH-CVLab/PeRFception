@@ -51,7 +51,7 @@ class ResampleCallBack(pl.Callback):
             )
 
             if pl_module.model.use_background and pl_module.reso_idx <= 1:
-                pl_module.sparsify_background(pl_module.args.background_density_thresh)
+                pl_module.model.sparsify_background(pl_module.args.background_density_thresh)
 
             if pl_module.args.upsample_density_add:
                 pl_module.model.density_data.data[:] += pl_module.args.upsample_density_add
