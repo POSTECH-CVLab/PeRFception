@@ -15,7 +15,7 @@ chunk: 16384
 upsamp_every: 50000
 reso: "[[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]"
 background_nlayers: 64
-background_reso: 64
+background_reso: 1024
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
 lr_sigma_delay_steps: 15000
