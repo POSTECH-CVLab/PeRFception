@@ -410,10 +410,9 @@ class LitPlenoxel(LitModel):
         if self.model.use_background:
             del self.model.background_links
             self.model.register_buffer(
-                "background_links", nn.Parameter(
-                    torch.zeros_like(
-                        state_dict["model.background_links"], dtype=torch.int32
-                    )
+                "background_links", 
+                torch.zeros_like(
+                    state_dict["model.background_links"], dtype=torch.int32
                 )
             )
 
