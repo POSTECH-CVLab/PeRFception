@@ -2,7 +2,7 @@ dataset_type: tanks_and_temples
 model: plenoxel_torch
 batching: all_images
 
-N_rand: 5000
+N_rand: 4096
 max_steps: 200000
 
 i_print: 100
