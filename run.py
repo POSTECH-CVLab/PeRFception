@@ -49,9 +49,9 @@ if __name__ == "__main__":
                 file.write("{} = {}\n".format(arg, attr))
 
     wandb_logger = pl_loggers.WandbLogger(
-        name=expname, entity="postech_cvlab",
+        name=args.expname, entity="postech_cvlab",
         project=args.model) if not args.tpu else pl_loggers.TensorBoardLogger(
-            save_dir=logdir, name=expname)
+            save_dir=logdir, name=args.expname)
 
     seed_everything(args.seed, workers=True)
 
