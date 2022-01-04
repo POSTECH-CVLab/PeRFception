@@ -16,6 +16,8 @@ import model.plenoxel_torch.utils as utils
 import model.plenoxel_torch.dataclass as dataclass
 import torch.nn as nn
 
+from config import str2bool
+
 from model.plenoxel_torch.__global__ import (
     BASIS_TYPE_3D_TEXTURE,
     BASIS_TYPE_MLP,
@@ -645,13 +647,17 @@ class LitPlenoxel(LitModel):
 
         group.add_argument(
             "--tune_mode",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="hypertuning mode (do not save, for speed)",
         )
         group.add_argument(
             "--tune_nosave",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="do not save any checkpoint even at the end",
         )
@@ -662,7 +668,9 @@ class LitPlenoxel(LitModel):
         group.add_argument("--tv_sparsity", type=float, default=0.01)
         group.add_argument(
             "--tv_logalpha",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="Use log(1-exp(-delta * sigma)) as in neural volumes",
         )
@@ -726,7 +734,13 @@ class LitPlenoxel(LitModel):
 
         group.add_argument("--weight_decay_sigma", type=float, default=1.0)
         group.add_argument("--weight_decay_sh", type=float, default=1.0)
-        group.add_argument("--lr_decay", action="store_true", default=True)
+        group.add_argument(
+            "--lr_decay", 
+            type=str2bool,
+            nargs="?",
+            const=True,
+            default=True
+        )
 
         group.add_argument(
             "--n_train",
@@ -737,7 +751,9 @@ class LitPlenoxel(LitModel):
 
         group.add_argument(
             "--nosphereinit",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="do not start with sphere bounds (please do not use for 360)",
         )
@@ -794,7 +810,9 @@ class LitPlenoxel(LitModel):
         )
         group.add_argument(
             "--use_spheric_clip",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="Use spheric ray clipping instead of voxel grid AABB "
             "(only for FG; changes near_clip to mean 1-near_intersection_radius; "
@@ -802,13 +820,17 @@ class LitPlenoxel(LitModel):
         )
         group.add_argument(
             "--enable_random",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="Random Gaussian std to add to density values",
         )
         group.add_argument(
             "--last_sample_opaque",
-            action="store_true",
+            type=str2bool,
+            nargs="?",
+            const=True,
             default=False,
             help="Last sample has +1e9 density (used for LLFF)",
         )

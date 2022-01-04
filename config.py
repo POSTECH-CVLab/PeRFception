@@ -1,5 +1,15 @@
 import argparse
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise Exception("Boolean value expected.")
+        
 def config_parser():
 
     parser = argparse.ArgumentParser()
@@ -41,7 +51,11 @@ def config_parser():
 
     ray = parser.add_argument_group("rays") 
     ray.add_argument(
-        "--use_pixel_centers", action="store_true", default=False,
+        "--use_pixel_centers", 
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
         help="add a half pixel while generating rays"
     )
 
@@ -60,7 +74,11 @@ def config_parser():
         help="resize the scale of scenes"
     )
     dataset.add_argument(
-        "--shuffle_train", action="store_true", default=False,
+        "--shuffle_train", 
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
         help="shuffle the train set"
     )
 
@@ -68,7 +86,9 @@ def config_parser():
     blender = parser.add_argument_group("blender")
     blender.add_argument(
         "--white_bkgd",
-        action="store_true",
+        type=str2bool,
+        nargs="?",
+        const=True,
         help="set to render synthetic data on a white bkgd (always use for dvoxels)",
     )
 
@@ -79,16 +99,23 @@ def config_parser():
     )
     llff.add_argument(
         "--no_ndc",
-        action="store_true",
+        type=str2bool,
+        nargs="?",
+        const=True,
         help="do not use normalized device coordinates (set for non-forward facing scenes)",
     )
     llff.add_argument(
         "--lindisp",
-        action="store_true",
+        type=str2bool,
+        nargs="?",
+        const=True,
         help="sampling linearly in disparity rather than depth",
     )
     llff.add_argument(
-        "--spherify", action="store_true", help="set for spherical 360 scenes"
+        "--spherify",   
+        type=str2bool,
+        nargs="?",
+        const=True,help="set for spherical 360 scenes"
     )
     llff.add_argument(
         "--llffhold",
@@ -108,7 +135,11 @@ def config_parser():
         help="frequency of validation"
     )
     metadata.add_argument(
-        "--debug", action="store_true", default=False,
+        "--debug", 
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
         help="run with debug mode"
     )
     metadata.add_argument(
@@ -125,22 +156,49 @@ def config_parser():
 
     runmode = parser.add_argument_group("running mode")
     runmode.add_argument(
-        "--train", action="store_true", default=False, help="run with train mode"
+        "--train",  
+        type=str2bool,
+        nargs="?",
+        const=True, 
+        default=False, 
+        help="run with train mode"
     )
     runmode.add_argument(
-        "--eval", action="store_true", default=False, help="run with eval mode"
+        "--eval",    
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, 
+        help="run with eval mode"
     )
     runmode.add_argument(
-        "--bake", action="store_true", default=False, help="bake the trained model"
+        "--bake",         
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, 
+        help="bake the trained model"
     )
     runmode.add_argument(
-        "--render", action="store_true", default=False, help="render to generate video"
+        "--render", 
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, help="render to generate video"
     )
     runmode.add_argument(
-        "--skip_validation", action="store_true", default=False, 
+        "--skip_validation",        
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, 
     )
     runmode.add_argument(
-        "--tpu", action="store_true", default=False, help="run with tpus"
+        "--tpu", 
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, help="run with tpus"
     )
     runmode.add_argument(
         "--tpu_num", type=int, default=0, help="number of tpu"
@@ -152,11 +210,19 @@ def config_parser():
         "--seed", type=int, default=0, help="seed to fix"
     )
     runmode.add_argument(
-        "--use_custom_optim", action="store_true", default=False, 
+        "--use_custom_optim",         
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False, 
         help="Run with a custom optimization step"
     )
     runmode.add_argument(
-        "--run_large_model", action="store_true", default=False,
+        "--run_large_model",         
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=False,
         help="For wandb sweep: run large nerf model"
     )
 
