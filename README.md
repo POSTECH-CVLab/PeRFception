@@ -13,14 +13,18 @@ This project is created and maintained by Yoonwoo Jeong, Jinoh Cho, and Seungjoo
     - Several options are different from the original NeRF (TensorFlow)
     - NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis: [[Code](https://github.com/google-research/google-research/tree/master/jaxnerf) | [Paper](https://arxiv.org/pdf/2003.08934) | [Arxiv](https://arxiv.org/abs/2003.08934)]
     - Document: [Link](./docs/jaxnerf.md)
-- SNeRG (Torch Version)
+- SNeRG (Torch)
     - Coming Soon
-- MipNeRF (Torch Version)
+- MipNeRF (Torch)
     - Coming Soon
-- MipNeRF360 (Torch Version)
+- MipNeRF360 (Torch)
     - Coming Soon
-- NeRF++ (Torch Version)
+- NeRF++ (Torch)
     - Coming Soon
+- Plenoxel (Torch)
+    - Reorganized the code structure for easier modification. 
+    - Plenoxels: Radiance Fields without Neural Networks [[Code](https://github.com/sxyu/svox2) | [Paper]()]
+    - Document: [Link](./docs/plenoxel.md)
 
 ## Dataset
 ```

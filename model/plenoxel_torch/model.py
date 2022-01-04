@@ -318,9 +318,11 @@ class LitPlenoxel(LitModel):
             ret["target"] = batch["target"]
         return ret
 
+    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def test_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
