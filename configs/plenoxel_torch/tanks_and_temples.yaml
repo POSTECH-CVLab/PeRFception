@@ -11,6 +11,7 @@ use_pixel_centers: true
 
 no_ndc: true
 
+upsamp_every: 50000
 reso: "[[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]"
 background_nlayers: 64
 background_reso: 64
