@@ -1,9 +1,7 @@
 import numpy as np
-
-import torch
 from torch.utils.data import DataLoader
 
-import dataloader.data_util.blender as blender
+import dataloader.data_util.tnt as tnt
 
 from dataloader.sampler import (
     SingleImageDDPSampler, DDPSequnetialSampler, MultipleImageDDPSampler,
@@ -11,39 +9,25 @@ from dataloader.sampler import (
 )
 from dataloader.interface import LitData
 
-class LitBlender(LitData):
+class LitTnT(LitData):
     
     def __init__(self, args):
-        super(LitBlender, self).__init__(args)
+        super(LitTnT, self).__init__(args)
 
         # OpenCV coordinate
-        self.GL = True
+        self.GL = False
 
-        images, poses, render_poses, hwf, i_split = blender.load_blender_data(
-            args.datadir, args.testskip
-        )
+        images, extrinsics, render_poses, (h, w), intrinsics, i_split = tnt.load_tnt_data(args.datadir)
         i_train, i_val, i_test = i_split
 
-        self.near = 2.
-        self.far = 6.
-
-        if args.white_bkgd:
-            images = images[..., :3] * images[..., -1:] + (1. - images[..., -1:])
-        else:
-            images = images[..., :3]
-
-        extrinsics = poses
-        h, w, focal = hwf
-        h, w = int(h), int(w)
-        hwf = [h, w, focal]
+        self.near = 0.
+        self.far = 1.
 
         self.image_len = h * w
         self.h, self.w = h, w
 
-        self.intrinsics = np.array(
-            [[focal, 0., 0.5 * w], [0., focal, 0.5 * h], [0., 0., 1.]]
-        )
-        self.extrinsics = poses
+        self.intrinsics = intrinsics
+        self.extrinsics = extrinsics
 
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))

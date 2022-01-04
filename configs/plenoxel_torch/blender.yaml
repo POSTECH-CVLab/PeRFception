@@ -1,0 +1,23 @@
+dataset_type: blender
+model: plenoxel_torch
+batching: all_images_wo_replace
+
+N_rand: 4096
+
+max_steps: 200000
+
+i_print: 100
+i_validation: 50000
+
+no_ndc: true
+
+reso: "[[256, 256, 256], [512, 512, 512]]"
+upsamp_every: 50000
+lr_sigma: 3.0e+1
+lr_sh: 1.0e-2
+lambda_tv: 1.0e-5
+lambda_tv_sh: 1.0e-3
+
+use_pixel_centers: true
+white_bkgd: true
+scene_scale: 0.6666

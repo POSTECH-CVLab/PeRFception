@@ -1,22 +1,21 @@
 import numpy as np
 
-import torch
-import torch.utils.data as data
 from torch.utils.data.dataloader import DataLoader
-from torch.utils.data.distributed import DistributedSampler
 
 import dataloader.data_util.llff as llff
 
-import model.jaxnerf_torch.utils as jaxnerf_torch_utils
-import pytorch_lightning as pl
-
-from dataloader.sampler import RaySet, MultipleImageDDPSampler, DDPSequnetialSampler
+from dataloader.sampler import (
+    MultipleImageDDPSampler, DDPSequnetialSampler, MultipleImageWOReplaceDDPSampler
+)
 from dataloader.interface import LitData
 
 class LitLLFF(LitData):
 
     def __init__(self, args):
         super(LitLLFF, self).__init__(args)
+
+        # OpenCV coordinate
+        self.GL = True
 
         images, poses, bds, render_poses, i_test = llff.load_llff_data(
             args.datadir, args.factor, recenter=True, bd_factor=0.75
@@ -57,16 +56,29 @@ class LitLLFF(LitData):
 
     def train_dataloader(self):
 
-        if self.args.tpu:
-            import torch_xla.core.xla_model as xm
-            sampler = MultipleImageDDPSampler(
-                self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
-                len(self.train_dset), self.args.i_validation, True
-            )
-        else:
-            sampler = MultipleImageDDPSampler(
-                self.batch_size, None, None, len(self.train_dset), self.args.i_validation, False
-            )
+        if self.args.batching == "all_images":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = MultipleImageDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.train_dset), self.args.i_validation, True
+                )
+            else:
+                sampler = MultipleImageDDPSampler(
+                    self.batch_size, None, None, len(self.train_dset), self.args.i_validation, False
+                )
+
+        elif self.args.batching == "all_images_wo_replace":
+            if self.args.tpu:
+                import torch_xla.core.xla_model as xm
+                sampler = MultipleImageWOReplaceDDPSampler(
+                    self.batch_size, xm.xrt_world_size(), xm.get_ordinal(),
+                    len(self.train_dset), self.args.i_validation, True
+                )
+            else:
+                sampler = MultipleImageWOReplaceDDPSampler(
+                    self.batch_size, None, None, len(self.train_dset), self.args.i_validation, False
+                )
 
         return DataLoader(
             self.train_dset, batch_sampler=sampler, num_workers=self.num_workers,

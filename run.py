@@ -1,9 +1,8 @@
-from torch.utils import data
 import config
 import os
 import yaml
 
-from utils.select_option import select_model
+from utils.select_option import select_model, select_callback, select_config
 
 import torch
 from pytorch_lightning import Trainer, seed_everything
@@ -18,6 +17,9 @@ if __name__ == "__main__":
     logging.getLogger("lightning").setLevel(logging.ERROR)
     args, parser = config.config_parser()
 
+    if args.config is None:
+        args.config = select_config(args.model, args.datadir, args.run_large_model)
+
     with open(args.config, "r") as fp: 
         config_file = yaml.load(fp, Loader=yaml.FullLoader)
 
@@ -28,14 +30,16 @@ if __name__ == "__main__":
     args.__dict__.update(config_file)
     
     basedir = args.basedir
-    expname = args.model + "_" + args.expname
-    logdir = os.path.join(basedir, expname)
+    if args.expname is None:
+        args.expname = args.datadir.split("/")[-1]
+    args.expname = args.model + "_" + args.expname
+    if args.debug:
+        args.expname += "_debug"
+    logdir = os.path.join(basedir, args.expname)
 
     n_gpus = torch.cuda.device_count()
 
     os.makedirs(logdir, exist_ok=True)
-    assert not os.path.exists(os.path.join(logdir, "best.ckpt")), \
-        f"the ckpt file already exists in {logdir}."
 
     if args.train:
         f = os.path.join(logdir, "args.txt")
@@ -45,9 +49,9 @@ if __name__ == "__main__":
                 file.write("{} = {}\n".format(arg, attr))
 
     wandb_logger = pl_loggers.WandbLogger(
-        name=expname, entity="postech_cvlab",
+        name=args.expname, entity="postech_cvlab",
         project=args.model) if not args.tpu else pl_loggers.TensorBoardLogger(
-            save_dir=logdir, name=expname)
+            save_dir=logdir, name=args.expname)
 
     seed_everything(args.seed, workers=True)
 
@@ -59,6 +63,9 @@ if __name__ == "__main__":
         save_top_k=1,
         mode="max",
     )
+
+    callbacks = [lr_monitor, model_best_checkpoint]
+    callbacks = select_callback(callbacks, model_name, args)
 
     trainer = Trainer(
         logger=wandb_logger if args.train else None,
@@ -74,7 +81,7 @@ if __name__ == "__main__":
         check_val_every_n_epoch=1,
         precision=32,
         num_sanity_val_steps=0,
-        callbacks=[lr_monitor, model_best_checkpoint],
+        callbacks=callbacks,
     )
 
     model = model_fn(args)

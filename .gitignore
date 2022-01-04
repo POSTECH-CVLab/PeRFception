@@ -7,3 +7,7 @@ logs
 *swap-pane*
 *.idea*
 logs_collection
+*build*
+*.egg-info*
+*.eggs*
+*_debug*

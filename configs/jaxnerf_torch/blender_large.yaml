@@ -17,7 +17,6 @@ lr_delay_mult: 0.01
 max_steps: 200000
 
 i_print: 100
-i_weights: 50000
 i_validation: 50000
 use_pixel_centers: true
 

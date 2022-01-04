@@ -210,7 +210,7 @@ class LitJaxNeRF(LitModel):
         }
 
         # NDC only good for LLFF-style forward facing data
-        if args.dataset_type != "llff" or args.no_ndc:
+        if args.no_ndc:
             render_kwargs_train["ndc"] = False
             render_kwargs_train["lindisp"] = args.lindisp
 
@@ -237,7 +237,6 @@ class LitJaxNeRF(LitModel):
 
     def forward_eval(self, batch_rays):
         return self.forward_fun(rays=batch_rays, **self.render_kwargs_test)
-
 
     def training_step(self, batch, batch_idx):
         batch_rays = batch["ray"]

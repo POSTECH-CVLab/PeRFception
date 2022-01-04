@@ -1,11 +1,6 @@
-import os
-import imageio
-
 import torch
 import torch.nn.functional as F
 import numpy as np
-
-from tqdm import tqdm
 
 
 def img2mse(x, y): 
@@ -43,30 +38,6 @@ def get_rays(H, W, K, c2w, use_pixel_centers):
     )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = c2w[:3, -1].expand(rays_d.shape)
-    return rays_o, rays_d
-
-
-def batchfied_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers): 
-    center = 0.5 if use_pixel_centers else 0. 
-    N_img = extrinsics.shape[0]
-    i, j = np.meshgrid(
-        np.arange(w, dtype=np.float32) + center, 
-        np.arange(h, dtype=np.float32) + center, 
-        indexing="xy"
-    )
-    i, j = np.tile(i, (N_img, 1, 1)), np.tile(j, (N_img, 1, 1))
-    dirs = np.stack([
-        (i - intrinsics[0][2]) / intrinsics[0][0],
-        -(j - intrinsics[1][2]) / intrinsics[1][1],
-        -np.ones_like(i)
-    ], -1)
-    rays_d = np.einsum(
-        "nhwc, nrc -> nhwr", dirs, extrinsics[:, :3, :3]
-    ).reshape(-1, 3)
-    rays_o = np.tile(
-        extrinsics[:, np.newaxis, :3, -1], (1, h * w, 1)
-    ).reshape(-1, 3)
-
     return rays_o, rays_d
 
 
