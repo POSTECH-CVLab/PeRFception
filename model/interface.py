@@ -66,3 +66,6 @@ class LitModel(pl.LightningModule):
             if target is not None:
                 target = target[:-dummy_num]
         return rgbs, target, depths
+
+    def load(self, trainer, ckpt_path):
+        return

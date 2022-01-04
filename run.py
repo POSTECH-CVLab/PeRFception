@@ -35,8 +35,6 @@ if __name__ == "__main__":
     n_gpus = torch.cuda.device_count()
 
     os.makedirs(logdir, exist_ok=True)
-    assert not os.path.exists(os.path.join(logdir, "best.ckpt")), \
-        f"the ckpt file already exists in {logdir}."
 
     if args.train:
         f = os.path.join(logdir, "args.txt")

@@ -10,6 +10,7 @@ i_validation: 50000
 use_pixel_centers: true
 
 no_ndc: true
+chunk: 16384
 
 upsamp_every: 50000
 reso: "[[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]"

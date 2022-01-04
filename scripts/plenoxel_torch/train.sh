@@ -17,3 +17,9 @@ python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/lea
 python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/orchids --expname orchids --train 
 python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/room --expname room --train 
 python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/trex --expname trex --train 
+
+# Tanks and Temples
+python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_M60 --expname M60 --train 
+python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_Playground --expname Playground --train 
+python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_Train --expname Train --train 
+python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_training_Truck --expname Truck --train 

@@ -14,6 +14,7 @@ import utils.store_image as store_image
 import model.plenoxel_torch.sparse_grid as sparse_grid
 import model.plenoxel_torch.utils as utils
 import model.plenoxel_torch.dataclass as dataclass
+import torch.nn as nn
 
 from model.plenoxel_torch.__global__ import (
     BASIS_TYPE_3D_TEXTURE,
@@ -63,8 +64,8 @@ class LitPlenoxel(LitModel):
         super(LitPlenoxel, self).__init__(args)
 
         self.automatic_optimization = False
-        self.reso_list = eval(args.reso)
         self.reso_idx = 0
+        self.reso_list = eval(args.reso)
         self.model = sparse_grid.SparseGrid(
             args=args,
             reso=self.reso_list[self.reso_idx],
@@ -368,6 +369,44 @@ class LitPlenoxel(LitModel):
         psnr = -10.0 * torch.log(mse) / np.log(10)
         psnr_mean = psnr.mean()
         self.log("val_psnr", psnr_mean, on_epoch=True, sync_dist=True)
+
+    def on_save_checkpoint(self, checkpoint) -> None:
+        checkpoint["reso_idx"] = self.reso_idx
+        return super().on_save_checkpoint(checkpoint)
+
+    def on_load_checkpoint(self, checkpoint) -> None:
+        state_dict = checkpoint["state_dict"]
+
+        self.reso_idx = checkpoint["reso_idx"]
+
+        del self.model.basis_data
+        del self.model.background_data
+        del self.model.density_data
+        del self.model.sh_data
+        del self.model.links
+
+        self.model.register_parameter(
+            "basis_data", 
+            nn.Parameter(torch.zeros_like(state_dict["model.basis_data"], dtype=torch.float32))
+        )
+        self.model.register_parameter(
+            "background_data", 
+            nn.Parameter(torch.zeros_like(state_dict["model.background_data"], dtype=torch.float32))
+        )
+        self.model.register_parameter(
+            "density_data", 
+            nn.Parameter(torch.zeros_like(state_dict["model.density_data"], dtype=torch.float32))
+        )
+        self.model.register_parameter(
+            "sh_data", 
+            nn.Parameter(torch.zeros_like(state_dict["model.sh_data"], dtype=torch.float32))
+        )
+        self.model.register_buffer(
+            "links", 
+            torch.zeros_like(state_dict["model.links"], dtype=torch.int32)
+        )
+
+        return super().on_load_checkpoint(checkpoint)
 
     @staticmethod
     def add_model_specific_args(parser):
