@@ -210,7 +210,7 @@ class LitJaxNeRF(LitModel):
         }
 
         # NDC only good for LLFF-style forward facing data
-        if args.dataset_type != "llff" or args.no_ndc:
+        if args.no_ndc:
             render_kwargs_train["ndc"] = False
             render_kwargs_train["lindisp"] = args.lindisp
 

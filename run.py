@@ -2,7 +2,7 @@ import config
 import os
 import yaml
 
-from utils.select_option import select_model, select_callback
+from utils.select_option import select_model, select_callback, select_config
 
 import torch
 from pytorch_lightning import Trainer, seed_everything
@@ -17,6 +17,9 @@ if __name__ == "__main__":
     logging.getLogger("lightning").setLevel(logging.ERROR)
     args, parser = config.config_parser()
 
+    if args.config is None:
+        args.config = select_config(args.model, args.datadir, args.run_large_model)
+
     with open(args.config, "r") as fp: 
         config_file = yaml.load(fp, Loader=yaml.FullLoader)
 
@@ -27,6 +30,8 @@ if __name__ == "__main__":
     args.__dict__.update(config_file)
     
     basedir = args.basedir
+    if args.expname is None:
+        args.expname = args.basedir.split("/")[-1]
     expname = args.model + "_" + args.expname
     if args.debug:
         expname += "_debug"

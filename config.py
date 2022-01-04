@@ -112,7 +112,7 @@ def config_parser():
         help="run with debug mode"
     )
     metadata.add_argument(
-        "--expname", type=str, required=True, help="experiment name"
+        "--expname", type=str, default=None, help="experiment name"
     )
     metadata.add_argument(
         "--basedir", type=str, default="./logs/",
@@ -154,6 +154,10 @@ def config_parser():
     runmode.add_argument(
         "--use_custom_optim", action="store_true", default=False, 
         help="Run with a custom optimization step"
+    )
+    runmode.add_argument(
+        "--run_large_model", action="store_true", default=False,
+        help="For wandb sweep: run large nerf model"
     )
 
     config = parser.add_argument_group("config")

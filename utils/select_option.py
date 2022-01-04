@@ -2,6 +2,17 @@ from dataloader.llff import LitLLFF
 from dataloader.blender import LitBlender
 
 
+def select_config(model, datadir, run_large_model):
+
+    datadir = datadir.rstrip("/")
+    dataset = datadir.split("/")[-2]
+    config_file = f"configs/{model}/{dataset}"
+    if run_large_model:
+        config_file += "_large"
+    config_file += ".yaml"
+
+    return config_file
+
 def select_model(model_name, dataset_type):
 
     if model_name == "jaxnerf_torch":
