@@ -13,14 +13,14 @@ from pytorch_lightning.plugins import DDPPlugin
 import logging
 
 if __name__ == "__main__":
-    
+
     logging.getLogger("lightning").setLevel(logging.ERROR)
     args, parser = config.config_parser()
-
+    args.datadir = args.datadir.rstrip("/")
     if args.config is None:
         args.config = select_config(args)
 
-    with open(args.config, "r") as fp: 
+    with open(args.config, "r") as fp:
         config_file = yaml.load(fp, Loader=yaml.FullLoader)
 
     model_name = config_file["model"]
@@ -28,7 +28,8 @@ if __name__ == "__main__":
     model_fn = select_model(model_name, dataset_type)
     args = model_fn.add_model_specific_args(parser)
     args.__dict__.update(config_file)
-    
+
+    args.datadir = args.datadir.rstrip("/")
     basedir = args.basedir
     if args.expname is None:
         args.expname = args.datadir.split("/")[-1]
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     )
 
     model = model_fn(args)
-    
+
     if args.train:
         trainer.fit(model)
     if args.eval:
