@@ -290,22 +290,26 @@ class LitJaxNeRF(LitModel):
             ret["target"] = batch["target"]
         return ret
 
+    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def test_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def predict_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
 
         if self.trainer.is_global_zero:
-            rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            target = target.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            target = target.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
             psnr = metrics.psnr(rgbs, target, self.i_train, self.i_val, self.i_test)
             ssim = metrics.ssim(rgbs, target, self.i_train, self.i_val, self.i_test)
             lpips = metrics.lpips_v(rgbs, target, self.i_train, self.i_val, self.i_test)
@@ -315,18 +319,20 @@ class LitJaxNeRF(LitModel):
 
             metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr, ssim, lpips)
 
+    @torch.no_grad()
     def on_predict_epoch_end(self, outputs):
         # In the prediction step, be sure to use outputs[0]
         # instead of outputs. 
         rgbs, _, depths = self.gather_results(outputs[0], self.pred_dummy) 
         if self.trainer.is_global_zero: 
-            rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy() 
+            rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            depths = depths.view(-1, self.h, self.w).detach().cpu().numpy() 
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
             store_image.store_image(image_dir, rgbs, depths)
             store_image.store_video(image_dir, rgbs, depths)
 
+    @torch.no_grad()
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)
         rgbs, target = rgbs.reshape(-1, self.img_size * 3), target.reshape(

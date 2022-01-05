@@ -336,11 +336,12 @@ class LitPlenoxel(LitModel):
     @torch.no_grad()
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
+        del outputs
 
         if self.trainer.is_global_zero:
-            np_rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            np_target = target.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            np_depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            np_rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_target = target.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
             del rgbs, target, depths
             psnr = metrics.psnr(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
             ssim = metrics.ssim(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
@@ -358,9 +359,11 @@ class LitPlenoxel(LitModel):
         # In the prediction step, be sure to use outputs[0]
         # instead of outputs.
         rgbs, _, depths = self.gather_results(outputs[0], self.pred_dummy)
+        del outputs
+
         if self.trainer.is_global_zero:
-            np_rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            np_depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            np_rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
             del rgbs, depths
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
