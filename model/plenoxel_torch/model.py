@@ -306,6 +306,7 @@ class LitPlenoxel(LitModel):
             target = batch["target"].to(torch.float32)
         else:
             target = torch.zeros((len(batch["ray"]), 3), dtype=torch.float32, device=self.device) + 0.5
+            
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
             rays,

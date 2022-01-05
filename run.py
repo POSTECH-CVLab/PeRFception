@@ -18,7 +18,7 @@ if __name__ == "__main__":
     args, parser = config.config_parser()
 
     if args.config is None:
-        args.config = select_config(args.model, args.datadir, args.run_large_model)
+        args.config = select_config(args)
 
     with open(args.config, "r") as fp: 
         config_file = yaml.load(fp, Loader=yaml.FullLoader)
@@ -32,6 +32,8 @@ if __name__ == "__main__":
     basedir = args.basedir
     if args.expname is None:
         args.expname = args.datadir.split("/")[-1]
+    if args.run_paper_mode:
+        args.expname += "_paper"
     args.expname = args.model + "_" + args.expname
     if args.debug:
         args.expname += "_debug"

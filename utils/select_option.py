@@ -2,13 +2,14 @@ from dataloader.llff import LitLLFF
 from dataloader.blender import LitBlender
 
 
-def select_config(model, datadir, run_large_model):
+def select_config(args):
 
-    datadir = datadir.rstrip("/")
-    dataset = datadir.split("/")[-2]
-    config_file = f"configs/{model}/{dataset}"
-    if run_large_model:
+    dataset = args.datadir.split("/")[-2]
+    config_file = f"configs/{args.model}/{dataset}"
+    if args.run_large_model:
         config_file += "_large"
+    elif args.run_paper_mode:
+        config_file += "_paper"
     config_file += ".yaml"
 
     return config_file
