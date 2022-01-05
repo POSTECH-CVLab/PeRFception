@@ -336,15 +336,16 @@ class LitPlenoxel(LitModel):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
 
         if self.trainer.is_global_zero:
-            rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            target = target.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
-            psnr = metrics.psnr(rgbs, target, self.i_train, self.i_val, self.i_test)
-            ssim = metrics.ssim(rgbs, target, self.i_train, self.i_val, self.i_test)
-            lpips = metrics.lpips_v(rgbs, target, self.i_train, self.i_val, self.i_test)
+            np_rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_target = target.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            del rgbs, target, depths
+            psnr = metrics.psnr(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
+            ssim = metrics.ssim(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
+            lpips = metrics.lpips_v(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs, depths)
+            store_image.store_image(image_dir, np_rgbs, np_depths)
 
             metrics.write_stats(
                 os.path.join(self.logdir, "results.txt"), psnr, ssim, lpips
@@ -355,12 +356,13 @@ class LitPlenoxel(LitModel):
         # instead of outputs.
         rgbs, _, depths = self.gather_results(outputs[0], self.pred_dummy)
         if self.trainer.is_global_zero:
-            rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            np_rgbs = rgbs.reshape(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.reshape(-1, self.h, self.w).detach().cpu().numpy()
+            del rgbs, depths
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs, depths)
-            store_image.store_video(image_dir, rgbs, depths)
+            store_image.store_image(image_dir, np_rgbs, np_depths)
+            store_image.store_video(image_dir, np_rgbs, np_depths)
 
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)
