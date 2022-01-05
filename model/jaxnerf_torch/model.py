@@ -296,20 +296,20 @@ class LitJaxNeRF(LitModel):
 
     @torch.no_grad()
     def test_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx)
+        return self.render_rays(batch, batch_idx).detach().cpu()
 
     @torch.no_grad()
     def predict_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx)
+        return self.render_rays(batch, batch_idx).detach().cpu()
 
     @torch.no_grad()
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
 
         if self.trainer.is_global_zero:
-            rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
-            target = target.view(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
+            rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
+            target = target.view(-1, self.h, self.w, 3).numpy()
+            depths = depths.view(-1, self.h, self.w).numpy()
             psnr = metrics.psnr(rgbs, target, self.i_train, self.i_val, self.i_test)
             ssim = metrics.ssim(rgbs, target, self.i_train, self.i_val, self.i_test)
             lpips = metrics.lpips_v(rgbs, target, self.i_train, self.i_val, self.i_test)
@@ -325,8 +325,8 @@ class LitJaxNeRF(LitModel):
         # instead of outputs. 
         rgbs, _, depths = self.gather_results(outputs[0], self.pred_dummy) 
         if self.trainer.is_global_zero: 
-            rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
-            depths = depths.view(-1, self.h, self.w).detach().cpu().numpy() 
+            rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
+            depths = depths.view(-1, self.h, self.w).numpy() 
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
             store_image.store_image(image_dir, rgbs, depths)
