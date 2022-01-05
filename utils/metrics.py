@@ -7,10 +7,12 @@ from piqa.lpips import LPIPS
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
 clip_0_1 = lambda x: torch.clip(x, 0, 1)
 
+@torch.no_grad()
 def psnr(pred, gt, i_train, i_val, i_test):
     pred, gt = reshape_2d(pred), reshape_2d(gt)
     mse = np.mean((pred - gt) ** 2, axis=1)
     psnr = -10.0 * np.log(mse) / np.log(10)
+    del pred, gt
     return {
         "name": "PSNR",
         "scene_wise": psnr, 
@@ -20,6 +22,7 @@ def psnr(pred, gt, i_train, i_val, i_test):
         "test_mean": psnr[i_test].mean()
     }
 
+@torch.no_grad()
 def ssim(pred, gt, i_train, i_val, i_test):
     
     ssim_model = SSIM().cuda()
@@ -34,6 +37,7 @@ def ssim(pred, gt, i_train, i_val, i_test):
         )
         ssim.append(score)
     ssim = torch.stack(ssim).cpu().numpy()
+    del pred, gt, ssim_model
     return {
         "name": "SSIM",
         "scene_wise": ssim,
@@ -43,10 +47,12 @@ def ssim(pred, gt, i_train, i_val, i_test):
         "test_mean": ssim[i_test].mean()
     }
 
+@torch.no_grad()
 def lpips_a(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="alex").cuda()
     return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-Alex")
 
+@torch.no_grad()
 def lpips_v(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="vgg").cuda()
     return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-VGG")
@@ -63,6 +69,7 @@ def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
         )
         lpips.append(score)
     lpips = torch.stack(lpips).cpu().numpy()
+    del pred, gt
     return {
         "name": name, 
         "scene_wise": lpips,
