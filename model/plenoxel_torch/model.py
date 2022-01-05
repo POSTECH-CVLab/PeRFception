@@ -345,9 +345,9 @@ class LitPlenoxel(LitModel):
         del outputs
 
         if self.trainer.is_global_zero:
-            np_rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
-            np_target = target.view(-1, self.h, self.w, 3).numpy()
-            np_depths = depths.view(-1, self.h, self.w).numpy()
+            np_rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_target = target.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
             del rgbs, target, depths
             psnr = metrics.psnr(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
             ssim = metrics.ssim(np_rgbs, np_target, self.i_train, self.i_val, self.i_test)
@@ -368,8 +368,8 @@ class LitPlenoxel(LitModel):
         del outputs
 
         if self.trainer.is_global_zero:
-            np_rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
-            np_depths = depths.view(-1, self.h, self.w).numpy()
+            np_rgbs = rgbs.view(-1, self.h, self.w, 3).detach().cpu().numpy()
+            np_depths = depths.view(-1, self.h, self.w).detach().cpu().numpy()
             del rgbs, depths
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
