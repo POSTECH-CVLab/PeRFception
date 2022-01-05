@@ -4,6 +4,7 @@ from dataloader.blender import LitBlender
 
 def select_config(args):
 
+    args.datadir = args.datadir.rstrip("/")
     dataset = args.datadir.split("/")[-2]
     config_file = f"configs/{args.model}/{dataset}"
     if args.run_large_model:
@@ -13,6 +14,7 @@ def select_config(args):
     config_file += ".yaml"
 
     return config_file
+
 
 def select_model(model_name, dataset_type):
 

@@ -49,7 +49,7 @@ class LitModel(pl.LightningModule):
         if torch.cuda.device_count() == 1 and not self.args.tpu:
             return torch.cat([out[key] for out in outputs_gather])
         dim = outputs_gather[0][key].shape[-1] if outputs_gather[0][key].dim() == 3 else 1 
-        ret = torch.cat([out[key].transpose(1, 0).reshape(-1, dim) for out in outputs_gather]) 
+        ret = torch.cat([out[key].transpose(1, 0).view(-1, dim) for out in outputs_gather]) 
         return ret
 
     # Gather the outputs into the ordinary device
@@ -57,9 +57,9 @@ class LitModel(pl.LightningModule):
     def gather_results(self, outputs, dummy_num):
         outputs_gather = self.all_gather(outputs)
         del outputs
-        rgbs = self.alter_cat(outputs_gather, "rgb")
-        target = self.alter_cat(outputs_gather, "target")
-        depths = self.alter_cat(outputs_gather, "depth")
+        rgbs = self.alter_cat(outputs_gather, "rgb").detach().cpu()
+        target = self.alter_cat(outputs_gather, "target").detach().cpu()
+        depths = self.alter_cat(outputs_gather, "depth").detach().cpu()
         del outputs_gather
         if dummy_num != 0:
             rgbs, depths = rgbs[:-dummy_num], depths[:-dummy_num]

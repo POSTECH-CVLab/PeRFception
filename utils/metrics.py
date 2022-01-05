@@ -5,7 +5,7 @@ from piqa.ssim import SSIM
 from piqa.lpips import LPIPS
 
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
-clip_0_1 = lambda x: torch.clip(x, 0, 1)
+clip_0_1 = lambda x: torch.clip(x, 0, 1).detach()
 
 @torch.no_grad()
 def psnr(pred, gt, i_train, i_val, i_test):
