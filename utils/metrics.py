@@ -5,7 +5,7 @@ from piqa.ssim import SSIM
 from piqa.lpips import LPIPS
 
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
-clip_0_1 = lambda x: torch.clip(x, 0, 1).detach()
+clip_0_1 = lambda x: torch.clip(x, 0, 1)
 
 @torch.no_grad()
 def psnr(pred, gt, i_train, i_val, i_test):
@@ -25,9 +25,9 @@ def psnr(pred, gt, i_train, i_val, i_test):
 @torch.no_grad()
 def ssim(pred, gt, i_train, i_val, i_test):
     
-    ssim_model = SSIM().cuda()
-    pred = torch.from_numpy(pred).to("cuda")
-    gt = torch.from_numpy(gt).to("cuda")
+    ssim_model = SSIM()
+    pred = torch.from_numpy(pred)
+    gt = torch.from_numpy(gt)
     pred_clip, gt_clip = clip_0_1(pred), clip_0_1(gt)
     ssim = []
     for i in range(len(pred_clip)):
@@ -36,7 +36,7 @@ def ssim(pred, gt, i_train, i_val, i_test):
             gt_clip[None, i].permute((0, 3, 1, 2)).float()
         )
         ssim.append(score)
-    ssim = torch.stack(ssim).cpu().numpy()
+    ssim = torch.stack(ssim).numpy()
     del pred, gt, ssim_model, pred_clip, gt_clip
     return {
         "name": "SSIM",
@@ -49,21 +49,21 @@ def ssim(pred, gt, i_train, i_val, i_test):
 
 @torch.no_grad()
 def lpips_a(pred, gt, i_train, i_val, i_test):
-    lpips_model = LPIPS(network="alex").cuda()
+    lpips_model = LPIPS(network="alex")
     ret = lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-Alex")
     del lpips_model
     return ret
 
 @torch.no_grad()
 def lpips_v(pred, gt, i_train, i_val, i_test):
-    lpips_model = LPIPS(network="vgg").cuda()
+    lpips_model = LPIPS(network="vgg")
     ret = lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-VGG")
     del lpips_model
     return ret
 
 def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
-    pred = torch.from_numpy(pred).to("cuda")
-    gt = torch.from_numpy(gt).to("cuda")
+    pred = torch.from_numpy(pred)
+    gt = torch.from_numpy(gt)
     pred_clip, gt_clip = clip_0_1(pred), clip_0_1(gt)
     lpips = []
     for i in range(len(pred)):
@@ -72,7 +72,7 @@ def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
             gt_clip[None, i].permute((0, 3, 1, 2)).float()
         )
         lpips.append(score)
-    lpips = torch.stack(lpips).cpu().numpy()
+    lpips = torch.stack(lpips).numpy()
     del pred, gt, pred_clip, gt_clip
     return {
         "name": name, 

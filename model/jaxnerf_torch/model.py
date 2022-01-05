@@ -280,14 +280,18 @@ class LitJaxNeRF(LitModel):
 
         optimizer.step(closure=optimizer_closure)
 
-    def render_rays(self, batch, batch_idx):
+    def render_rays(self, batch, batch_idx, cpu=False):
         ret = {}
         batch_rays = batch["ray"]
         rgb, disparity, acc, depth, extras = self.forward_eval(batch_rays)
+        target = batch["target"]
+        if cpu:
+            rgb, depth, target = rgb.detach().cpu(), depth.detach().cpu(), target.detach().cpu()
+
         ret["rgb"] = rgb
         ret["depth"] = depth
         if "target" in batch:
-            ret["target"] = batch["target"]
+            ret["target"] = target
         return ret
 
     @torch.no_grad()
@@ -296,11 +300,11 @@ class LitJaxNeRF(LitModel):
 
     @torch.no_grad()
     def test_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx).detach().cpu()
+        return self.render_rays(batch, batch_idx, cpu=True)
 
     @torch.no_grad()
     def predict_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx).detach().cpu()
+        return self.render_rays(batch, batch_idx, cpu=True)
 
     @torch.no_grad()
     def test_epoch_end(self, outputs):

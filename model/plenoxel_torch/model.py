@@ -294,7 +294,7 @@ class LitPlenoxel(LitModel):
             self.model.density_data.data *= args.weight_decay_sh
 
     @torch.no_grad()
-    def render_rays(self, batch, batch_idx):
+    def render_rays(self, batch, batch_idx, cpu=False):
         ret = {}
         rays = batch["ray"].to(torch.float32)
         if self.ndc_coeffs[0] != -1:
@@ -315,10 +315,16 @@ class LitPlenoxel(LitModel):
             randomize=False,
         )
         depth = self.model.volume_render_depth(rays, None)
+        target = batch["target"]
+        if cpu:
+            rgb = rgb.detach().cpu()
+            depth = depth.detach().cpu()
+            target = target.detach().cpu()
+
         ret["rgb"] = rgb
         ret["depth"] = depth[:, None]
         if "target" in batch.keys():
-            ret["target"] = batch["target"]
+            ret["target"] = target
         return ret
 
     @torch.no_grad()
@@ -327,11 +333,11 @@ class LitPlenoxel(LitModel):
 
     @torch.no_grad()
     def test_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx).detach().cpu()
+        return self.render_rays(batch, batch_idx, cpu=True)
 
     @torch.no_grad()
     def predict_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx).detach().cpu()
+        return self.render_rays(batch, batch_idx, cpu=True)
 
     @torch.no_grad()
     def test_epoch_end(self, outputs):
