@@ -33,7 +33,7 @@ def ssim(pred, gt, i_train, i_val, i_test):
     for i in range(len(pred_clip)):
         pred_i = pred_clip[None, i].permute((0, 3, 1, 2)).float().cuda()
         gt_i = gt_clip[None, i].permute((0, 3, 1, 2)).float().cuda()
-        score = ssim_model(pred_i, gt_i)
+        score = ssim_model(pred_i, gt_i).detach().cpu()
         del pred_i, gt_i
         ssim.append(score)
     ssim = torch.stack(ssim).numpy()
@@ -69,7 +69,7 @@ def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
     for i in range(len(pred)): 
         pred_i = pred_clip[None, i].permute((0, 3, 1, 2)).float().cuda()
         gt_i = gt_clip[None, i].permute((0, 3, 1, 2)).float().cuda()
-        score = lpips_model(pred_i, gt_i)
+        score = lpips_model(pred_i, gt_i).detach().cpu()
         del pred_i, gt_i
         lpips.append(score)
     lpips = torch.stack(lpips).numpy()
