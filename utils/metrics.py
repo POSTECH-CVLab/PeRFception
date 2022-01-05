@@ -5,7 +5,7 @@ from piqa.ssim import SSIM
 from piqa.lpips import LPIPS
 
 reshape_2d = lambda x: x.reshape((x.shape[0], -1))
-clip_0_1 = lambda x: torch.clip(x, 0, 1)
+clip_0_1 = lambda x: torch.clip(x, 0, 1).detach()
 
 @torch.no_grad()
 def psnr(pred, gt, i_train, i_val, i_test):
@@ -28,16 +28,16 @@ def ssim(pred, gt, i_train, i_val, i_test):
     ssim_model = SSIM().cuda()
     pred = torch.from_numpy(pred).to("cuda")
     gt = torch.from_numpy(gt).to("cuda")
-    pred, gt = clip_0_1(pred), clip_0_1(gt)
+    pred_clip, gt_clip = clip_0_1(pred), clip_0_1(gt)
     ssim = []
-    for i in range(len(pred)):
+    for i in range(len(pred_clip)):
         score = ssim_model(
-            pred[None, i].permute((0, 3, 1, 2)).float(), 
-            gt[None, i].permute((0, 3, 1, 2)).float()
+            pred_clip[None, i].permute((0, 3, 1, 2)).float(), 
+            gt_clip[None, i].permute((0, 3, 1, 2)).float()
         )
         ssim.append(score)
     ssim = torch.stack(ssim).cpu().numpy()
-    del pred, gt, ssim_model
+    del pred, gt, ssim_model, pred_clip, gt_clip
     return {
         "name": "SSIM",
         "scene_wise": ssim,
@@ -64,16 +64,16 @@ def lpips_v(pred, gt, i_train, i_val, i_test):
 def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
     pred = torch.from_numpy(pred).to("cuda")
     gt = torch.from_numpy(gt).to("cuda")
-    pred, gt = clip_0_1(pred), clip_0_1(gt)
+    pred_clip, gt_clip = clip_0_1(pred), clip_0_1(gt)
     lpips = []
     for i in range(len(pred)):
         score = lpips_model(
-            pred[None, i].permute((0, 3, 1, 2)).float(), 
-            gt[None, i].permute((0, 3, 1, 2)).float()
+            pred_clip[None, i].permute((0, 3, 1, 2)).float(), 
+            gt_clip[None, i].permute((0, 3, 1, 2)).float()
         )
         lpips.append(score)
     lpips = torch.stack(lpips).cpu().numpy()
-    del pred, gt
+    del pred, gt, pred_clip, gt_clip
     return {
         "name": name, 
         "scene_wise": lpips,

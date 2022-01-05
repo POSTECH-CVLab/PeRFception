@@ -1,25 +1,25 @@
 # Blender
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/chair/ --expname chair --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/drums/ --expname drums --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/ficus/ --expname ficus --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/hotdog/ --expname hotdog --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/lego/ --expname lego --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/materials/ --expname materials --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/mic/ --expname mic --train --eval --render
-python3 -m run --config configs/plenoxel_torch/blender.yaml --datadir data/blender/ship/ --expname ship --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/chair/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/drums/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/ficus/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/hotdog/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/lego/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/materials/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/mic/ --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/blender/ship/ --train --eval --render
 
 # LLFF
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/fern --expname fern --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/flower --expname flower --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/fortress --expname fortress --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/horns --expname horns --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/leaves --expname leaves --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/orchids --expname orchids --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/room --expname room --train --eval --render
-python3 -m run --config configs/plenoxel_torch/llff.yaml --datadir data/llff/trex --expname trex --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/fern --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/flower --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/fortress --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/horns --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/leaves --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/orchids --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/room --train --eval --render
+python3 -m run --model plenoxel_torch --datadir data/llff/trex --train --eval --render
 
 # Tanks and Temples
-python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_M60 --expname M60 --train --eval --render
-python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_Playground --expname Playground --train --eval --render
-python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_intermediate_Train --expname Train --train --eval --render
-python3 -m run --config configs/plenoxel_torch/tanks_and_temples.yaml --datadir data/tanks_and_temples/tat_training_Truck --expname Truck --train --eval --render
+python3 -m run --model plenoxel_torch --model plenoxel_torch --datadir data/tanks_and_temples/tat_intermediate_M60 --train --eval --render
+python3 -m run --model plenoxel_torch --model plenoxel_torch --datadir data/tanks_and_temples/tat_intermediate_Playground --train --eval --render
+python3 -m run --model plenoxel_torch --model plenoxel_torch --datadir data/tanks_and_temples/tat_intermediate_Train --train --eval --render
+python3 -m run --model plenoxel_torch --model plenoxel_torch --datadir data/tanks_and_temples/tat_training_Truck --train --eval --render

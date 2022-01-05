@@ -56,9 +56,11 @@ class LitModel(pl.LightningModule):
     # and remove the dummy values for proper evaluation.
     def gather_results(self, outputs, dummy_num):
         outputs_gather = self.all_gather(outputs)
+        del outputs
         rgbs = self.alter_cat(outputs_gather, "rgb")
         target = self.alter_cat(outputs_gather, "target")
         depths = self.alter_cat(outputs_gather, "depth")
+        del outputs_gather
         if dummy_num != 0:
             rgbs, depths = rgbs[:-dummy_num], depths[:-dummy_num]
             if target is not None:

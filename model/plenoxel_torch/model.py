@@ -329,9 +329,11 @@ class LitPlenoxel(LitModel):
     def test_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def predict_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
+    @torch.no_grad()
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
 
@@ -351,6 +353,7 @@ class LitPlenoxel(LitModel):
                 os.path.join(self.logdir, "results.txt"), psnr, ssim, lpips
             )
 
+    @torch.no_grad()
     def on_predict_epoch_end(self, outputs):
         # In the prediction step, be sure to use outputs[0]
         # instead of outputs.
@@ -364,6 +367,7 @@ class LitPlenoxel(LitModel):
             store_image.store_image(image_dir, np_rgbs, np_depths)
             store_image.store_video(image_dir, np_rgbs, np_depths)
 
+    @torch.no_grad()
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)
         rgbs, target = rgbs.reshape(-1, self.img_size * 3), target.reshape(
