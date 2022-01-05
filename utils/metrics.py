@@ -50,12 +50,16 @@ def ssim(pred, gt, i_train, i_val, i_test):
 @torch.no_grad()
 def lpips_a(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="alex").cuda()
-    return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-Alex")
+    ret = lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-Alex")
+    del lpips_model
+    return ret
 
 @torch.no_grad()
 def lpips_v(pred, gt, i_train, i_val, i_test):
     lpips_model = LPIPS(network="vgg").cuda()
-    return lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-VGG")
+    ret = lpips(lpips_model, pred, gt, i_train, i_val, i_test, "LPIPS-VGG")
+    del lpips_model
+    return ret
 
 def lpips(lpips_model, pred, gt, i_train, i_val, i_test, name):
     pred = torch.from_numpy(pred).to("cuda")
