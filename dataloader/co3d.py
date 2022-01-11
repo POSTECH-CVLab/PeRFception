@@ -1,7 +1,7 @@
 import numpy as np
 from torch.utils.data import DataLoader
 
-import dataloader.data_util.tnt as tnt
+import dataloader.data_util.co3d as co3d
 
 from dataloader.sampler import (
     SingleImageDDPSampler, DDPSequnetialSampler, MultipleImageDDPSampler,
@@ -9,12 +9,13 @@ from dataloader.sampler import (
 )
 from dataloader.interface import LitData
 
-class LitTnT(LitData):
+class LitCo3D(LitData):
     
     def __init__(self, args):
-        super(LitTnT, self).__init__(args)
-
-        images, extrinsics, render_poses, (h, w), intrinsics, i_split = tnt.load_tnt_data(args.datadir)
+        super(LitCo3D, self).__init__(args)
+        (
+            images, extrinsics, render_poses, (h, w), intrinsics, i_split 
+        ) = co3d.load_co3d_data(args.datadir)
         i_train, i_val, i_test = i_split
 
         self.near = 0.

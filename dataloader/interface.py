@@ -67,7 +67,7 @@ class LitData(pl.LightningDataModule):
 
         extrinsics_idx = extrinsics[idx]
         rays_o, rays_d = batchfied_get_rays(
-            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers, self.GL
+            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers
         )
         _rays = np.stack([rays_o, rays_d], axis=1)
         device_count = torch.cuda.device_count() if not self.args.tpu else self.args.tpu_num

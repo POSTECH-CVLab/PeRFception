@@ -1,6 +1,6 @@
 import numpy as np
 
-def batchfied_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers, GL): 
+def batchfied_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers): 
     center = 0.5 if use_pixel_centers else 0. 
     N_img = extrinsics.shape[0]
     i, j = np.meshgrid(
@@ -10,10 +10,6 @@ def batchfied_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers, GL):
     )
     i, j = np.tile(i, (N_img, 1, 1)), np.tile(j, (N_img, 1, 1))
     dirs = np.stack([
-        (i - intrinsics[0][2]) / intrinsics[0][0],
-        -(j - intrinsics[1][2]) / intrinsics[1][1],
-        -np.ones_like(i)
-    ], -1) if GL else np.stack([
         (i - intrinsics[0][2]) / intrinsics[0][0],
         (j - intrinsics[1][2]) / intrinsics[1][1],
         np.ones_like(i)

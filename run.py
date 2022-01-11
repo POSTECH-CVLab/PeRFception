@@ -51,21 +51,26 @@ if __name__ == "__main__":
 
     wandb_logger = pl_loggers.WandbLogger(
         name=args.expname, entity="postech_cvlab",
-        project=args.model) if not args.tpu else pl_loggers.TensorBoardLogger(
+        project="idg"
+        ) if not args.tpu else pl_loggers.TensorBoardLogger(
             save_dir=logdir, name=args.expname)
 
     seed_everything(args.seed, workers=True)
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    model_best_checkpoint = ModelCheckpoint(
+    model_checkpoint = ModelCheckpoint(
         monitor="val_psnr",
         dirpath=logdir,
         filename="best",
         save_top_k=1,
         mode="max",
+    ) if not args.skip_val else ModelCheckpoint(
+        filename="best", 
+        save_last=True,
+        dirpath=logdir
     )
 
-    callbacks = [lr_monitor, model_best_checkpoint]
+    callbacks = [lr_monitor, model_checkpoint]
     callbacks = select_callback(callbacks, model_name, args)
 
     trainer = Trainer(
@@ -76,10 +81,9 @@ if __name__ == "__main__":
         accelerator="gpu" if not args.tpu else "tpu",
         tpu_cores=args.tpu_num if args.tpu else None,
         replace_sampler_ddp=False,
-        deterministic=True,
         strategy=DDPPlugin(find_unused_parameters=False) \
             if n_gpus > 1 and not args.tpu else None,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=1 if not args.skip_val else -1,
         precision=32,
         num_sanity_val_steps=0,
         callbacks=callbacks,

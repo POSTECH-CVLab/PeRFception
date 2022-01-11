@@ -16,9 +16,6 @@ class LitBlender(LitData):
     def __init__(self, args):
         super(LitBlender, self).__init__(args)
 
-        # OpenCV coordinate
-        self.GL = True
-
         images, poses, render_poses, hwf, i_split = blender.load_blender_data(
             args.datadir, args.testskip, args.scene_scale
         )

@@ -8,6 +8,7 @@ from dataloader.tnt import LitTnT
 from model.interface import LitModel
 from dataloader.blender import LitBlender
 from dataloader.llff import LitLLFF
+from dataloader.co3d import LitCo3D
 
 import utils.metrics as metrics
 import utils.store_image as store_image
@@ -51,7 +52,6 @@ class ResampleCallBack(pl.Callback):
                 cameras=pl_module.generate_camera_list() if \
                     pl_module.args.thresh_type == 'weight' else None,
                 max_elements=pl_module.args.max_grid_elements,
-                GL=pl_module.GL
             )
 
             if pl_module.model.use_background and pl_module.reso_idx <= 1:
@@ -169,30 +169,17 @@ class LitPlenoxel(LitModel):
         """Convert a set of rays to NDC coordinates."""
         # Shift ray origins to near plane, not sure if needed
         # Projection
-        if self.GL:
-            t = -(near + origins[Ellipsis, 2]) / directions[Ellipsis, 2]
-            origins = origins + t[Ellipsis, None] * directions
+        t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+        origins = origins + t[Ellipsis, None] * directions
 
-            dx, dy, dz = directions.unbind(-1)
-            ox, oy, oz = origins.unbind(-1)
-            o0 = -ndc_coeffs[0] * (ox / oz)
-            o1 = -ndc_coeffs[1] * (oy / oz)
-            o2 = 1 + 2 * near / oz
-            d0 = -ndc_coeffs[0] * (dx / dz - ox / oz)
-            d1 = -ndc_coeffs[1] * (dy / dz - oy / oz)
-            d2 = -2 * near / oz
-        else:
-            t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
-            origins = origins + t[Ellipsis, None] * directions
-
-            dx, dy, dz = directions.unbind(-1)
-            ox, oy, oz = origins.unbind(-1)
-            o0 = ndc_coeffs[0] * (ox / oz)
-            o1 = ndc_coeffs[1] * (oy / oz)
-            o2 = 1 - 2 * near / oz
-            d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
-            d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
-            d2 = 2 * near / oz
+        dx, dy, dz = directions.unbind(-1)
+        ox, oy, oz = origins.unbind(-1)
+        o0 = ndc_coeffs[0] * (ox / oz)
+        o1 = ndc_coeffs[1] * (oy / oz)
+        o2 = 1 - 2 * near / oz
+        d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
+        d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
+        d2 = 2 * near / oz
 
         origins = torch.stack([o0, o1, o2], -1)
         directions = torch.stack([d0, d1, d2], -1)
@@ -378,6 +365,12 @@ class LitPlenoxel(LitModel):
 
             metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr,
                                 ssim, lpips)
+
+            if self.args.store_results_json:
+                metrics.write_stats_json(
+                    os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
+                )
+            
 
     @torch.no_grad()
     def on_predict_epoch_end(self, outputs):
@@ -941,3 +934,13 @@ class LitPlenoxelTnT(LitPlenoxel):
         self.use_sphere_bound = True
         self.ndc_coeffs = (-1, -1)
         super(LitPlenoxelTnT, self).__init__(args)
+
+class LitPlenoxelCo3D(LitPlenoxel):
+
+    def __init__(self, args):
+        self.dataset = LitCo3D(args)
+        self.scene_center = [0.0, 0.0, 0.0]
+        self.scene_radius = [1.0, 1.0, 1.0]
+        self.use_sphere_bound = True
+        self.ndc_coeffs = (-1, -1)
+        super(LitPlenoxelCo3D, self).__init__(args)

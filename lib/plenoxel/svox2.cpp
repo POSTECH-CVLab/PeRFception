@@ -52,7 +52,7 @@ void volume_render_svox1_fused(SparseGridSpec &, RaysSpec &, RenderOptions &,
 // Misc
 Tensor dilate(Tensor);
 void accel_dist_prop(Tensor);
-void grid_weight_render(Tensor, CameraSpec &, float, float, bool, bool, Tensor,
+void grid_weight_render(Tensor, CameraSpec &, float, float, bool, Tensor,
                         Tensor, Tensor);
 // void sample_cubemap(Tensor, Tensor, bool, Tensor);
 
