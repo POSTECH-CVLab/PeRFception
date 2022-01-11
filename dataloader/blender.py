@@ -20,7 +20,7 @@ class LitBlender(LitData):
         self.GL = True
 
         images, poses, render_poses, hwf, i_split = blender.load_blender_data(
-            args.datadir, args.testskip
+            args.datadir, args.testskip, args.scene_scale
         )
         i_train, i_val, i_test = i_split
 
@@ -48,7 +48,7 @@ class LitBlender(LitData):
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))
 
-        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False, args.scene_scale)
+        self.train_dset, _ = self.split(images, extrinsics, self.i_train, False)
         self.val_dset, self.val_dummy = self.split(images, extrinsics, self.i_val)
         self.test_dset, self.test_dummy = self.split(images, extrinsics, self.i_all)
 

@@ -2,20 +2,20 @@ dataset_type: llff
 model: plenoxel_torch
 batching: all_images_wo_replace
 
-N_rand: 4096
-max_steps: 200000
+N_rand: 5000
+max_steps: 128000
 
 llffhold: 8
 factor: 4
 
 i_print: 100
-i_validation: 50000
+i_validation: 38400
 use_pixel_centers: true
 
 no_ndc: false
 
 reso: "[[256, 256, 128], [512, 512, 128], [1408, 1156, 128]]"
-upsamp_every: 50000
+upsamp_every: 38400
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
 thresh_type: "sigma"

@@ -8,8 +8,6 @@ def select_config(args):
     config_file = f"configs/{args.model}/{dataset}"
     if args.run_large_model:
         config_file += "_large"
-    elif args.run_paper_mode:
-        config_file += "_paper"
     config_file += ".yaml"
 
     return config_file

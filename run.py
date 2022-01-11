@@ -33,8 +33,6 @@ if __name__ == "__main__":
     basedir = args.basedir
     if args.expname is None:
         args.expname = args.datadir.split("/")[-1]
-    if args.run_paper_mode:
-        args.expname += "_paper"
     args.expname = args.model + "_" + args.expname
     if args.debug:
         args.expname += "_debug"

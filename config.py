@@ -225,14 +225,6 @@ def config_parser():
         default=False,
         help="For wandb sweep: run large nerf model"
     )
-    runmode.add_argument(
-        "--run_paper_mode",
-        type=str2bool,
-        nargs="?", 
-        const=True, 
-        default=False, 
-        help="Run with the same setup with the reported performance"
-    )
 
     config = parser.add_argument_group("config")
     config.add_argument(

@@ -1,0 +1,21 @@
+method: grid
+parameters:
+  datadir:
+    values:
+    - data/llff/fern
+    - data/llff/flower
+    - data/llff/fortress
+    - data/llff/horns
+    - data/llff/leaves
+    - data/llff/orchids
+    - data/llff/room
+    - data/llff/trex
+  eval:
+    value: true
+  model:
+    value: plenoxel_torch
+  render:
+    value: true
+  train:
+    value: true
+program: run.py
