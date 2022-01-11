@@ -16,7 +16,7 @@ lr_sh: 1.0e-2
 lr_fg_begin_step: 1000
 lr_sigma_delay_steps: 0
 weight_thresh: 0.5
-thresh_type: "weight"
+thresh_type: "sigma"
 lambda_tv": 5.0e-5
 lambda_tv_sh": 5.0e-3
 lambda_tv_background_sigma": 1.0e-3
