@@ -24,5 +24,4 @@ background_brightness: 0.5
 tv_early_only: 0
 tv_decay: 0.5
 
-skip_val: True
 store_result_json: True

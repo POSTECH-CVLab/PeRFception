@@ -187,13 +187,6 @@ def config_parser():
         default=False, help="render to generate video"
     )
     runmode.add_argument(
-        "--skip_validation",        
-        type=str2bool,
-        nargs="?",
-        const=True,
-        default=False, 
-    )
-    runmode.add_argument(
         "--tpu", 
         type=str2bool,
         nargs="?",
@@ -226,15 +219,7 @@ def config_parser():
         help="For wandb sweep: run large nerf model"
     )
     runmode.add_argument(
-        "--skip_val", 
-        type=str2bool,
-        nargs="?",
-        const=True,
-        default=False,
-        help="omit the validation phase for a faster training."
-    )
-    runmode.add_argument(
-        "--store_results_json",
+        "--store_result_json",
         type=str2bool, 
         nargs="?",
         const=True, 

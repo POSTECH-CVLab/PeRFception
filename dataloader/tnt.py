@@ -35,6 +35,7 @@ class LitTnT(LitData):
 
         N_render = len(render_poses)
         self.predict_dset, self.pred_dummy = self.split(None, render_poses, np.arange(N_render))
+        del images, extrinsics, render_poses
 
     def train_dataloader(self):
 

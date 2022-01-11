@@ -13,7 +13,6 @@ background_reso: 1024
 upsamp_every: 25600
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
-lr_sigma_delay_steps: 0
 lr_fg_begin_step: 1000
 weight_thresh: 1.28
 thresh_type: "weight"
@@ -27,5 +26,4 @@ background_brightness: 0.5
 tv_early_only: 0
 tv_decay: 0.5
 
-skip_val: True
 store_result_json: True

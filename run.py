@@ -64,10 +64,6 @@ if __name__ == "__main__":
         filename="best",
         save_top_k=1,
         mode="max",
-    ) if not args.skip_val else ModelCheckpoint(
-        filename="best", 
-        save_last=True,
-        dirpath=logdir
     )
 
     callbacks = [lr_monitor, model_checkpoint]
@@ -83,7 +79,7 @@ if __name__ == "__main__":
         replace_sampler_ddp=False,
         strategy=DDPPlugin(find_unused_parameters=False) \
             if n_gpus > 1 and not args.tpu else None,
-        check_val_every_n_epoch=1 if not args.skip_val else -1,
+        check_val_every_n_epoch=1,
         precision=32,
         num_sanity_val_steps=0,
         callbacks=callbacks,

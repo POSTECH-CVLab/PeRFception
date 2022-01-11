@@ -271,7 +271,6 @@ def spherify_poses(poses, bds):
 def load_llff_data(
     basedir, factor=8, recenter=True, bd_factor=0.75, path_zflat=False, spherify=False,
 ):
-
     poses, bds, imgs = _load_data(basedir, factor=factor)  
     # factor=8 downsamples original imgs by 8x
 
@@ -331,6 +330,11 @@ def load_llff_data(
 
     images = images.astype(np.float32)
     poses = poses.astype(np.float32)
+    
+    # Transforming the coordinate
+    poses[:, 0, 1:3] *= -1
+    poses[:, 1:, 3] *= -1
+    poses[:, 1:3, 0] *= -1
 
     return images, poses, bds, render_poses, i_test
 

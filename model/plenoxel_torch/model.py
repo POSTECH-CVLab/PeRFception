@@ -120,6 +120,19 @@ class LitPlenoxel(LitModel):
         if self.model.use_background:
             self.model.background_data.data[..., -1] = args.init_sigma_bg
 
+    def generate_camera_list(self):
+        extrinsics = self.extrinsics
+        intrinsics = self.intrinsics
+        ret = [
+            dataclass.Camera(
+                torch.from_numpy(extrinsics[i]).to(dtype=torch.float32,
+                                                   device=self.device),
+                intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2],
+                intrinsics[1, 2], self.w, self.h, self.ndc_coeffs)
+            for i in self.i_train
+        ]
+        return ret
+
     def get_expon_lr_func(self,
                           lr_init,
                           lr_final,
@@ -148,43 +161,6 @@ class LitPlenoxel(LitModel):
     def configure_optimizers(self):
         return None
 
-    def generate_camera_list(self):
-        extrinsics = self.extrinsics
-        intrinsics = self.intrinsics
-        ret = [
-            dataclass.Camera(
-                torch.from_numpy(extrinsics[i]).to(dtype=torch.float32,
-                                                   device=self.device),
-                intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2],
-                intrinsics[1, 2], self.w, self.h, self.ndc_coeffs)
-            for i in self.i_train
-        ]
-        return ret
-
-    def convert_to_ndc(self,
-                       origins,
-                       directions,
-                       ndc_coeffs,
-                       near: float = 1.0):
-        """Convert a set of rays to NDC coordinates."""
-        # Shift ray origins to near plane, not sure if needed
-        # Projection
-        t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
-        origins = origins + t[Ellipsis, None] * directions
-
-        dx, dy, dz = directions.unbind(-1)
-        ox, oy, oz = origins.unbind(-1)
-        o0 = ndc_coeffs[0] * (ox / oz)
-        o1 = ndc_coeffs[1] * (oy / oz)
-        o2 = 1 - 2 * near / oz
-        d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
-        d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
-        d2 = 2 * near / oz
-
-        origins = torch.stack([o0, o1, o2], -1)
-        directions = torch.stack([d0, d1, d2], -1)
-        return origins, directions
-
     def training_step(self, batch, batch_idx):
         args = self.args
         gstep = self.trainer.global_step
@@ -199,12 +175,6 @@ class LitPlenoxel(LitModel):
 
         rays, target = batch["ray"].to(torch.float32), batch["target"].to(
             torch.float32)
-
-        if self.ndc_coeffs[0] != -1:
-            rays_o, rays_d = self.convert_to_ndc(rays[:, 0], rays[:, 1],
-                                                 self.ndc_coeffs)
-            rays_d /= torch.norm(rays_d, dim=-1, keepdim=True)
-            rays = torch.stack([rays_o, rays_d], dim=1)
 
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
@@ -299,12 +269,6 @@ class LitPlenoxel(LitModel):
     def render_rays(self, batch, batch_idx, cpu=False):
         ret = {}
         rays = batch["ray"].to(torch.float32)
-        if self.ndc_coeffs[0] != -1:
-            rays_o, rays_d = self.convert_to_ndc(rays[:, 0], rays[:, 1],
-                                                 self.ndc_coeffs)
-            rays_d /= torch.norm(rays_d, dim=-1, keepdim=True)
-            rays = torch.stack([rays_o, rays_d], dim=1)
-
         if "target" in batch.keys():
             target = batch["target"].to(torch.float32)
         else:
@@ -366,7 +330,7 @@ class LitPlenoxel(LitModel):
             metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr,
                                 ssim, lpips)
 
-            if self.args.store_results_json:
+            if self.args.store_result_json:
                 metrics.write_stats_json(
                     os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
                 )

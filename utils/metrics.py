@@ -128,15 +128,10 @@ def write_stats_json(fpath, *stats):
     
     d = {}
     for stat in stats:
-        d[stat["name"]] = {}
-        d[stat["name"]]["train_mean"] = stat["train_mean"]
-        d[stat["name"]]["val_mean"] = stat["val_mean"]
-        d[stat["name"]]["test_mean"] = stat["test_mean"]
-
-        d[stat["name"]]["scene_wise"] = {}
+        d[stat["name"]] = {k : float(w) for (k, w) in stat.items() if k != "name" and k != "scene_wise"}
         for i in range(len(len(stats[0]["scene_wise"]))):
             img_name = f"image{str(i + 1).zfill(3)}\n"
             d[stat["name"]]["scene_wise"][img_name] = stat["scene_wise"][i]
 
-    with open(fpath, 'w') as f:
-        json.dump(d, f)
+    with open(fpath, 'w') as fp:
+        json.dump(d, fp)
