@@ -1,0 +1,21 @@
+method: grid
+parameters:
+  datadir:
+    values:
+    - data/blender/chair
+    - data/blender/drums
+    - data/blender/ficus
+    - data/blender/hotdog
+    - data/blender/lego
+    - data/blender/materials
+    - data/blender/mic
+    - data/blender/ship
+  eval:
+    value: true
+  model:
+    value: plenoxel_torch
+  render:
+    value: true
+  train:
+    value: true
+program: run.py
