@@ -20,7 +20,7 @@ class LitBlender(LitData):
         self.GL = True
 
         images, poses, render_poses, hwf, i_split = blender.load_blender_data(
-            args.datadir, args.testskip
+            args.datadir, args.testskip, args.scene_scale
         )
         i_train, i_val, i_test = i_split
 
