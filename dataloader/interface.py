@@ -57,24 +57,13 @@ class LitData(pl.LightningDataModule):
         return rays_o, rays_d
 
 
-    def split(self, _images, extrinsics, idx, dummy=True, scene_scale=1.0):
+    def split(self, _images, extrinsics, idx, dummy=True):
         # dummy is needed for DDP evaluation but not necessary for the training phase
         image_exist = _images is not None
         images = None
         
         H, W = self.h, self.w
         intrinsics = self.intrinsics
-
-        if scene_scale != 1.0:
-            H, W = int(self.h * scene_scale), int(self.w * scene_scale) 
-            intrinsics = self.intrinsics.copy()
-            intrinsics[[0, 0, 1, 1], [0, 2, 1, 2]] *= scene_scale
-            extrinsics[:, :3, 3] *= scene_scale
-
-            imgs_scaled_res = np.zeros((len(idx), H, W, 3))
-            for i, img in enumerate(_images[idx]):
-                imgs_scaled_res[i] = cv2.resize(img, (W, H), interpolation=cv2.INTER_AREA)
-            _images = imgs_scaled_res
 
         extrinsics_idx = extrinsics[idx]
         rays_o, rays_d = batchfied_get_rays(
