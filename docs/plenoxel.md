@@ -11,6 +11,7 @@ Plenoxel has shown dramatic improvements in training time by directly optimizing
 We found several interesting details in the official code, which are not explained in the paper. 
 - For blender scenes, the scale of scene is reduced to 2/3. 
 - There are two strategies to resample the sparse voxel grids: "sigma" and "weights". Refer to the code [Link](https://github.com/POSTECH-CVLab/NeRF-Factory/blob/c57a275af98e75b716e7f32a32b12b68a26b6d50/model/plenoxel_torch/sparse_grid.py#L991) and [Link](https://github.com/POSTECH-CVLab/NeRF-Factory/blob/c57a275af98e75b716e7f32a32b12b68a26b6d50/model/plenoxel_torch/sparse_grid.py#L1026) for details. 
+- We have observed that the data loading phase of `tanks_and_temples` dataset is slightly different from NeRF++. In detail, they have changed the scale of scenes by 0.95 after normalizing the poses. This results in a slightly better performance in all scenes. 
 
 ## Setup
 Before running the code, users should install an additional CUDA package.
