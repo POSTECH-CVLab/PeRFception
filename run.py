@@ -33,7 +33,7 @@ if __name__ == "__main__":
     basedir = args.basedir
     if args.expname is None:
         args.expname = args.datadir.split("/")[-1]
-    args.expname = args.model + "_" + args.expname
+    args.expname = args.model + "_" + args.expname + args.postfix
     if args.debug:
         args.expname += "_debug"
     logdir = os.path.join(basedir, args.expname)

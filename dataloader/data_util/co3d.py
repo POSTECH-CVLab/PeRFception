@@ -177,7 +177,7 @@ def load_co3d_data(datadir, cam_scale_factor=0.95):
     i_train = np.array([i for i in i_split if not i in i_test])
 
     render_poses = np.stack([
-        pose_spherical(angle, -30.0, 4.0) for angle in np.linspace(-180,180,40+1)[:-1]
+        cam_trans @ pose_spherical(angle, -30.0, 4.0) for angle in np.linspace(-180,180,40+1)[:-1]
     ], 0)
 
     return imgs, poses, render_poses, (H, W), intrinsics, (i_train, i_test, i_test)

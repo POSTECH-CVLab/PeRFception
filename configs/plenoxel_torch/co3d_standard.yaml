@@ -2,6 +2,9 @@ dataset_type: co3d
 model: plenoxel_torch
 batching: all_images
 
+i_print: 100
+i_validation: 25600
+
 N_rand: 5000
 max_steps: 102400
 reso: "[[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]"
@@ -10,7 +13,6 @@ background_reso: 1024
 upsamp_every: 25600
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
-lr_sigma_delay_steps: 0
 lr_fg_begin_step: 1000
 weight_thresh: 1.28
 thresh_type: "weight"
@@ -23,5 +25,7 @@ lambda_sparsity: 1.0e-11
 background_brightness: 0.5
 tv_early_only: 0
 tv_decay: 0.5
+
+postfix: "_large"
 
 store_result_json: True

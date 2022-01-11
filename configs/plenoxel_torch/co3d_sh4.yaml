@@ -6,8 +6,8 @@ i_print: 100
 i_validation: 25600
 
 N_rand: 5000
-max_steps: 51200
-reso: "[[128, 128, 128], [256, 256, 256]]"
+max_steps: 102400
+reso: "[[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]"
 background_nlayers: 64
 background_reso: 1024
 upsamp_every: 25600
@@ -25,7 +25,8 @@ lambda_sparsity: 1.0e-11
 background_brightness: 0.5
 tv_early_only: 0
 tv_decay: 0.5
+sh_dim: 4
 
-postfix: "_small"
+postfix: "_sh2_large"
 
 store_result_json: True

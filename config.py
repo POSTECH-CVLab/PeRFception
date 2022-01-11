@@ -153,6 +153,10 @@ def config_parser():
         "--datadir", type=str, default="./data/llff/fern", 
         help="input data directory"
     )
+    metadata.add_argument(
+        "--postfix", type=str, default="",
+        help="post fix to add behind the expname"
+    )
 
     runmode = parser.add_argument_group("running mode")
     runmode.add_argument(
