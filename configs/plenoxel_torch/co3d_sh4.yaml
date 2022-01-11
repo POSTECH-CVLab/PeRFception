@@ -14,6 +14,7 @@ upsamp_every: 25600
 lr_sigma: 3.0e+1
 lr_sh: 1.0e-2
 lr_fg_begin_step: 1000
+lr_sigma_delay_steps: 0
 weight_thresh: 1.28
 thresh_type: "weight"
 lambda_tv": 5.0e-5
