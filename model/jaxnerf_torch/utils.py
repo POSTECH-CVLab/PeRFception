@@ -19,75 +19,6 @@ def depth8b(x):
     x = (x - x.min()) / (x.max() - x.min())
     return to8b(x)
 
-
-# Ray helpers
-def get_rays(H, W, K, c2w, use_pixel_centers):
-    center = 0.5 if use_pixel_centers else 0.
-    i, j = torch.meshgrid(
-        torch.linspace(0, W - 1, W) + center, 
-        torch.linspace(0, H - 1, H) + center
-    )  # pytorch's meshgrid has indexing='ij'
-    i = i.t()
-    j = j.t()
-    dirs = torch.stack(
-        [(i - K[0][2]) / K[0][0], -(j - K[1][2]) / K[1][1], -torch.ones_like(i)], -1
-    )
-    # Rotate ray directions from camera frame to the world frame
-    rays_d = torch.sum(
-        dirs[..., np.newaxis, :] * c2w[:3, :3], -1
-    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
-    # Translate camera frame's origin to the world frame. It is the origin of all rays.
-    rays_o = c2w[:3, -1].expand(rays_d.shape)
-    return rays_o, rays_d
-
-
-def get_rays_np(H, W, K, c2w, use_pixel_centers):
-    center = 0.5 if use_pixel_centers else 0.0
-    i, j = np.meshgrid(
-        np.arange(W, dtype=np.float32) + center, 
-        np.arange(H, dtype=np.float32) + center, 
-        indexing="xy"
-    )
-    dirs = np.stack(
-        [(i - K[0][2]) / K[0][0], -(j - K[1][2]) / K[1][1], -np.ones_like(i)], -1
-    )
-    # Rotate ray directions from camera frame to the world frame
-    rays_d = np.sum(
-        dirs[..., np.newaxis, :] * c2w[:3, :3], -1
-    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
-    # Translate camera frame's origin to the world frame. It is the origin of all rays.
-    rays_o = np.broadcast_to(c2w[:3, -1], np.shape(rays_d))
-    return rays_o, rays_d
-
-
-def ndc_rays(H, W, focal, near, rays_o, rays_d):
-    # Shift ray origins to near plane
-    t = -(near + rays_o[..., 2]) / rays_d[..., 2]
-    rays_o = rays_o + t[..., None] * rays_d
-
-    # Projection
-    o0 = -1.0 / (W / (2.0 * focal)) * rays_o[..., 0] / rays_o[..., 2]
-    o1 = -1.0 / (H / (2.0 * focal)) * rays_o[..., 1] / rays_o[..., 2]
-    o2 = 1.0 + 2.0 * near / rays_o[..., 2]
-
-    d0 = (
-        -1.0
-        / (W / (2.0 * focal))
-        * (rays_d[..., 0] / rays_d[..., 2] - rays_o[..., 0] / rays_o[..., 2])
-    )
-    d1 = (
-        -1.0
-        / (H / (2.0 * focal))
-        * (rays_d[..., 1] / rays_d[..., 2] - rays_o[..., 1] / rays_o[..., 2])
-    )
-    d2 = -2.0 * near / rays_o[..., 2]
-
-    rays_o = torch.stack([o0, o1, o2], -1)
-    rays_d = torch.stack([d0, d1, d2], -1)
-
-    return rays_o, rays_d
-
-
 # Hierarchical sampling (section 5.2)
 def sample_pdf(bins, weights, num_coarse_samples, det=False):
     # Get pdf
@@ -241,7 +172,6 @@ def render_rays(
         mids = 0.5 * (z_vals[..., 1:] + z_vals[..., :-1])
         upper = torch.cat([mids, z_vals[..., -1:]], -1)
         lower = torch.cat([z_vals[..., :1], mids], -1)
-        # stratified samples in those intervals
         t_rand = torch.rand(z_vals.shape, device=rank)
 
         z_vals = lower + (upper - lower) * t_rand
@@ -250,7 +180,7 @@ def render_rays(
         rays_o[..., None, :] + rays_d[..., None, :] * z_vals[..., :, None]
     )  # [N_rays, num_coarse_samples, 3]
 
-    #     raw = run_network(pts)
+    #     r
     raw = network_query_fn(pts, viewdirs, network_fn)
     rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(
         raw, z_vals, rays_d, raw_noise_std, white_bkgd
@@ -272,10 +202,8 @@ def render_rays(
         z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
         pts = (
             rays_o[..., None, :] + rays_d[..., None, :] * z_vals[..., :, None]
-        )  # [N_rays, num_coarse_samples + num_fine_samples, 3]
-
+        ) 
         run_fn = network_fn if network_fine is None else network_fine
-        #         raw = run_network(pts, fn=run_fn)
         raw = network_query_fn(pts, viewdirs, run_fn)
 
         rgb_map, disp_map, acc_map, weights, depth_map = raw2outputs(
@@ -292,7 +220,7 @@ def render_rays(
         ret["rgb0"] = rgb_map_0
         ret["disp0"] = disp_map_0
         ret["acc0"] = acc_map_0
-        ret["z_std"] = torch.std(z_samples, dim=-1, unbiased=False)  # [N_rays]
+        ret["z_std"] = torch.std(z_samples, dim=-1, unbiased=False)
 
     return ret
 
@@ -341,59 +269,16 @@ def batchify_rays(rays_flat, chunk=1024 * 32, **kwargs):
     return all_ret
 
 def render(
-    H,
-    W,
-    K,
     chunk=1024 * 32,
     rays=None,
-    c2w=None,
-    ndc=True,
     near=0.0,
     far=1.0,
-    c2w_staticcam=None,
-    use_pixel_centers=False,
     **kwargs,
 ):
-    """Render rays
-    Args:
-        H: int. Height of image in pixels.
-        W: int. Width of image in pixels.
-        focal: float. Focal length of pinhole camera.
-        chunk: int. Maximum number of rays to process simultaneously. Used to
-            control maximum memory usage. Does not affect final results.
-        rays: array of shape [2, batch_size, 3]. Ray origin and direction for
-            each example in batch.
-        c2w: array of shape [3, 4]. Camera-to-world transformation matrix.
-        ndc: bool. If True, represent ray origin, direction in NDC coordinates.
-        near: float or array of shape [batch_size]. Nearest distance for a ray.
-        far: float or array of shape [batch_size]. Farthest distance for a ray.
-        c2w_staticcam: array of shape [3, 4]. If not None, use this transformation matrix for
-        camera while using other c2w argument for viewing directions.
-    Returns:
-        rgb_map: [batch_size, 3]. Predicted RGB values for rays.
-        disp_map: [batch_size]. Disparity map. Inverse of depth.
-        acc_map: [batch_size]. Accumulated opacity (alpha) along a ray.
-        extras: dict with everything returned by render_rays().
-    """
-    if c2w is not None:
-        # special case to render full image
-        rays_o, rays_d = get_rays(H, W, K, c2w, use_pixel_centers)
-    else:
-        # use provided ray batch
-        rays_o, rays_d = rays[:, 0], rays[:, 1]
 
-    # provide ray directions as input
-    viewdirs = rays_d
-    if c2w_staticcam is not None:
-        # special case to visualize effect of viewdirs
-        rays_o, rays_d = get_rays(H, W, K, c2w_staticcam, use_pixel_centers)
-    viewdirs = viewdirs / torch.norm(viewdirs, dim=-1, keepdim=True)
-    viewdirs = torch.reshape(viewdirs, [-1, 3]).float()
-
-    sh = rays_d.shape  # [..., 3]
-    if ndc:
-        # for forward facing scenes
-        rays_o, rays_d = ndc_rays(H, W, K[0][0], 1.0, rays_o, rays_d)
+    rays_o, rays_d = rays[:, 0], rays[:, 1]
+    viewdirs = rays_d.reshape([-1, 3]).float()
+    sh = rays_d.shape 
 
     # Create ray batch
     rays_o = torch.reshape(rays_o, [-1, 3]).float()

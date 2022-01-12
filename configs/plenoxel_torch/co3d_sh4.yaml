@@ -29,5 +29,3 @@ tv_decay: 0.5
 sh_dim: 4
 
 postfix: "_sh2_large"
-
-store_result_json: True

@@ -222,14 +222,6 @@ def config_parser():
         default=False,
         help="For wandb sweep: run large nerf model"
     )
-    runmode.add_argument(
-        "--store_result_json",
-        type=str2bool, 
-        nargs="?",
-        const=True, 
-        default=False, 
-        help="store the result with json for a conveninet log integration"
-    )
 
     config = parser.add_argument_group("config")
     config.add_argument(

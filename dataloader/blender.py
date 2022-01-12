@@ -20,7 +20,7 @@ class LitBlender(LitData):
             args.datadir, args.testskip, args.scene_scale
         )
         i_train, i_val, i_test = i_split
-
+        
         self.near = 2.
         self.far = 6.
 

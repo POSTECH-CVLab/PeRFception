@@ -31,8 +31,9 @@ class ResampleCallBack(pl.Callback):
         self.args = args
         self.upsamp_every = args.upsamp_every
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch,
-                           batch_idx):
+    def on_train_batch_end(
+        self, trainer, pl_module, outputs, batch, batch_idx
+    ):
         if trainer.global_step > 0 and trainer.global_step % self.upsamp_every == 0 \
             and pl_module.reso_idx + 1 < len(pl_module.reso_list):
             if pl_module.args.tv_early_only:
@@ -125,20 +126,19 @@ class LitPlenoxel(LitModel):
         intrinsics = self.intrinsics
         ret = [
             dataclass.Camera(
-                torch.from_numpy(extrinsics[i]).to(dtype=torch.float32,
-                                                   device=self.device),
+                torch.from_numpy(extrinsics[i]).to(
+                    dtype=torch.float32, device=self.device
+                ),
                 intrinsics[0, 0], intrinsics[1, 1], intrinsics[0, 2],
-                intrinsics[1, 2], self.w, self.h, self.ndc_coeffs)
+                intrinsics[1, 2], self.w, self.h, self.dataset.ndc_coeffs
+            )
             for i in self.i_train
         ]
         return ret
 
-    def get_expon_lr_func(self,
-                          lr_init,
-                          lr_final,
-                          lr_delay_steps=0,
-                          lr_delay_mult=1.0,
-                          max_steps=1000000):
+    def get_expon_lr_func(
+        self, lr_init, lr_final, lr_delay_steps, lr_delay_mult, max_steps
+    ):
         def helper(step):
             if step < 0 or (lr_init == 0.0 and lr_final == 0.0):
                 # Disable this parameter
@@ -192,11 +192,7 @@ class LitPlenoxel(LitModel):
             self.log("lr_sh", lr_sh, on_step=True)
             self.log("lr_sigma_bg", lr_sigma_bg, on_step=True)
             self.log("lr_color_bg", lr_color_bg, on_step=True)
-            self.log("train_psnr",
-                     psnr,
-                     on_step=True,
-                     prog_bar=True,
-                     logger=True)
+            self.log("train_psnr", psnr, on_step=True, prog_bar=True, logger=True)
 
         if args.lambda_tv > 0.0:
             self.model.inplace_tv_grad(
@@ -204,7 +200,7 @@ class LitPlenoxel(LitModel):
                 scaling=args.lambda_tv,
                 sparse_frac=args.tv_sparsity,
                 logalpha=args.tv_logalpha,
-                ndc_coeffs=self.ndc_coeffs,
+                ndc_coeffs=self.dataset.ndc_coeffs,
                 contiguous=args.tv_contiguous,
             )
 
@@ -213,7 +209,7 @@ class LitPlenoxel(LitModel):
                 self.model.sh_data.grad,
                 scaling=args.lambda_tv_sh,
                 sparse_frac=args.tv_sh_sparsity,
-                ndc_coeffs=self.ndc_coeffs,
+                ndc_coeffs=self.dataset.ndc_coeffs,
                 contiguous=args.tv_contiguous,
             )
 
@@ -223,12 +219,13 @@ class LitPlenoxel(LitModel):
                 scaling=args.lambda_tv_lumisphere,
                 dir_factor=args.tv_lumisphere_dir_factor,
                 sparse_frac=args.tv_lumisphere_sparsity,
-                ndc_coeffs=self.ndc_coeffs,
+                ndc_coeffs=self.dataset.ndc_coeffs,
             )
 
         if args.lambda_l2_sh > 0.0:
-            self.model.inplace_l2_color_grad(self.model.sh_data.grad,
-                                             scaling=args.lambda_l2_sh)
+            self.model.inplace_l2_color_grad(
+                self.model.sh_data.grad, scaling=args.lambda_l2_sh
+            )
 
         if self.model.use_background and (
                 args.lambda_tv_background_sigma > 0.0
@@ -247,34 +244,32 @@ class LitPlenoxel(LitModel):
             loss_tv_basis.backward()
 
         if gstep >= args.lr_fg_begin_step:
-            self.model.optim_density_step(lr_sigma,
-                                          beta=args.rms_beta,
-                                          optim=args.sigma_optim)
-            self.model.optim_sh_step(lr_sh,
-                                     beta=args.rms_beta,
-                                     optim=args.sh_optim)
+            self.model.optim_density_step(
+                lr_sigma, beta=args.rms_beta, optim=args.sigma_optim
+            )
+            self.model.optim_sh_step(
+                lr_sh, beta=args.rms_beta, optim=args.sh_optim
+            )
 
         if self.model.use_background:
-            self.model.optim_background_step(lr_sigma_bg,
-                                             lr_color_bg,
-                                             beta=args.rms_beta,
-                                             optim=args.bg_optim)
+            self.model.optim_background_step(
+                lr_sigma_bg, lr_color_bg, beta=args.rms_beta, optim=args.bg_optim
+            )
 
         if args.weight_decay_sh < 1.0 and gstep % 20 == 0:
             self.model.sh_data.data *= args.weight_decay_sigma
         if args.weight_decay_sigma < 1.0 and gstep % 20 == 0:
             self.model.density_data.data *= args.weight_decay_sh
 
-    @torch.no_grad()
     def render_rays(self, batch, batch_idx, cpu=False):
         ret = {}
         rays = batch["ray"].to(torch.float32)
         if "target" in batch.keys():
             target = batch["target"].to(torch.float32)
         else:
-            target = torch.zeros((len(batch["ray"]), 3),
-                                 dtype=torch.float32,
-                                 device=self.device) + 0.5
+            target = torch.zeros(
+                (len(batch["ray"]), 3), dtype=torch.float32, device=self.device
+            ) + 0.5
 
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
@@ -296,19 +291,15 @@ class LitPlenoxel(LitModel):
             ret["target"] = target
         return ret
 
-    @torch.no_grad()
     def validation_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx)
 
-    @torch.no_grad()
     def test_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx, cpu=True)
 
-    @torch.no_grad()
     def predict_step(self, batch, batch_idx):
         return self.render_rays(batch, batch_idx, cpu=True)
 
-    @torch.no_grad()
     def test_epoch_end(self, outputs):
         rgbs, target, depths = self.gather_results(outputs, self.test_dummy)
         del outputs
@@ -316,7 +307,6 @@ class LitPlenoxel(LitModel):
             np_rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
             np_target = target.view(-1, self.h, self.w, 3).numpy()
             np_depths = depths.view(-1, self.h, self.w).numpy()
-            del rgbs, target, depths
             psnr = metrics.psnr(np_rgbs, np_target, self.i_train, self.i_val,
                                 self.i_test)
             ssim = metrics.ssim(np_rgbs, np_target, self.i_train, self.i_val,
@@ -330,13 +320,10 @@ class LitPlenoxel(LitModel):
             metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr,
                                 ssim, lpips)
 
-            if self.args.store_result_json:
-                metrics.write_stats_json(
-                    os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
-                )
+            metrics.write_stats_json(
+                os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
+            )
             
-
-    @torch.no_grad()
     def on_predict_epoch_end(self, outputs):
         # In the prediction step, be sure to use outputs[0]
         # instead of outputs.
@@ -352,7 +339,6 @@ class LitPlenoxel(LitModel):
             store_image.store_image(image_dir, np_rgbs, np_depths)
             store_image.store_video(image_dir, np_rgbs, np_depths)
 
-    @torch.no_grad()
     def validation_epoch_end(self, outputs):
         rgbs, target, _ = self.gather_results(outputs, self.val_dummy)
         rgbs, target = rgbs.reshape(-1, self.img_size * 3), target.reshape(
@@ -380,32 +366,47 @@ class LitPlenoxel(LitModel):
         self.model.register_parameter(
             "basis_data",
             nn.Parameter(
-                torch.zeros_like(state_dict["model.basis_data"],
-                                 dtype=torch.float32)))
+                torch.zeros_like(
+                    state_dict["model.basis_data"], dtype=torch.float32
+                )
+            )
+        )
         self.model.register_parameter(
             "background_data",
             nn.Parameter(
-                torch.zeros_like(state_dict["model.background_data"],
-                                 dtype=torch.float32)))
+                torch.zeros_like(
+                    state_dict["model.background_data"], dtype=torch.float32
+                )
+            )
+        )
         self.model.register_parameter(
             "density_data",
             nn.Parameter(
-                torch.zeros_like(state_dict["model.density_data"],
-                                 dtype=torch.float32)))
+                torch.zeros_like(
+                    state_dict["model.density_data"], dtype=torch.float32
+                )
+            )
+        )
         self.model.register_parameter(
             "sh_data",
             nn.Parameter(
-                torch.zeros_like(state_dict["model.sh_data"],
-                                 dtype=torch.float32)))
+                torch.zeros_like(
+                    state_dict["model.sh_data"], dtype=torch.float32
+                )
+            )
+        )
         self.model.register_buffer(
             "links",
-            torch.zeros_like(state_dict["model.links"], dtype=torch.int32))
+            torch.zeros_like(state_dict["model.links"], dtype=torch.int32)
+        )
         if self.model.use_background:
             del self.model.background_links
             self.model.register_buffer(
                 "background_links",
-                torch.zeros_like(state_dict["model.background_links"],
-                                 dtype=torch.int32))
+                torch.zeros_like(
+                    state_dict["model.background_links"], dtype=torch.int32
+                )
+            )
 
         return super().on_load_checkpoint(checkpoint)
 
@@ -467,10 +468,12 @@ class LitPlenoxel(LitModel):
             default=4,
             help="Positional encoding size if using MLP basis; 0 to disable",
         )
-        group.add_argument("--mlp_width",
-                           type=int,
-                           default=32,
-                           help="MLP width if using MLP basis")
+        group.add_argument(
+            "--mlp_width",
+            type=int,
+            default=32,
+            help="MLP width if using MLP basis"
+        )
 
         group.add_argument(
             "--background_nlayers",
@@ -478,10 +481,12 @@ class LitPlenoxel(LitModel):
             default=0,
             help="Number of background layers (0=disable BG model)",
         )
-        group.add_argument("--background_reso",
-                           type=int,
-                           default=512,
-                           help="Background resolution")
+        group.add_argument(
+            "--background_reso",
+            type=int,
+            default=512,
+            help="Background resolution"
+        )
 
         group = parser.add_argument_group("optimization")
 
@@ -491,10 +496,12 @@ class LitPlenoxel(LitModel):
             default="rmsprop",
             help="Density optimizer",
         )
-        group.add_argument("--lr_sigma",
-                           type=float,
-                           default=3e1,
-                           help="SGD/rmsprop lr for sigma")
+        group.add_argument(
+            "--lr_sigma",
+            type=float,
+            default=3e1,
+            help="SGD/rmsprop lr for sigma"
+        )
         group.add_argument("--lr_sigma_final", type=float, default=5e-2)
         group.add_argument("--lr_sigma_decay_steps", type=int, default=250000)
         group.add_argument(
@@ -511,10 +518,12 @@ class LitPlenoxel(LitModel):
             default="rmsprop",
             help="SH optimizer",
         )
-        group.add_argument("--lr_sh",
-                           type=float,
-                           default=1e-2,
-                           help="SGD/rmsprop lr for SH")
+        group.add_argument(
+            "--lr_sh",
+            type=float,
+            default=1e-2,
+            help="SGD/rmsprop lr for SH"
+        )
         group.add_argument("--lr_sh_final", type=float, default=5e-6)
         group.add_argument("--lr_sh_decay_steps", type=int, default=250000)
         group.add_argument(
@@ -550,18 +559,22 @@ class LitPlenoxel(LitModel):
             default=3e-3,
             help="SGD/rmsprop lr for background",
         )
-        group.add_argument("--lr_sigma_bg_decay_steps",
-                           type=int,
-                           default=250000)
+        group.add_argument(
+            "--lr_sigma_bg_decay_steps",
+            type=int,
+            default=250000
+        )
         group.add_argument(
             "--lr_sigma_bg_delay_steps",
             type=int,
             default=0,
             help="Reverse cosine steps (0 means disable)",
         )
-        group.add_argument("--lr_sigma_bg_delay_mult",
-                           type=float,
-                           default=1e-2)
+        group.add_argument(
+            "--lr_sigma_bg_delay_mult",
+            type=float,
+            default=1e-2
+        )
 
         group.add_argument(
             "--lr_color_bg",
@@ -575,18 +588,22 @@ class LitPlenoxel(LitModel):
             default=5e-6,
             help="SGD/rmsprop lr for background",
         )
-        group.add_argument("--lr_color_bg_decay_steps",
-                           type=int,
-                           default=250000)
+        group.add_argument(
+            "--lr_color_bg_decay_steps",
+            type=int,
+            default=250000
+        )
         group.add_argument(
             "--lr_color_bg_delay_steps",
             type=int,
             default=0,
             help="Reverse cosine steps (0 means disable)",
         )
-        group.add_argument("--lr_color_bg_delay_mult",
-                           type=float,
-                           default=1e-2)
+        group.add_argument(
+            "--lr_color_bg_delay_mult",
+            type=float,
+            default=1e-2
+        )
 
         group.add_argument(
             "--basis_optim",
@@ -594,10 +611,12 @@ class LitPlenoxel(LitModel):
             default="rmsprop",
             help="Learned basis optimizer",
         )
-        group.add_argument("--lr_basis",
-                           type=float,
-                           default=1e-6,
-                           help="SGD/rmsprop lr for SH")
+        group.add_argument(
+            "--lr_basis",
+            type=float,
+            default=1e-6,
+            help="SGD/rmsprop lr for SH"
+        )
         group.add_argument("--lr_basis_final", type=float, default=1e-6)
         group.add_argument("--lr_basis_decay_steps", type=int, default=250000)
         group.add_argument(
@@ -616,10 +635,12 @@ class LitPlenoxel(LitModel):
             help="RMSProp exponential averaging factor",
         )
 
-        group.add_argument("--init_sigma",
-                           type=float,
-                           default=0.1,
-                           help="initialization sigma")
+        group.add_argument(
+            "--init_sigma",
+            type=float,
+            default=0.1,
+            help="initialization sigma"
+        )
         group.add_argument(
             "--init_sigma_bg",
             type=float,
@@ -642,10 +663,12 @@ class LitPlenoxel(LitModel):
             help=
             "Upsample weight threshold; will be divided by resulting z-resolution",
         )
-        group.add_argument("--density_thresh",
-                           type=float,
-                           default=5.0,
-                           help="Upsample sigma threshold")
+        group.add_argument(
+            "--density_thresh",
+            type=float,
+            default=5.0,
+            help="Upsample sigma threshold"
+        )
         group.add_argument(
             "--background_density_thresh",
             type=float,
@@ -694,12 +717,16 @@ class LitPlenoxel(LitModel):
         group.add_argument("--tv_sh_sparsity", type=float, default=0.01)
 
         group.add_argument("--lambda_tv_lumisphere", type=float, default=0.0)
-        group.add_argument("--tv_lumisphere_sparsity",
-                           type=float,
-                           default=0.01)
-        group.add_argument("--tv_lumisphere_dir_factor",
-                           type=float,
-                           default=0.0)
+        group.add_argument(
+            "--tv_lumisphere_sparsity",
+            type=float,
+            default=0.01
+        )
+        group.add_argument(
+            "--tv_lumisphere_dir_factor",
+            type=float,
+            default=0.0
+        )
 
         group.add_argument("--tv_decay", type=float, default=1.0)
 
@@ -737,16 +764,22 @@ class LitPlenoxel(LitModel):
         )
 
         # Background TV
-        group.add_argument("--lambda_tv_background_sigma",
-                           type=float,
-                           default=1e-2)
-        group.add_argument("--lambda_tv_background_color",
-                           type=float,
-                           default=1e-2)
+        group.add_argument(
+            "--lambda_tv_background_sigma",
+            type=float,
+            default=1e-2
+        )
+        group.add_argument(
+            "--lambda_tv_background_color",
+            type=float,
+            default=1e-2
+        )
 
-        group.add_argument("--tv_background_sparsity",
-                           type=float,
-                           default=0.01)
+        group.add_argument(
+            "--tv_background_sparsity",
+            type=float,
+            default=0.01
+        )
         # End Background TV
 
         # Basis TV
@@ -760,11 +793,13 @@ class LitPlenoxel(LitModel):
 
         group.add_argument("--weight_decay_sigma", type=float, default=1.0)
         group.add_argument("--weight_decay_sh", type=float, default=1.0)
-        group.add_argument("--lr_decay",
-                           type=str2bool,
-                           nargs="?",
-                           const=True,
-                           default=True)
+        group.add_argument(
+            "--lr_decay",
+            type=str2bool,
+            nargs="?",
+            const=True,
+            default=True
+        )
 
         group.add_argument(
             "--n_train",
@@ -871,7 +906,6 @@ class LitPlenoxelBlender(LitPlenoxel):
         self.scene_center = [0.0, 0.0, 0.0]
         self.scene_radius = [1.0, 1.0, 1.0]
         self.use_sphere_bound = True
-        self.ndc_coeffs = (-1, -1)
         super(LitPlenoxelBlender, self).__init__(args)
 
 
@@ -885,8 +919,6 @@ class LitPlenoxelLLFF(LitPlenoxel):
         self.scene_center = [0.0, 0.0, 0.0]
         self.scene_radius = [radx, rady, radz]
         self.use_sphere_bound = False
-        self.ndc_coeffs = (2 * K[0][0] / self.dataset.w,
-                           2 * K[1][1] / self.dataset.h)
         super(LitPlenoxelLLFF, self).__init__(args)
 
 
@@ -896,7 +928,6 @@ class LitPlenoxelTnT(LitPlenoxel):
         self.scene_center = [0.0, 0.0, 0.0]
         self.scene_radius = [1.0, 1.0, 1.0]
         self.use_sphere_bound = True
-        self.ndc_coeffs = (-1, -1)
         super(LitPlenoxelTnT, self).__init__(args)
 
 class LitPlenoxelCo3D(LitPlenoxel):
@@ -906,5 +937,4 @@ class LitPlenoxelCo3D(LitPlenoxel):
         self.scene_center = [0.0, 0.0, 0.0]
         self.scene_radius = [1.0, 1.0, 1.0]
         self.use_sphere_bound = True
-        self.ndc_coeffs = (-1, -1)
         super(LitPlenoxelCo3D, self).__init__(args)
