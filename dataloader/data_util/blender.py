@@ -75,7 +75,7 @@ def load_blender_data(basedir, testskip=1, scene_scale=1):
     focal = .5 * W / np.tan(.5 * camera_angle_x)
     
     render_poses = torch.stack(
-        [pose_spherical(angle, -30.0, 4.0) for angle in np.linspace(-180,180,40+1)[:-1]], 0
+        [pose_spherical(angle, -30.0, 4.0) @ cam_trans for angle in np.linspace(-180,180,40+1)[:-1]], 0
     )
     render_poses[:, :3, 3] *= scene_scale
     

@@ -267,6 +267,13 @@ def spherify_poses(poses, bds):
 
     return poses_reset, new_poses, bds
 
+def transform_pose_llff(poses):
+    ret = np.zeros_like(poses)
+    ret[:] = poses[:]
+    ret[:, 0, 1:3] *= -1
+    ret[:, 1:, 3] *= -1
+    ret[:, 1:3, 0] *= -1
+    return ret
 
 def load_llff_data(
     basedir, factor=8, recenter=True, bd_factor=0.75, path_zflat=False, spherify=False,
@@ -332,9 +339,8 @@ def load_llff_data(
     poses = poses.astype(np.float32)
     
     # Transforming the coordinate
-    poses[:, 0, 1:3] *= -1
-    poses[:, 1:, 3] *= -1
-    poses[:, 1:3, 0] *= -1
+    poses = transform_pose_llff(poses)
+    render_poses = transform_pose_llff(render_poses)
 
     return images, poses, bds, render_poses, i_test
 

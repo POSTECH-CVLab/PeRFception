@@ -109,7 +109,7 @@ def load_co3d_data(datadir, cam_scale_factor=0.95):
 
     datadir = datadir.rstrip("/")
 
-    cam_trans = np.diag(np.array([1, -1, -1, 1], dtype=np.float32))
+    cam_trans = np.diag(np.array([-1, 1, 1, 1], dtype=np.float32))
 
     imgdir = os.path.join(datadir, "images")
     imgpath = [os.path.join(imgdir, fpath) for fpath in sorted(os.listdir(imgdir))]
@@ -152,7 +152,6 @@ def load_co3d_data(datadir, cam_scale_factor=0.95):
         T = np.array(frame["viewpoint"]["T"])
         pose[:3, :3] = R
         pose[:3, 3:] = -R @ T[..., None]
-        pose = pose @ cam_trans
         poses.append(pose)
 
     poses = np.stack(poses)
@@ -169,6 +168,7 @@ def load_co3d_data(datadir, cam_scale_factor=0.95):
     T, sscale = similarity_from_cameras(poses)
 
     poses = np.einsum("nij, ki -> nkj", poses, T)
+    poses = np.einsum("nij, ki -> nkj", poses, cam_trans)
     scene_scale = cam_scale_factor * sscale
     poses[:, :3, 3] *= scene_scale
 
