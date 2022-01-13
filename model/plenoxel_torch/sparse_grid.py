@@ -904,7 +904,6 @@ class SparseGrid(nn.Module):
         accelerate: bool = True,
         weight_render_stop_thresh: float = 0.2,  # SHOOT, forgot to turn this off for main exps..
         max_elements: int = 0,
-        GL=False,
     ):
         """
         Resample and sparsify the grid; used to increase the resolution
@@ -1001,7 +1000,6 @@ class SparseGrid(nn.Module):
                         0.5,
                         weight_render_stop_thresh,
                         False,
-                        GL,
                         offset,
                         scaling,
                         max_wt_grid,

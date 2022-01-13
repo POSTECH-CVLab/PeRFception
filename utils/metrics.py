@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import json
 
 from piqa.ssim import SSIM
 from piqa.lpips import LPIPS
@@ -123,3 +124,11 @@ def write_stats(fpath, *stats):
                 name, score = stat["name"], stat["scene_wise"][i]
                 fp.write(f"        {name}: {score}\n")
 
+def write_stats_json(fpath, *stats):
+    
+    d = {}
+    for stat in stats:
+        d[stat["name"]] = {k : float(w) for (k, w) in stat.items() if k != "name" and k != "scene_wise"}
+
+    with open(fpath, 'w') as fp:
+        json.dump(d, fp)

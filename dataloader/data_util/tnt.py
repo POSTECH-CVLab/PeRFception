@@ -102,7 +102,6 @@ def load_tnt_data(datadir, cam_scale_factor=0.95):
     i_test = np.arange(len(test_imgfile)) + len(train_imgfile) + len(val_imgfile)
     i_split = (i_train, i_val, i_test)
 
-
     im = np.stack([imageio.imread(imgfile) for imgfile in train_imgfile + val_imgfile + test_imgfile]) / 255.
     H, W = im[0].shape[:2]
 

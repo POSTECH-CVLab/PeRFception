@@ -135,32 +135,3 @@ class Camera:
     @property
     def is_cuda(self) -> bool:
         return self.c2w.is_cuda
-
-    def gen_rays(self) -> Rays:
-        """
-        Generate the rays for this camera
-        :return: (origins (H*W, 3), dirs (H*W, 3))
-        """
-        origins = (
-            self.c2w[None, :3, 3].expand(self.height * self.width, -1).contiguous()
-        )
-        yy, xx = torch.meshgrid(
-            torch.arange(self.height, dtype=torch.float64, device=self.c2w.device)
-            + 0.5,
-            torch.arange(self.width, dtype=torch.float64, device=self.c2w.device) + 0.5,
-        )
-        xx = (xx - self.cx_val) / self.fx_val
-        yy = (yy - self.cy_val) / self.fy_val
-        zz = torch.ones_like(xx)
-        dirs = torch.stack((xx, yy, zz), dim=-1)  # OpenCV
-        del xx, yy, zz
-        dirs /= torch.norm(dirs, dim=-1, keepdim=True)
-        dirs = dirs.reshape(-1, 3, 1)
-        dirs = (self.c2w[None, :3, :3].float() @ dirs)[..., 0]
-        dirs = dirs.reshape(-1, 3).float()
-
-        if self.ndc_coeffs[0] > 0.0:
-            origins, dirs = utils.convert_to_ndc(origins, dirs, self.ndc_coeffs)
-            dirs /= torch.norm(dirs, dim=-1, keepdim=True)
-            
-        return Rays(origins, dirs)

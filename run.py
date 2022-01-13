@@ -33,7 +33,7 @@ if __name__ == "__main__":
     basedir = args.basedir
     if args.expname is None:
         args.expname = args.datadir.split("/")[-1]
-    args.expname = args.model + "_" + args.expname
+    args.expname = args.model + "_" + args.expname + args.postfix
     if args.debug:
         args.expname += "_debug"
     logdir = os.path.join(basedir, args.expname)
@@ -51,13 +51,14 @@ if __name__ == "__main__":
 
     wandb_logger = pl_loggers.WandbLogger(
         name=args.expname, entity="postech_cvlab",
-        project=args.model) if not args.tpu else pl_loggers.TensorBoardLogger(
+        project="idg"
+        ) if not args.tpu else pl_loggers.TensorBoardLogger(
             save_dir=logdir, name=args.expname)
 
     seed_everything(args.seed, workers=True)
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    model_best_checkpoint = ModelCheckpoint(
+    model_checkpoint = ModelCheckpoint(
         monitor="val_psnr",
         dirpath=logdir,
         filename="best",
@@ -65,7 +66,7 @@ if __name__ == "__main__":
         mode="max",
     )
 
-    callbacks = [lr_monitor, model_best_checkpoint]
+    callbacks = [lr_monitor, model_checkpoint]
     callbacks = select_callback(callbacks, model_name, args)
 
     trainer = Trainer(
@@ -76,7 +77,6 @@ if __name__ == "__main__":
         accelerator="gpu" if not args.tpu else "tpu",
         tpu_cores=args.tpu_num if args.tpu else None,
         replace_sampler_ddp=False,
-        deterministic=True,
         strategy=DDPPlugin(find_unused_parameters=False) \
             if n_gpus > 1 and not args.tpu else None,
         check_val_every_n_epoch=1,

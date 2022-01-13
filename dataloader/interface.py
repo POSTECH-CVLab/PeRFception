@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 
 import model.jaxnerf_torch.utils as jaxnerf_torch_utils
 from dataloader.sampler import RaySet
-from dataloader.data_util.ray import batchfied_get_rays
+from dataloader.data_util.ray import batchified_get_rays
 
 import numpy as np
 import torch
@@ -17,6 +17,7 @@ class LitData(pl.LightningDataModule):
         self.seed = args.seed
         self.chunk = args.chunk
         self.num_workers = args.num_workers
+        self.ndc_coeffs = (-1, -1)
 
     def check(self):
 
@@ -28,35 +29,6 @@ class LitData(pl.LightningDataModule):
         assert hasattr(self, "i_val"), "You must define self.i_val"
         assert hasattr(self, "i_test"), "You must define self.i_test"
 
-
-    def ndc_rays(H, W, focal, near, rays_o, rays_d):
-        # Shift ray origins to near plane
-        t = -(near + rays_o[..., 2]) / rays_d[..., 2]
-        rays_o = rays_o + t[..., None] * rays_d
-
-        # Projection
-        o0 = -1.0 / (W / (2.0 * focal)) * rays_o[..., 0] / rays_o[..., 2]
-        o1 = -1.0 / (H / (2.0 * focal)) * rays_o[..., 1] / rays_o[..., 2]
-        o2 = 1.0 + 2.0 * near / rays_o[..., 2]
-
-        d0 = (
-            -1.0
-            / (W / (2.0 * focal))
-            * (rays_d[..., 0] / rays_d[..., 2] - rays_o[..., 0] / rays_o[..., 2])
-        )
-        d1 = (
-            -1.0
-            / (H / (2.0 * focal))
-            * (rays_d[..., 1] / rays_d[..., 2] - rays_o[..., 1] / rays_o[..., 2])
-        )
-        d2 = -2.0 * near / rays_o[..., 2]
-
-        rays_o = torch.stack([o0, o1, o2], -1)
-        rays_d = torch.stack([d0, d1, d2], -1)
-
-        return rays_o, rays_d
-
-
     def split(self, _images, extrinsics, idx, dummy=True):
         # dummy is needed for DDP evaluation but not necessary for the training phase
         image_exist = _images is not None
@@ -66,9 +38,10 @@ class LitData(pl.LightningDataModule):
         intrinsics = self.intrinsics
 
         extrinsics_idx = extrinsics[idx]
-        rays_o, rays_d = batchfied_get_rays(
-            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers, self.GL
+        rays_o, rays_d = batchified_get_rays(
+            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers, self.ndc_coeffs
         )
+
         _rays = np.stack([rays_o, rays_d], axis=1)
         device_count = torch.cuda.device_count() if not self.args.tpu else self.args.tpu_num
         n_dset = len(_rays)

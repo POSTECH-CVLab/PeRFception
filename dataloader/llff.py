@@ -14,9 +14,6 @@ class LitLLFF(LitData):
     def __init__(self, args):
         super(LitLLFF, self).__init__(args)
 
-        # OpenCV coordinate
-        self.GL = True
-
         images, poses, bds, render_poses, i_test = llff.load_llff_data(
             args.datadir, args.factor, recenter=True, bd_factor=0.75
         )
@@ -25,8 +22,13 @@ class LitLLFF(LitData):
         h, w, focal = hwf
         h, w = int(h), int(w)
         hwf = [h, w, focal]
-        self.intrinsics = np.array([[focal, 0., 0.5 * w], [0., focal, 0.5 * h],
-                                    [0., 0., 1.]])
+        self.intrinsics = np.array(
+            [
+                [focal, 0., 0.5 * w],     
+                [0., focal, 0.5 * h],
+                [0., 0., 1.]
+            ]
+        )
         self.extrinsics = extrinsics
 
         if not isinstance(i_test, list):
@@ -43,6 +45,12 @@ class LitLLFF(LitData):
 
         self.image_len = h * w
         self.h, self.w = h, w
+
+        if not args.no_ndc:
+            self.ndc_coeffs = (
+                2 * self.intrinsics[0][0] / self.w,
+                2 * self.intrinsics[1][1] / self.h
+            )
 
         self.i_train, self.i_val, self.i_test = i_train, i_val, i_test
         self.i_all = np.arange(len(images))
