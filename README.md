@@ -23,7 +23,7 @@ This project is created and maintained by Yoonwoo Jeong, Jinoh Cho, and Seungjoo
     - Coming Soon
 - Plenoxel (Torch)
     - Reorganized the code structure for easier modification. 
-    - Plenoxels: Radiance Fields without Neural Networks [[Code](https://github.com/sxyu/svox2) | [Paper]()]
+    - Plenoxels: Radiance Fields without Neural Networks [[Code](https://github.com/sxyu/svox2) | [Paper](https://arxiv.org/abs/2112.05131) | [Arxiv](https://arxiv.org/pdf/2112.05131)]
     - Document: [Link](./docs/plenoxel.md)
 
 ## Dataset
