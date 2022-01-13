@@ -202,10 +202,12 @@ class LitJaxNeRF(LitModel):
         ret = {}
         batch_rays = batch["ray"]
         rgb, disparity, acc, depth, extras = self.forward_eval(batch_rays)
+        if "target" in batch:
+            target = batch["target"]
         if cpu:
             rgb, depth = rgb.detach().cpu(), depth.detach().cpu()
             if "target" in batch:
-                target = batch["target"].detach().cpu()
+                target = target.detach().cpu()
 
         ret["rgb"] = rgb
         ret["depth"] = depth

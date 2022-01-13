@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     wandb_logger = pl_loggers.WandbLogger(
         name=args.expname, entity="postech_cvlab",
-        project="idg"
+        project=args.model
         ) if not args.tpu else pl_loggers.TensorBoardLogger(
             save_dir=logdir, name=args.expname)
 
