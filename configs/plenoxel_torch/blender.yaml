@@ -6,7 +6,7 @@ N_rand: 5000
 max_steps: 128000
 
 i_print: 100
-i_validation: 38400
+i_validation: 32000
 
 ndc: false
 

@@ -9,7 +9,7 @@ llffhold: 8
 factor: 4
 
 i_print: 100
-i_validation: 38400
+i_validation: 32000
 use_pixel_centers: true
 
 ndc: true
