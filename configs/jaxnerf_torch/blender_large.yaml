@@ -23,4 +23,4 @@ use_pixel_centers: true
 netwidth: 512
 netwidth_fine: 512
 
-no_ndc: true
+ndc: false

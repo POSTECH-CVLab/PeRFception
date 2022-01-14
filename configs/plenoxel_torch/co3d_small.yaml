@@ -30,3 +30,4 @@ tv_decay: 0.5
 postfix: "_small"
 
 store_result_json: True
+ndc: false

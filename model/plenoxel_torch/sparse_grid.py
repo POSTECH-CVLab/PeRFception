@@ -23,24 +23,6 @@ _C = _get_c_extension()
 
 
 class SparseGrid(nn.Module):
-    """
-    Main sparse grid data structure.
-    initially it will be a dense grid of resolution <reso>.
-    Only float32 is supported.
-
-    :param reso: int or List[int, int, int], resolution for resampled grid, as in the constructor
-    :param radius: float or List[float, float, float], the 1/2 side length of the grid, optionally in each direction
-    :param center: float or List[float, float, float], the center of the grid
-    :param basis_type: int, basis type; may use svox2.BASIS_TYPE_* (1 = SH, 4 = learned 3D texture, 255 = learned MLP)
-    :param basis_dim: int, size of basis / number of SH components
-                           (must be square number in case of SH)
-    :param basis_reso: int, resolution of grid if using BASIS_TYPE_3D_TEXTURE
-    :param use_z_order: bool, if true, stores the data initially in a Z-order curve if possible
-    :param mlp_posenc_size: int, if using BASIS_TYPE_MLP, then enables standard axis-aligned positional encoding of
-                                 given size on MLP; if 0 then does not use positional encoding
-    :param mlp_width: int, if using BASIS_TYPE_MLP, specifies MLP width (hidden dimension)
-    :param device: torch.device, device to store the grid
-    """
 
     def __init__(
         self,
@@ -49,14 +31,13 @@ class SparseGrid(nn.Module):
         radius: Union[float, List[float]] = 1.0,
         center: Union[float, List[float]] = [0.0, 0.0, 0.0],
         basis_type: int = BASIS_TYPE_SH,
-        basis_dim: int = 9,  # SH/learned basis size; in SH case, square number
-        basis_reso: int = 16,  # Learned basis resolution (x^3 embedding grid)
+        basis_dim: int = 9, 
         use_z_order: bool = False,
         use_sphere_bound: bool = False,
         mlp_posenc_size: int = 0,
         mlp_width: int = 16,
-        background_nlayers: int = 0,  # BG MSI layers
-        background_reso: int = 256,  # BG MSI cubemap face size
+        background_nlayers: int = 0,  
+        background_reso: int = 256, 
         device: Union[torch.device, str] = "cpu",
     ):
         super().__init__()
@@ -155,43 +136,10 @@ class SparseGrid(nn.Module):
                 self.capacity, self.basis_dim * 3, dtype=torch.float32, device=device
             )
         )
-
-        if self.basis_type == BASIS_TYPE_3D_TEXTURE:
-            # Unit sphere embedded in a cube
-            self.basis_data = nn.Parameter(
-                torch.zeros(
-                    basis_reso,
-                    basis_reso,
-                    basis_reso,
-                    self.basis_dim,
-                    dtype=torch.float32,
-                    device=device,
-                )
-            )
-        elif self.basis_type == BASIS_TYPE_MLP:
-            D_rgb = mlp_width
-            dir_in_dims = 3 + 6 * self.mlp_posenc_size
-            # Hard-coded 4 layer MLP
-            self.basis_mlp = nn.Sequential(
-                nn.Linear(dir_in_dims, D_rgb),
-                nn.ReLU(),
-                nn.Linear(D_rgb, D_rgb),
-                nn.ReLU(),
-                nn.Linear(D_rgb, D_rgb),
-                nn.ReLU(),
-                nn.Linear(D_rgb, self.basis_dim),
-            )
-            self.basis_mlp = self.basis_mlp.to(device=self.sh_data.device)
-            self.basis_mlp.apply(utils.init_weights)
-            self.basis_data = nn.Parameter(
-                torch.empty(0, 0, 0, 0, dtype=torch.float32, device=device),
-                requires_grad=False,
-            )
-        else:
-            self.basis_data = nn.Parameter(
-                torch.empty(0, 0, 0, 0, dtype=torch.float32, device=device),
-                requires_grad=False,
-            )
+        self.basis_data = nn.Parameter(
+            torch.empty(0, 0, 0, 0, dtype=torch.float32, device=device),
+            requires_grad=False,
+        )
 
         self.background_links: Optional[torch.Tensor]
         self.background_data: Optional[torch.Tensor]
@@ -239,14 +187,6 @@ class SparseGrid(nn.Module):
         return self.sh_data.size(1) + 1
 
     @property
-    def basis_reso(self):
-        """
-        Return the resolution of the learned spherical function data if using
-        3D learned texture, or 0 if only using SH
-        """
-        return self.basis_data.size(0) if self.BASIS_TYPE_3D_TEXTURE else 0
-
-    @property
     def use_background(self):
         return self.background_nlayers > 0
 
@@ -287,10 +227,10 @@ class SparseGrid(nn.Module):
         :param points: torch.Tensor, (N, 3)
         :param use_kernel: bool, if false uses pure PyTorch version even if on CUDA.
         :param grid_coords: bool, if true then uses grid coordinates ([-0.5, reso[i]-0.5 ] in each dimension);
-                                  more numerically exact for resampling
+            more numerically exact for resampling
         :param want_colors: bool, if true (default) returns density and colors,
-                            else returns density and a dummy tensor to be ignored
-                            (much faster)
+            else returns density and a dummy tensor to be ignored
+            (much faster)
 
         :return: (density, color)
         """
@@ -358,396 +298,6 @@ class SparseGrid(nn.Module):
     def forward(self, points: torch.Tensor, use_kernel: bool = True):
         return self.sample(points, use_kernel=use_kernel)
 
-    def _volume_render_gradcheck_lerp(
-        self, rays: dataclass.Rays, return_raylen: bool = False
-    ):
-        """
-        trilerp gradcheck version
-        """
-        origins = self.world2grid(rays.origins)
-        dirs = rays.dirs / torch.norm(rays.dirs, dim=-1, keepdim=True)
-        viewdirs = dirs
-        B = dirs.size(0)
-        assert origins.size(0) == B
-        gsz = self._grid_size()
-        dirs = dirs * (self._scaling * gsz).to(device=dirs.device)
-        delta_scale = 1.0 / dirs.norm(dim=1)
-        dirs *= delta_scale.unsqueeze(-1)
-
-        if self.basis_type == BASIS_TYPE_3D_TEXTURE:
-            sh_mult = self._eval_learned_bases(viewdirs)
-        elif self.basis_type == BASIS_TYPE_MLP:
-            sh_mult = torch.sigmoid(self._eval_basis_mlp(viewdirs))
-        else:
-            sh_mult = utils.eval_sh_bases(self.basis_dim, viewdirs)
-        invdirs = 1.0 / dirs
-
-        gsz = self._grid_size()
-        gsz_cu = gsz.to(device=dirs.device)
-        t1 = (-0.5 - origins) * invdirs
-        t2 = (gsz_cu - 0.5 - origins) * invdirs
-
-        t = torch.min(t1, t2)
-        t[dirs == 0] = -1e9
-        t = torch.max(t, dim=-1).values.clamp_min_(self.opt.near_clip)
-
-        tmax = torch.max(t1, t2)
-        tmax[dirs == 0] = 1e9
-        tmax = torch.min(tmax, dim=-1).values
-        if return_raylen:
-            return tmax - t
-
-        log_light_intensity = torch.zeros(B, device=origins.device)
-        out_rgb = torch.zeros((B, 3), device=origins.device)
-        good_indices = torch.arange(B, device=origins.device)
-
-        origins_ini = origins
-        dirs_ini = dirs
-
-        mask = t <= tmax
-        good_indices = good_indices[mask]
-        origins = origins[mask]
-        dirs = dirs[mask]
-
-        #  invdirs = invdirs[mask]
-        del invdirs
-        t = t[mask]
-        sh_mult = sh_mult[mask]
-        tmax = tmax[mask]
-
-        while good_indices.numel() > 0:
-            pos = origins + t[:, None] * dirs
-            pos = pos.clamp_min_(0.0)
-            pos[:, 0] = torch.clamp_max(pos[:, 0], gsz[0] - 1)
-            pos[:, 1] = torch.clamp_max(pos[:, 1], gsz[1] - 1)
-            pos[:, 2] = torch.clamp_max(pos[:, 2], gsz[2] - 1)
-            #  print('pym', pos, log_light_intensity)
-
-            l = pos.to(torch.long)
-            l.clamp_min_(0)
-            l[:, 0] = torch.clamp_max(l[:, 0], gsz[0] - 2)
-            l[:, 1] = torch.clamp_max(l[:, 1], gsz[1] - 2)
-            l[:, 2] = torch.clamp_max(l[:, 2], gsz[2] - 2)
-            pos -= l
-
-            # BEGIN CRAZY TRILERP
-            lx, ly, lz = l.unbind(-1)
-            links000 = self.links[lx, ly, lz]
-            links001 = self.links[lx, ly, lz + 1]
-            links010 = self.links[lx, ly + 1, lz]
-            links011 = self.links[lx, ly + 1, lz + 1]
-            links100 = self.links[lx + 1, ly, lz]
-            links101 = self.links[lx + 1, ly, lz + 1]
-            links110 = self.links[lx + 1, ly + 1, lz]
-            links111 = self.links[lx + 1, ly + 1, lz + 1]
-
-            sigma000, rgb000 = self._fetch_links(links000)
-            sigma001, rgb001 = self._fetch_links(links001)
-            sigma010, rgb010 = self._fetch_links(links010)
-            sigma011, rgb011 = self._fetch_links(links011)
-            sigma100, rgb100 = self._fetch_links(links100)
-            sigma101, rgb101 = self._fetch_links(links101)
-            sigma110, rgb110 = self._fetch_links(links110)
-            sigma111, rgb111 = self._fetch_links(links111)
-
-            wa, wb = 1.0 - pos, pos
-            c00 = sigma000 * wa[:, 2:] + sigma001 * wb[:, 2:]
-            c01 = sigma010 * wa[:, 2:] + sigma011 * wb[:, 2:]
-            c10 = sigma100 * wa[:, 2:] + sigma101 * wb[:, 2:]
-            c11 = sigma110 * wa[:, 2:] + sigma111 * wb[:, 2:]
-            c0 = c00 * wa[:, 1:2] + c01 * wb[:, 1:2]
-            c1 = c10 * wa[:, 1:2] + c11 * wb[:, 1:2]
-            sigma = c0 * wa[:, :1] + c1 * wb[:, :1]
-
-            c00 = rgb000 * wa[:, 2:] + rgb001 * wb[:, 2:]
-            c01 = rgb010 * wa[:, 2:] + rgb011 * wb[:, 2:]
-            c10 = rgb100 * wa[:, 2:] + rgb101 * wb[:, 2:]
-            c11 = rgb110 * wa[:, 2:] + rgb111 * wb[:, 2:]
-            c0 = c00 * wa[:, 1:2] + c01 * wb[:, 1:2]
-            c1 = c10 * wa[:, 1:2] + c11 * wb[:, 1:2]
-            rgb = c0 * wa[:, :1] + c1 * wb[:, :1]
-
-            # END CRAZY TRILERP
-
-            log_att = (
-                -self.opt.step_size
-                * torch.relu(sigma[..., 0])
-                * delta_scale[good_indices]
-            )
-            weight = torch.exp(log_light_intensity[good_indices]) * (
-                1.0 - torch.exp(log_att)
-            )
-            # [B', 3, n_sh_coeffs]
-            rgb_sh = rgb.reshape(-1, 3, self.basis_dim)
-            rgb = torch.clamp_min(
-                torch.sum(sh_mult.unsqueeze(-2) * rgb_sh, dim=-1) + 0.5,
-                0.0,
-            )  # [B', 3]
-            rgb = weight[:, None] * rgb[:, :3]
-
-            out_rgb[good_indices] += rgb
-            log_light_intensity[good_indices] += log_att
-            t += self.opt.step_size
-
-            mask = t <= tmax
-            good_indices = good_indices[mask]
-            origins = origins[mask]
-            dirs = dirs[mask]
-            #  invdirs = invdirs[mask]
-            t = t[mask]
-            sh_mult = sh_mult[mask]
-            tmax = tmax[mask]
-
-        if self.use_background:
-            # Render the MSI background model
-            csi = utils.ConcentricSpheresIntersector(
-                gsz_cu, origins_ini, dirs_ini, delta_scale
-            )
-            inner_radius = (
-                torch.cross(csi.origins, csi.dirs, dim=-1).norm(dim=-1) + 1e-3
-            )
-            inner_radius = inner_radius.clamp_min(1.0)
-            _, t_last = csi.intersect(inner_radius)
-            n_steps = int(self.background_nlayers / self.opt.step_size) + 2
-            layer_scale = (self.background_nlayers - 1) / (n_steps + 1)
-
-            def fetch_bg_link(lx, ly, lz):
-                results = torch.zeros(
-                    [lx.shape[0], self.background_data.size(-1)], device=lx.device
-                )
-                lnk = self.background_links[lx, ly]
-                mask = lnk >= 0
-                results[mask] = self.background_data[lnk[mask].long(), lz[mask]]
-                return results
-
-            for i in range(n_steps):
-                r: float = n_steps / (n_steps - i - 0.5)
-                normalized_inv_radius = min(
-                    (i + 1) * layer_scale, self.background_nlayers - 1
-                )
-                layerid = min(int(normalized_inv_radius), self.background_nlayers - 2)
-                interp_wt = normalized_inv_radius - layerid
-
-                active_mask, t = csi.intersect(r)
-                active_mask = active_mask & (r >= inner_radius)
-                if active_mask.count_nonzero() == 0:
-                    continue
-                t_sub = t[active_mask]
-                t_mid_sub = (t_sub + t_last[active_mask]) * 0.5
-                sphpos = (
-                    csi.origins[active_mask]
-                    + t_mid_sub.unsqueeze(-1) * csi.dirs[active_mask]
-                )
-                invr_mid = 1.0 / torch.norm(sphpos, dim=-1)
-                sphpos *= invr_mid.unsqueeze(-1)
-
-                xy = utils.xyz2equirect(sphpos, self.background_links.size(1))
-                z = torch.clamp(
-                    (1.0 - invr_mid) * self.background_nlayers - 0.5,
-                    0.0,
-                    self.background_nlayers - 1,
-                )
-                points = torch.cat([xy, z.unsqueeze(-1)], dim=-1)
-                l = points.to(torch.long)
-                l[..., 0].clamp_max_(self.background_links.size(0) - 1)
-                l[..., 1].clamp_max_(self.background_links.size(1) - 1)
-                l[..., 2].clamp_max_(self.background_nlayers - 2)
-
-                wb = points - l
-                wa = 1.0 - wb
-                lx, ly, lz = l.unbind(-1)
-                lnx = (lx + 1) % self.background_links.size(0)
-                lny = (ly + 1) % self.background_links.size(1)
-                lnz = lz + 1
-
-                v000 = fetch_bg_link(lx, ly, lz)
-                v001 = fetch_bg_link(lx, ly, lnz)
-                v010 = fetch_bg_link(lx, lny, lz)
-                v011 = fetch_bg_link(lx, lny, lnz)
-                v100 = fetch_bg_link(lnx, ly, lz)
-                v101 = fetch_bg_link(lnx, ly, lnz)
-                v110 = fetch_bg_link(lnx, lny, lz)
-                v111 = fetch_bg_link(lnx, lny, lnz)
-
-                c00 = v000 * wa[:, 2:] + v001 * wb[:, 2:]
-                c01 = v010 * wa[:, 2:] + v011 * wb[:, 2:]
-                c10 = v100 * wa[:, 2:] + v101 * wb[:, 2:]
-                c11 = v110 * wa[:, 2:] + v111 * wb[:, 2:]
-                c0 = c00 * wa[:, 1:2] + c01 * wb[:, 1:2]
-                c1 = c10 * wa[:, 1:2] + c11 * wb[:, 1:2]
-                rgba = c0 * wa[:, :1] + c1 * wb[:, :1]
-
-                log_att = (
-                    -csi.world_step_scale[active_mask]
-                    * torch.relu(rgba[:, -1])
-                    * (t_sub - t_last[active_mask])
-                )
-                weight = torch.exp(log_light_intensity[active_mask]) * (
-                    1.0 - torch.exp(log_att)
-                )
-                rgb = torch.clamp_min(rgba[:, :3] * utils.SH_C0 + 0.5, 0.0)
-                out_rgb[active_mask] += rgb * weight[:, None]
-                log_light_intensity[active_mask] += log_att
-                t_last[active_mask] = t[active_mask]
-
-        # Add background color
-        if self.opt.background_brightness:
-            out_rgb += (
-                torch.exp(log_light_intensity).unsqueeze(-1)
-                * self.opt.background_brightness
-            )
-        return out_rgb
-
-    def _volume_render_gradcheck_nvol_lerp(
-        self, rays: dataclass.Rays, return_raylen: bool = False
-    ):
-        """
-        trilerp gradcheck version
-        """
-        origins = self.world2grid(rays.origins)
-        dirs = rays.dirs / torch.norm(rays.dirs, dim=-1, keepdim=True)
-        viewdirs = dirs
-        B = dirs.size(0)
-        assert origins.size(0) == B
-        gsz = self._grid_size()
-        dirs = dirs * (self._scaling * gsz).to(device=dirs.device)
-        delta_scale = 1.0 / dirs.norm(dim=1)
-        dirs *= delta_scale.unsqueeze(-1)
-
-        if self.basis_type == BASIS_TYPE_3D_TEXTURE:
-            sh_mult = self._eval_learned_bases(viewdirs)
-        elif self.basis_type == BASIS_TYPE_MLP:
-            sh_mult = torch.sigmoid(self._eval_basis_mlp(viewdirs))
-        else:
-            sh_mult = utils.eval_sh_bases(self.basis_dim, viewdirs)
-        invdirs = 1.0 / dirs
-
-        gsz = self._grid_size()
-        gsz_cu = gsz.to(device=dirs.device)
-        t1 = (-0.5 - origins) * invdirs
-        t2 = (gsz_cu - 0.5 - origins) * invdirs
-
-        t = torch.min(t1, t2)
-        t[dirs == 0] = -1e9
-        t = torch.max(t, dim=-1).values.clamp_min_(self.opt.near_clip)
-
-        tmax = torch.max(t1, t2)
-        tmax[dirs == 0] = 1e9
-        tmax = torch.min(tmax, dim=-1).values
-        if return_raylen:
-            return tmax - t
-
-        total_alpha = torch.zeros(B, device=origins.device)
-        out_rgb = torch.zeros((B, 3), device=origins.device)
-        good_indices = torch.arange(B, device=origins.device)
-
-        origins_ini = origins
-        dirs_ini = dirs
-
-        mask = t <= tmax
-        good_indices = good_indices[mask]
-        origins = origins[mask]
-        dirs = dirs[mask]
-
-        #  invdirs = invdirs[mask]
-        del invdirs
-        t = t[mask]
-        sh_mult = sh_mult[mask]
-        tmax = tmax[mask]
-
-        while good_indices.numel() > 0:
-            pos = origins + t[:, None] * dirs
-            pos = pos.clamp_min_(0.0)
-            pos[:, 0] = torch.clamp_max(pos[:, 0], gsz[0] - 1)
-            pos[:, 1] = torch.clamp_max(pos[:, 1], gsz[1] - 1)
-            pos[:, 2] = torch.clamp_max(pos[:, 2], gsz[2] - 1)
-
-            l = pos.to(torch.long)
-            l.clamp_min_(0)
-            l[:, 0] = torch.clamp_max(l[:, 0], gsz[0] - 2)
-            l[:, 1] = torch.clamp_max(l[:, 1], gsz[1] - 2)
-            l[:, 2] = torch.clamp_max(l[:, 2], gsz[2] - 2)
-            pos -= l
-
-            # BEGIN CRAZY TRILERP
-            lx, ly, lz = l.unbind(-1)
-            links000 = self.links[lx, ly, lz]
-            links001 = self.links[lx, ly, lz + 1]
-            links010 = self.links[lx, ly + 1, lz]
-            links011 = self.links[lx, ly + 1, lz + 1]
-            links100 = self.links[lx + 1, ly, lz]
-            links101 = self.links[lx + 1, ly, lz + 1]
-            links110 = self.links[lx + 1, ly + 1, lz]
-            links111 = self.links[lx + 1, ly + 1, lz + 1]
-
-            sigma000, rgb000 = self._fetch_links(links000)
-            sigma001, rgb001 = self._fetch_links(links001)
-            sigma010, rgb010 = self._fetch_links(links010)
-            sigma011, rgb011 = self._fetch_links(links011)
-            sigma100, rgb100 = self._fetch_links(links100)
-            sigma101, rgb101 = self._fetch_links(links101)
-            sigma110, rgb110 = self._fetch_links(links110)
-            sigma111, rgb111 = self._fetch_links(links111)
-
-            wa, wb = 1.0 - pos, pos
-            c00 = sigma000 * wa[:, 2:] + sigma001 * wb[:, 2:]
-            c01 = sigma010 * wa[:, 2:] + sigma011 * wb[:, 2:]
-            c10 = sigma100 * wa[:, 2:] + sigma101 * wb[:, 2:]
-            c11 = sigma110 * wa[:, 2:] + sigma111 * wb[:, 2:]
-            c0 = c00 * wa[:, 1:2] + c01 * wb[:, 1:2]
-            c1 = c10 * wa[:, 1:2] + c11 * wb[:, 1:2]
-            sigma = c0 * wa[:, :1] + c1 * wb[:, :1]
-
-            c00 = rgb000 * wa[:, 2:] + rgb001 * wb[:, 2:]
-            c01 = rgb010 * wa[:, 2:] + rgb011 * wb[:, 2:]
-            c10 = rgb100 * wa[:, 2:] + rgb101 * wb[:, 2:]
-            c11 = rgb110 * wa[:, 2:] + rgb111 * wb[:, 2:]
-            c0 = c00 * wa[:, 1:2] + c01 * wb[:, 1:2]
-            c1 = c10 * wa[:, 1:2] + c11 * wb[:, 1:2]
-            rgb = c0 * wa[:, :1] + c1 * wb[:, :1]
-
-            # END CRAZY TRILERP
-
-            log_att = (
-                -self.opt.step_size
-                * torch.relu(sigma[..., 0])
-                * delta_scale[good_indices]
-            )
-            #  weight = torch.exp(log_light_intensity[good_indices]) * (
-            #      1.0 - torch.exp(log_att)
-            #  )
-            delta_alpha = 1.0 - torch.exp(log_att)
-            total_alpha_sub = total_alpha[good_indices]
-            new_total_alpha = torch.clamp_max(total_alpha_sub + delta_alpha, 1.0)
-            weight = new_total_alpha - total_alpha_sub
-            total_alpha[good_indices] = new_total_alpha
-
-            # [B', 3, n_sh_coeffs]
-            rgb_sh = rgb.reshape(-1, 3, self.basis_dim)
-            rgb = torch.clamp_min(
-                torch.sum(sh_mult.unsqueeze(-2) * rgb_sh, dim=-1) + 0.5,
-                0.0,
-            )  # [B', 3]
-            rgb = weight[:, None] * rgb[:, :3]
-
-            out_rgb[good_indices] += rgb
-            t += self.opt.step_size
-
-            mask = t <= tmax
-            good_indices = good_indices[mask]
-            origins = origins[mask]
-            dirs = dirs[mask]
-            t = t[mask]
-            sh_mult = sh_mult[mask]
-            tmax = tmax[mask]
-
-        # Add background color
-        if self.opt.background_brightness:
-            out_rgb += (1.0 - total_alpha).unsqueeze(
-                -1
-            ) * self.opt.background_brightness
-        return out_rgb
-
     def volume_render(
         self,
         rays: dataclass.Rays,
@@ -765,33 +315,19 @@ class SparseGrid(nn.Module):
                                     ray-cube intersection and quits
         :return: (N, 3), predicted RGB
         """
-        if use_kernel and self.links.is_cuda and _C is not None and not return_raylen:
-            assert rays.is_cuda
-            basis_data = (
-                self._eval_basis_mlp(rays.dirs)
-                if self.basis_type == BASIS_TYPE_MLP
-                else None
-            )
-            return autograd._VolumeRenderFunction.apply(
-                self.density_data,
-                self.sh_data,
-                basis_data,
-                self.background_data if self.use_background else None,
-                self._to_cpp(replace_basis_data=basis_data),
-                rays._to_cpp(),
-                self.opt._to_cpp(randomize=randomize),
-                self.opt.backend,
-            )
-        else:
-            warn("Using slow volume rendering, should only be used for debugging")
-            if self.opt.backend == "nvol":
-                return self._volume_render_gradcheck_nvol_lerp(
-                    rays, return_raylen=return_raylen
-                )
-            else:
-                return self._volume_render_gradcheck_lerp(
-                    rays, return_raylen=return_raylen
-                )
+        assert rays.is_cuda
+        basis_data = None
+        return autograd._VolumeRenderFunction.apply(
+            self.density_data,
+            self.sh_data,
+            basis_data,
+            self.background_data if self.use_background else None,
+            self._to_cpp(replace_basis_data=basis_data),
+            rays._to_cpp(),
+            self.opt._to_cpp(randomize=randomize),
+            self.opt.backend,
+        )
+
 
     def volume_render_fused(
         self,
@@ -826,11 +362,6 @@ class SparseGrid(nn.Module):
         grad_density, grad_sh, grad_basis, grad_bg = self._get_data_grads()
         rgb_out = torch.zeros_like(rgb_gt, dtype=torch.float32)
         basis_data: Optional[torch.Tensor] = None
-        if self.basis_type == BASIS_TYPE_MLP:
-            with torch.enable_grad():
-                basis_data = self._eval_basis_mlp(rays.dirs)
-            grad_basis = torch.empty_like(basis_data)
-
         self.sparse_grad_indexer = torch.zeros(
             (self.density_data.size(0),),
             dtype=torch.bool,
@@ -911,17 +442,16 @@ class SparseGrid(nn.Module):
         :param sigma_thresh: float, threshold to apply on the sigma (if using sigma thresh i.e. cameras NOT given)
         :param weight_thresh: float, threshold to apply on the weights (if using weight thresh i.e. cameras given)
         :param dilate: int, if true applies dilation of size <dilate> to the 3D mask for nodes to keep in the grid
-                             (keep neighbors in all 28 directions, including diagonals, of the desired nodes)
+            (keep neighbors in all 28 directions, including diagonals, of the desired nodes)
         :param cameras: Optional[List[Camera]], optional list of cameras in OpenCV convention (if given, uses weight thresholding)
         :param use_z_order: bool, if true, stores the data initially in a Z-order curve if possible
         :param accelerate: bool, if true (default), calls grid.accelerate() after resampling
-                           to build distance transform table (only if on CUDA)
+            to build distance transform table (only if on CUDA)
         :param weight_render_stop_thresh: float, stopping threshold for grid weight render in [0, 1];
-                                                 0.0 = no thresholding, 1.0 = hides everything.
-                                                 Useful for force-cutting off
-                                                 junk that contributes very little at the end of a ray
+            0.0 = no thresholding, 1.0 = hides everything.
+            Useful for force-cutting off junk that contributes very little at the end of a ray
         :param max_elements: int, if nonzero, an upper bound on the number of elements in the
-                upsampled grid; we will adjust the threshold to match it
+            upsampled grid; we will adjust the threshold to match it
         """
         with torch.no_grad():
             device = self.links.device
@@ -1220,7 +750,7 @@ class SparseGrid(nn.Module):
         similar to Neural Volumes [Lombardi et al., ToG 2019]
 
         :return: torch.Tensor, size scalar, the TV value (sum over channels,
-                 mean over voxels)
+        mean over voxels)
         """
         assert (
             _C is not None and self.sh_data.is_cuda
@@ -1249,12 +779,12 @@ class SparseGrid(nn.Module):
         Compute total variation on color
 
         :param start_dim: int, first color channel dimension to compute TV over (inclusive).
-                          Default 0.
+        Default 0.
         :param end_dim: int, last color channel dimension to compute TV over (exclusive).
-                          Default None = all dimensions until the end.
+        Default None = all dimensions until the end.
 
         :return: torch.Tensor, size scalar, the TV value (sum over channels,
-                 mean over voxels)
+        mean over voxels)
         """
         assert (
             _C is not None and self.sh_data.is_cuda
@@ -1273,17 +803,6 @@ class SparseGrid(nn.Module):
             logalpha_delta,
             True,
             ndc_coeffs,
-        )
-
-    def tv_basis(self):
-        bd = self.basis_data
-        return torch.mean(
-            torch.sqrt(
-                1e-5
-                + (bd[:-1, :-1, 1:] - bd[:-1, :-1, :-1]) ** 2
-                + (bd[:-1, 1:, :-1] - bd[:-1, :-1, :-1]) ** 2
-                + (bd[1:, :-1, :-1] - bd[:-1, :-1, :-1]) ** 2
-            ).sum(dim=-1)
         )
 
     def inplace_tv_grad(
@@ -1358,9 +877,9 @@ class SparseGrid(nn.Module):
         directly into the gradient tensor, multiplied by 'scaling'
 
         :param start_dim: int, first color channel dimension to compute TV over (inclusive).
-                          Default 0.
+            Default 0.
         :param end_dim: int, last color channel dimension to compute TV over (exclusive).
-                          Default None = all dimensions until the end.
+            Default None = all dimensions until the end.
         """
         assert (
             _C is not None and self.sh_data.is_cuda and grad.is_cuda
@@ -1425,14 +944,6 @@ class SparseGrid(nn.Module):
             _C is not None and self.sh_data.is_cuda and grad.is_cuda
         ), "CUDA extension is currently required for total variation"
         assert self.basis_type != BASIS_TYPE_MLP, "MLP not supported"
-        #  SparseGridSpec& grid,
-        #  torch::Tensor rand_cells,
-        #  torch::Tensor sample_dirs,
-        #  float scale,
-        #  float ndc_coeffx,
-        #  float ndc_coeffy,
-        #  float dir_factor,
-        #  GridOutputGrads& grads) {
         rand_cells = self._get_rand_cells(sparse_frac)
         grad_holder = _C.GridOutputGrads()
 
@@ -1446,12 +957,7 @@ class SparseGrid(nn.Module):
         dirs = torch.randn(3, device=rand_cells.device)
         dirs /= torch.norm(dirs)
 
-        if self.basis_type == BASIS_TYPE_3D_TEXTURE:
-            sh_mult = self._eval_learned_bases(dirs[None])
-        elif self.basis_type == BASIS_TYPE_MLP:
-            sh_mult = torch.sigmoid(self._eval_basis_mlp(dirs[None]))
-        else:
-            sh_mult = utils.eval_sh_bases(self.basis_dim, dirs[None])
+        sh_mult = utils.eval_sh_bases(self.basis_dim, dirs[None])
         sh_mult = sh_mult[0]
 
         if dir_factor > 0.0:
@@ -1464,12 +970,7 @@ class SparseGrid(nn.Module):
         else:
             dirs_perturb = dirs  # Dummy, since it won't be used
 
-        if self.basis_type == BASIS_TYPE_3D_TEXTURE:
-            sh_mult_u = self._eval_learned_bases(dirs_perturb[None])
-        elif self.basis_type == BASIS_TYPE_MLP:
-            sh_mult_u = torch.sigmoid(self._eval_basis_mlp(dirs_perturb[None]))
-        else:
-            sh_mult_u = utils.eval_sh_bases(self.basis_dim, dirs_perturb[None])
+        sh_mult_u = utils.eval_sh_bases(self.basis_dim, dirs_perturb[None])
         sh_mult_u = sh_mult_u[0]
 
         _C.lumisphere_tv_grad_sparse(
@@ -1497,9 +998,9 @@ class SparseGrid(nn.Module):
         (no CUDA extension used)
 
         :param start_dim: int, first color channel dimension to compute TV over (inclusive).
-                          Default 0.
+            Default 0.
         :param end_dim: int, last color channel dimension to compute TV over (exclusive).
-                          Default None = all dimensions until the end.
+            Default None = all dimensions until the end.
         """
         with torch.no_grad():
             if end_dim is None:
@@ -1551,19 +1052,6 @@ class SparseGrid(nn.Module):
             scaling_density,
             grad,
         )
-
-    def inplace_tv_basis_grad(self, grad: torch.Tensor, scaling: float = 1.0):
-        bd = self.basis_data
-        tv_val = torch.mean(
-            torch.sqrt(
-                1e-5
-                + (bd[:-1, :-1, 1:] - bd[:-1, :-1, :-1]) ** 2
-                + (bd[:-1, 1:, :-1] - bd[:-1, :-1, :-1]) ** 2
-                + (bd[1:, :-1, :-1] - bd[:-1, :-1, :-1]) ** 2
-            ).sum(dim=-1)
-        )
-        tv_val_scaled = tv_val * scaling
-        tv_val_scaled.backward()
 
     def optim_density_step(
         self,
@@ -1899,117 +1387,3 @@ class SparseGrid(nn.Module):
             return torch.randint(
                 0, grid_size, (sparse_num,), dtype=torch.int32, device=self.links.device
             )
-
-    def _eval_learned_bases(self, dirs: torch.Tensor):
-        basis_data = self.basis_data.permute([3, 2, 1, 0])[None]
-        samples = F.grid_sample(
-            basis_data,
-            dirs[None, None, None],
-            mode="bilinear",
-            padding_mode="zeros",
-            align_corners=True,
-        )
-        samples = samples[0, :, 0, 0, :].permute([1, 0])
-        #  dc = torch.full_like(samples[:, :1], fill_value=0.28209479177387814)
-        #  samples = torch.cat([dc, samples], dim=-1)
-        return samples
-
-    def _eval_basis_mlp(self, dirs: torch.Tensor):
-        if self.mlp_posenc_size > 0:
-            dirs_enc = utils.posenc(
-                dirs,
-                None,
-                0,
-                self.mlp_posenc_size,
-                include_identity=True,
-                enable_ipe=False,
-            )
-        else:
-            dirs_enc = dirs
-        return self.basis_mlp(dirs_enc)
-
-    def reinit_learned_bases(
-        self,
-        init_type: str = "sh",
-        sg_lambda_max: float = 1.0,
-        upper_hemi: bool = False,
-    ):
-        """
-        Initialize learned basis using either SH orrandom spherical Gaussians
-        with concentration parameter sg_lambda (max magnitude) and
-        normalization constant sg_sigma
-
-        Spherical Gaussians formula for reference:
-        :math:`Output = \sigma_{i}{exp ^ {\lambda_i * (\dot(\mu_i, \dirs) - 1)}`
-
-        :param upper_hemi: bool, (SG only) whether to only place Gaussians in z <= 0 (note directions are flipped)
-        """
-
-        init_type = init_type.lower()
-        n_comps = self.basis_data.size(-1)
-
-        basis_reso = self.basis_data.size(0)
-        ax = torch.linspace(-1.0, 1.0, basis_reso, dtype=torch.float32)
-        X, Y, Z = torch.meshgrid(ax, ax, ax)
-        points = torch.stack((X, Y, Z), dim=-1).view(-1, 3)
-        points /= points.norm(dim=-1).unsqueeze(-1)
-
-        if init_type == "sh":
-            assert (
-                utils.isqrt(n_comps) is not None
-            ), "n_comps (learned basis SH init) must be a square number; maybe try SG init"
-            sph_vals = utils.eval_sh_bases(n_comps, points)
-        elif init_type == "sg":
-            # Low-disparity direction sampling
-            u1 = torch.arange(0, n_comps) + torch.rand((n_comps,))
-            u1 /= n_comps
-            u1 = u1[torch.randperm(n_comps)]
-            u2 = torch.arange(0, n_comps) + torch.rand((n_comps,))
-            u2 /= n_comps
-            sg_dirvecs = utils.spher2cart(u1 * np.pi, u2 * np.pi * 2)
-            if upper_hemi:
-                sg_dirvecs[..., 2] = -torch.abs(sg_dirvecs[..., 2])
-
-            # Concentration parameters (0 = DC -> infty = point)
-            sg_lambdas = torch.rand_like(sg_dirvecs[:, 0]) * sg_lambda_max
-            sg_lambdas[0] = 0.0  # Assure DC
-
-            # L2-Normalization
-            sg_sigmas: np.ndarray = np.sqrt(
-                sg_lambdas / (np.pi * (1.0 - np.exp(-4 * sg_lambdas)))
-            )
-            sg_sigmas[sg_lambdas == 0.0] = 1.0 / np.sqrt(4 * np.pi)
-            # L1-Normalization
-            #  sg_sigmas : np.ndarray = sg_lambdas / (2 * np.pi * (1.0 - np.exp(-2 * sg_lambdas)))
-            #  sg_sigmas[sg_lambdas == 0.0] = 1.0 / (2 *  (1.0 - 1.0 / np.exp(1)) * np.pi)
-            sph_vals = utils.eval_sg_at_dirs(sg_lambdas, sg_dirvecs, points) * sg_sigmas
-        elif init_type == "fourier":
-            # Low-disparity direction sampling
-            u1 = torch.arange(0, n_comps) + torch.rand((n_comps,))
-            u1 /= n_comps
-            u1 = u1[torch.randperm(n_comps)]
-            u2 = torch.arange(0, n_comps) + torch.rand((n_comps,))
-            u2 /= n_comps
-            fourier_dirvecs = utils.spher2cart(u1 * np.pi, u2 * np.pi * 2)
-            fourier_freqs = torch.linspace(0.0, 1.0, n_comps + 1)[:-1]
-            fourier_freqs += torch.rand_like(fourier_freqs) * (
-                fourier_freqs[1] - fourier_freqs[0]
-            )
-            fourier_freqs = torch.exp(fourier_freqs)
-            fourier_freqs = fourier_freqs[torch.randperm(n_comps)]
-            fourier_scale = 1.0 / torch.sqrt(
-                2 * np.pi
-                - torch.cos(fourier_freqs) * torch.sin(fourier_freqs) / fourier_freqs
-            )
-            four_phases = torch.rand_like(fourier_freqs) * np.pi * 2
-
-            dots = (points[:, None] * fourier_dirvecs[None]).sum(-1)
-            dots *= fourier_freqs
-            sins = torch.sin(dots + four_phases)
-            sph_vals = sins * fourier_scale
-
-        else:
-            raise NotImplementedError("Unsupported initialization", init_type)
-        self.basis_data.data[:] = sph_vals.view(
-            basis_reso, basis_reso, basis_reso, n_comps
-        ).to(device=self.basis_data.device)

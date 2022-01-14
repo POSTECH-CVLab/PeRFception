@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 
 import model.jaxnerf_torch.utils as jaxnerf_torch_utils
 from dataloader.sampler import RaySet
-from dataloader.data_util.ray import batchified_get_rays
+from utils.ray import batchified_get_rays
 
 import numpy as np
 import torch
@@ -39,7 +39,7 @@ class LitData(pl.LightningDataModule):
 
         extrinsics_idx = extrinsics[idx]
         rays_o, rays_d = batchified_get_rays(
-            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers, self.ndc_coeffs
+            H, W, intrinsics, extrinsics_idx, self.args.use_pixel_centers
         )
 
         _rays = np.stack([rays_o, rays_d], axis=1)
@@ -47,7 +47,7 @@ class LitData(pl.LightningDataModule):
         n_dset = len(_rays)
 
         dummy_num = (device_count - n_dset % device_count) % device_count if dummy else 0
-        rays = np.zeros((n_dset + dummy_num, 2, 3))
+        rays = np.zeros((n_dset + dummy_num, 2, 3), dtype=np.float32)
         rays[:n_dset] = _rays
         if dummy:
             rays[n_dset:] = rays[:dummy_num]
@@ -55,7 +55,7 @@ class LitData(pl.LightningDataModule):
         if image_exist:
             images_idx = _images[idx].reshape(-1, 3)
             images = np.zeros((n_dset + dummy_num, 3))
-            images[:n_dset] = images_idx 
+            images[:n_dset] = images_idx
             images[n_dset:] = images[:dummy_num]
 
         return RaySet(images, rays), dummy_num

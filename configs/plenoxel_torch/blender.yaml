@@ -8,7 +8,7 @@ max_steps: 128000
 i_print: 100
 i_validation: 38400
 
-no_ndc: true
+ndc: false
 
 reso: "[[256, 256, 256], [512, 512, 512]]"
 upsamp_every: 38400

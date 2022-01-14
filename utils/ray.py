@@ -1,5 +1,5 @@
 import numpy as np
-
+import torch
 
 def convert_to_ndc(
     origins,
@@ -8,8 +8,6 @@ def convert_to_ndc(
     near: float = 1.0
 ):
     """Convert a set of rays to NDC coordinates."""
-    # Shift ray origins to near plane, not sure if needed
-    # Projection
     t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
     origins = origins + t[Ellipsis, None] * directions
 
@@ -22,12 +20,12 @@ def convert_to_ndc(
     d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
     d2 = 2 * near / oz
 
-    origins = np.stack([o0, o1, o2], -1)
-    directions = np.stack([d0, d1, d2], -1)
+    origins = torch.stack([o0, o1, o2], -1)
+    directions = torch.stack([d0, d1, d2], -1)
 
     return origins, directions
 
-def batchified_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers, ndc_coeffs): 
+def batchified_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers): 
     center = 0.5 if use_pixel_centers else 0. 
     N_img = extrinsics.shape[0]
     i, j = np.meshgrid(
@@ -45,11 +43,11 @@ def batchified_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers, ndc_coe
         "nhwc, nrc -> nhwr", dirs, extrinsics[:, :3, :3]
     ).reshape(-1, 3)
     rays_o = np.tile(
-        extrinsics[:, np.newaxis, :3, -1], (1, h * w, 1)
+        extrinsics[:, np.newaxis, :3, 3], (1, h * w, 1)
     ).reshape(-1, 3)
-
-    if ndc_coeffs[0] != -1 or ndc_coeffs[1] != -1:
-        rays_o, rays_d = convert_to_ndc(rays_o, rays_d, ndc_coeffs)
     rays_d /= np.linalg.norm(rays_d, axis=-1, keepdims=True)
+
+    tofloat32 = lambda x : x.astype(np.float32)
+    rays_o, rays_d = tofloat32(rays_o), tofloat32(rays_d)
 
     return rays_o, rays_d

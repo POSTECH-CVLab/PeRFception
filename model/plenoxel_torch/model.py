@@ -12,6 +12,7 @@ from dataloader.co3d import LitCo3D
 
 import utils.metrics as metrics
 import utils.store_image as store_image
+import utils.ray as ray
 import model.plenoxel_torch.sparse_grid as sparse_grid
 import model.plenoxel_torch.utils as utils
 import model.plenoxel_torch.dataclass as dataclass
@@ -19,12 +20,7 @@ import torch.nn as nn
 
 from config import str2bool
 
-from model.plenoxel_torch.__global__ import (
-    BASIS_TYPE_3D_TEXTURE,
-    BASIS_TYPE_MLP,
-    BASIS_TYPE_SH,
-)
-
+from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
 
 class ResampleCallBack(pl.Callback):
     def __init__(self, args):
@@ -80,7 +76,6 @@ class LitPlenoxel(LitModel):
             use_sphere_bound=self.use_sphere_bound and not args.nosphereinit,
             basis_dim=args.sh_dim,
             use_z_order=True,
-            basis_reso=self.args.basis_reso,
             basis_type=eval("BASIS_TYPE_" + args.basis_type.upper()),
             mlp_posenc_size=args.mlp_posenc_size,
             mlp_width=args.mlp_width,
@@ -175,8 +170,12 @@ class LitPlenoxel(LitModel):
 
         rays, target = batch["ray"].to(torch.float32), batch["target"].to(
             torch.float32)
-
+        
+        if self.ndc_coeffs[0] != -1 or self.ndc_coeffs[1] != -1:
+            rays = torch.stack(ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1)
+        
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
+        
         rgb = self.model.volume_render_fused(
             rays,
             target,
@@ -238,11 +237,6 @@ class LitPlenoxel(LitModel):
                 contiguous=args.tv_contiguous,
             )
 
-        if args.lambda_tv_basis > 0.0:
-            tv_basis = self.model.tv_basis()
-            loss_tv_basis = tv_basis * args.lambda_tv_basis
-            loss_tv_basis.backward()
-
         if gstep >= args.lr_fg_begin_step:
             self.model.optim_density_step(
                 lr_sigma, beta=args.rms_beta, optim=args.sigma_optim
@@ -271,6 +265,8 @@ class LitPlenoxel(LitModel):
                 (len(batch["ray"]), 3), dtype=torch.float32, device=self.device
             ) + 0.5
 
+        if self.ndc_coeffs[0] != -1 or self.ndc_coeffs[1] != -1:
+            rays = torch.stack(ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1)
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
             rays,
@@ -448,12 +444,6 @@ class LitPlenoxel(LitModel):
             choices=["sh", "3d_texture", "mlp"],
             default="sh",
             help="Basis function type",
-        )
-        group.add_argument(
-            "--basis_reso",
-            type=int,
-            default=32,
-            help="basis grid resolution (only for learned texture)",
         )
         group.add_argument(
             "--sh_dim",
@@ -781,15 +771,6 @@ class LitPlenoxel(LitModel):
             default=0.01
         )
         # End Background TV
-
-        # Basis TV
-        group.add_argument(
-            "--lambda_tv_basis",
-            type=float,
-            default=0.0,
-            help="Learned basis total variation loss",
-        )
-        # End Basis TV
 
         group.add_argument("--weight_decay_sigma", type=float, default=1.0)
         group.add_argument("--weight_decay_sh", type=float, default=1.0)

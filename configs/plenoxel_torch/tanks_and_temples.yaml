@@ -9,7 +9,7 @@ i_print: 100
 i_validation: 25600
 use_pixel_centers: true
 
-no_ndc: true
+ndc: false
 chunk: 65536
 
 upsamp_every: 25600

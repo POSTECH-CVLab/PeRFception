@@ -12,7 +12,7 @@ i_print: 100
 i_validation: 38400
 use_pixel_centers: true
 
-no_ndc: false
+ndc: true
 
 reso: "[[256, 256, 128], [512, 512, 128], [1408, 1156, 128]]"
 upsamp_every: 38400

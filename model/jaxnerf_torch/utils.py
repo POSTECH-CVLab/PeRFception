@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
+import utils.ray as ray
 
 
 def img2mse(x, y): 
@@ -273,16 +274,20 @@ def render(
     rays=None,
     near=0.0,
     far=1.0,
+    ndc_coeffs=(-1., -1.),
     **kwargs,
 ):
 
     rays_o, rays_d = rays[:, 0], rays[:, 1]
-    viewdirs = rays_d.reshape([-1, 3]).float()
+    viewdirs = rays_d
     sh = rays_d.shape 
 
     # Create ray batch
     rays_o = torch.reshape(rays_o, [-1, 3]).float()
     rays_d = torch.reshape(rays_d, [-1, 3]).float()
+
+    if ndc_coeffs[0] != -1 or ndc_coeffs[1] != -1:
+        rays_o, rays_d = ray.convert_to_ndc(rays_o, rays_d, ndc_coeffs)
 
     near, far = near * torch.ones_like(rays_d[...,:1]), far * torch.ones_like(rays_d[...,:1])
 

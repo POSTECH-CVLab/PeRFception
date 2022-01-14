@@ -98,10 +98,10 @@ def config_parser():
         "--factor", type=int, default=8, help="downsample factor for LLFF images"
     )
     llff.add_argument(
-        "--no_ndc",
+        "--ndc",
         type=str2bool,
         nargs="?",
-        const=True,
+        const=False,
         help="do not use normalized device coordinates (set for non-forward facing scenes)",
     )
     llff.add_argument(
@@ -213,14 +213,6 @@ def config_parser():
         const=True,
         default=False, 
         help="Run with a custom optimization step"
-    )
-    runmode.add_argument(
-        "--run_large_model",         
-        type=str2bool,
-        nargs="?",
-        const=True,
-        default=False,
-        help="For wandb sweep: run large nerf model"
     )
 
     config = parser.add_argument_group("config")

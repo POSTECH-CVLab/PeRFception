@@ -75,7 +75,9 @@ class LitJaxNeRF(LitModel):
     # The external dataset will be called.
     def __init__(self, args):
         super(LitJaxNeRF, self).__init__(args)
-        self.forward_fun = utils.render
+        self.forward_fun = functools.partial(
+            utils.render, ndc_coeffs=self.ndc_coeffs
+        )
 
     def create_model(self):
         args = self.args
@@ -130,7 +132,7 @@ class LitJaxNeRF(LitModel):
         }
 
         # NDC only good for LLFF-style forward facing data
-        if args.no_ndc:
+        if not args.ndc:
             render_kwargs_train["lindisp"] = args.lindisp
 
         render_kwargs_test = {

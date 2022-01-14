@@ -30,10 +30,7 @@ class RenderOptions:
     sigma_thresh: float = 1e-10  # Voxels with sigmas < this are ignored, in [0, 1]
     #  make this higher for fast rendering
 
-    stop_thresh: float = (
-        1e-7  # Stops rendering if the remaining light intensity/termination, in [0, 1]
-    )
-    #  probability is <= this much (forward only)
+    stop_thresh: float = 1e-7
     #  make this higher for fast rendering
 
     last_sample_opaque: bool = False  # Make the last sample opaque (for forward-facing)
@@ -43,7 +40,6 @@ class RenderOptions:
 
     random_sigma_std: float = 1.0  # Noise to add to sigma (only if randomize=True)
     random_sigma_std_background: float = 1.0  # Noise to add to sigma
-    # (for the BG model; only if randomize=True)
 
     def _to_cpp(self, randomize: bool = False):
         """

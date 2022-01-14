@@ -29,3 +29,4 @@ tv_decay: 0.5
 sh_dim: 4
 
 postfix: "_sh2_large"
+ndc: false

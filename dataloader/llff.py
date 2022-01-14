@@ -40,13 +40,13 @@ class LitLLFF(LitData):
         i_val = i_test
         is_train = lambda i: i not in i_test and i not in i_val
         i_train = np.array([i for i in np.arange(len(images)) if is_train(i)])
-        self.near = np.ndarray.min(bds) * 0.9 if args.no_ndc else 0.
-        self.far = np.ndarray.max(bds) * 1.0 if args.no_ndc else 1.
+        self.near = np.ndarray.min(bds) * 0.9 if not args.ndc else 0.
+        self.far = np.ndarray.max(bds) * 1.0 if not args.ndc else 1.
 
         self.image_len = h * w
         self.h, self.w = h, w
 
-        if not args.no_ndc:
+        if args.ndc:
             self.ndc_coeffs = (
                 2 * self.intrinsics[0][0] / self.w,
                 2 * self.intrinsics[1][1] / self.h
