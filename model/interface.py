@@ -49,7 +49,7 @@ class LitModel(pl.LightningModule):
         if torch.cuda.device_count() == 1 and not self.args.tpu:
             return torch.cat([out[key] for out in outputs_gather]).detach().cpu()
         dim = outputs_gather[0][key].shape[-1] if outputs_gather[0][key].dim() == 3 else 1 
-        ret = torch.cat([out[key].transpose(1, 0).view(-1, dim) for out in outputs_gather]) 
+        ret = torch.cat([out[key].transpose(1, 0).reshape(-1, dim) for out in outputs_gather]) 
         return ret.detach().cpu()
 
     # Gather the outputs into the ordinary device
