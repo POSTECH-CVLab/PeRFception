@@ -276,8 +276,18 @@ def transform_pose_llff(poses):
     return ret
 
 def load_llff_data(
-    basedir, factor=8, recenter=True, bd_factor=0.75, path_zflat=False, spherify=False,
+    datadir: str, 
+    scene_name: str,
+    factor: int, 
+    ndc_coord: bool, 
+    recenter: bool, 
+    bd_factor: float, 
+    spherify: bool,
+    llffhold: int, 
+    path_zflat: bool, 
 ):
+
+    basedir = os.path.join(datadir, scene_name)
     poses, bds, imgs = _load_data(basedir, factor=factor)  
     # factor=8 downsamples original imgs by 8x
 
@@ -342,5 +352,57 @@ def load_llff_data(
     poses = transform_pose_llff(poses)
     render_poses = transform_pose_llff(render_poses)
 
-    return images, poses, bds, render_poses, i_test
+    if not isinstance(i_test, list):
+        i_test = [i_test]
+
+    num_frame = len(poses)
+    hwf = poses[0, :3, -1]
+    extrinsics = poses[:, :3, :4]
+    h, w, focal = hwf
+    h, w = int(h), int(w)
+    hwf = [h, w, focal]
+    intrinsics = np.array(
+        [
+            [
+                [focal, 0., 0.5 * w],
+                [0., focal, 0.5 * h],
+                [0., 0., 1.]
+            ] for _ in range(num_frame)
+        ]
+    )
+
+    if llffhold > 0:
+        i_test = np.arange(num_frame)[::llffhold]
+
+    i_val = i_test
+    is_train = lambda i: i not in i_test and i not in i_val
+    i_train = np.array([i for i in np.arange(num_frame) if is_train(i)])
+
+    near = np.ndarray.min(bds) * 0.9 if not ndc_coord else 0.
+    far = np.ndarray.max(bds) * 1.0 if not ndc_coord else 1.
+
+    image_sizes = np.array([[h, w] for i in range(num_frame)])
+
+    i_all = np.arange(num_frame)
+    i_split = (i_train, i_val, i_test, i_all)
+
+    if ndc_coord:
+        ndc_coeffs = (
+            2 * intrinsics[0, 0, 0] / w,
+            2 * intrinsics[0, 1, 1] / h
+        )
+    else:
+        ndc_coeffs = (-1., -1.)
+
+    return (
+        images, 
+        intrinsics, 
+        extrinsics, 
+        image_sizes, 
+        near, 
+        far, 
+        ndc_coeffs,
+        i_split,
+        render_poses
+    )
 

@@ -1,0 +1,10 @@
+
+run.dataset_name = "llff"
+run.datadir = "data/llff"
+run.logbase = "logs"
+
+LitData.batch_sampler = "all_images_wo_replace"
+LitData.ndc_coord = False
+
+LitDataLLFF.factor = 4
+LitDataLLFF.llffhold = 8

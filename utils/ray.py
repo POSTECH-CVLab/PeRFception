@@ -25,29 +25,44 @@ def convert_to_ndc(
 
     return origins, directions
 
-def batchified_get_rays(h, w, intrinsics, extrinsics, use_pixel_centers): 
+def batchified_get_rays(
+    intrinsics, 
+    extrinsics, 
+    image_sizes, 
+    use_pixel_centers
+): 
     center = 0.5 if use_pixel_centers else 0. 
-    N_img = extrinsics.shape[0]
-    i, j = np.meshgrid(
+    mesh_grids = [np.meshgrid(
         np.arange(w, dtype=np.float32) + center, 
         np.arange(h, dtype=np.float32) + center, 
         indexing="xy"
-    )
-    i, j = np.tile(i, (N_img, 1, 1)), np.tile(j, (N_img, 1, 1))
-    dirs = np.stack([
-        (i - intrinsics[0][2]) / intrinsics[0][0],
-        (j - intrinsics[1][2]) / intrinsics[1][1],
-        np.ones_like(i)
-    ], -1)
-    rays_d = np.einsum(
-        "nhwc, nrc -> nhwr", dirs, extrinsics[:, :3, :3]
-    ).reshape(-1, 3)
-    rays_o = np.tile(
-        extrinsics[:, np.newaxis, :3, 3], (1, h * w, 1)
-    ).reshape(-1, 3)
-    rays_d /= np.linalg.norm(rays_d, axis=-1, keepdims=True)
+    ) for (h, w) in image_sizes]
+    
+    i_coords = [mesh_grid[0] for mesh_grid in mesh_grids]
+    j_coords = [mesh_grid[1] for mesh_grid in mesh_grids]
 
-    tofloat32 = lambda x : x.astype(np.float32)
-    rays_o, rays_d = tofloat32(rays_o), tofloat32(rays_d)
+    dirs = [
+        np.stack(
+            [
+                (i - intrinsic[0][2]) / intrinsic[0][0],
+                (j - intrinsic[1][2]) / intrinsic[1][1],
+                np.ones_like(i)
+            ], -1
+        ) for (intrinsic, i, j) in zip(intrinsics, i_coords, j_coords)
+    ]
+
+    rays_o = np.concatenate([
+        np.tile(
+            extrinsic[np.newaxis, :3, 3], (1, h * w, 1)
+        ).reshape(-1, 3) for (extrinsic, (h, w)) in zip(extrinsics, image_sizes)
+    ]).astype(np.float32)
+
+    rays_d = np.concatenate([
+        np.einsum(
+            "hwc, rc -> hwr", dir, extrinsic[:3, :3]
+        ).reshape(-1, 3) for (dir, extrinsic) in zip(dirs, extrinsics)
+    ]).astype(np.float32)
+
+    rays_d /= np.linalg.norm(rays_d, axis=-1, keepdims=True)
 
     return rays_o, rays_d

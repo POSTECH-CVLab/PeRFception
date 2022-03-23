@@ -1,71 +1,125 @@
 import pytorch_lightning as pl
-import os
 
+import numpy as np
 import torch
+import json
+
+from piqa.ssim import SSIM
+from piqa.lpips import LPIPS
+
+reshape_2d = lambda x: x.reshape((x.shape[0], -1))
+clip_0_1 = lambda x: torch.clip(x, 0, 1).detach()
 
 class LitModel(pl.LightningModule):
 
-    def train_dataloader(self):
-        return self.dataset.train_dataloader()
-
-    def test_dataloader(self):
-        return self.dataset.test_dataloader()
-
-    def val_dataloader(self):
-        return self.dataset.val_dataloader()
-
-    def predict_dataloader(self):
-        return self.dataset.predict_dataloader()
-
-    def __init__(self, args):
-        super(LitModel, self).__init__()
-        assert hasattr(self, "dataset")
-        self.args = args
-        self.h, self.w = self.dataset.h, self.dataset.w
-        self.logdir = os.path.join(args.basedir, args.expname)
-        self.i_train, self.i_val, self.i_test = self.dataset.i_train, self.dataset.i_val, self.dataset.i_test
-        self.val_dummy, self.test_dummy, self.pred_dummy = self.dataset.val_dummy, self.dataset.test_dummy, self.dataset.pred_dummy
-        self.near, self.far = self.dataset.near, self.dataset.far,
-        self.img_size = self.h * self.w
-        self.intrinsics = self.dataset.intrinsics
-        self.extrinsics = self.dataset.extrinsics
-        self.ndc_coeffs = self.dataset.ndc_coeffs
-        self.create_model()
-
-    def on_train_start(self):
-        self.logger.log_hyperparams(self.args)
-
-    def create_model(self):
-        raise NotImplemented("Implement the [create_model] function")
-
-    def training_step(self):
-        raise NotImplemented("Implement the [training_step] function")
-    
     # Utils to reorganize output values from evaluation steps, 
     # i.e., validation and test step.
-    def alter_cat(self, outputs_gather, key):
-        if not key in outputs_gather[0].keys():
-            return None
-        if torch.cuda.device_count() == 1 and not self.args.tpu:
-            return torch.cat([out[key] for out in outputs_gather]).detach().cpu()
-        dim = outputs_gather[0][key].shape[-1] if outputs_gather[0][key].dim() == 3 else 1 
-        ret = torch.cat([out[key].transpose(1, 0).reshape(-1, dim) for out in outputs_gather]) 
-        return ret.detach().cpu()
+    def alter_gather_cat(self, outputs, key, image_sizes):
+        each = torch.cat([output[key] for output in outputs])
+        all = self.all_gather(each).detach()
+        if all.dim() == 3:
+            all = all.permute((1, 0, 2)).flatten(0, 1)
+        ret, curr = [], 0
+        for (h, w) in image_sizes: 
+            ret.append(all[curr:curr+h*w].reshape(h, w, 3))
+            curr += h * w
+        return ret
 
-    # Gather the outputs into the ordinary device
-    # and remove the dummy values for proper evaluation.
-    def gather_results(self, outputs, dummy_num):
-        outputs_gather = self.all_gather(outputs)
-        del outputs
-        rgbs = self.alter_cat(outputs_gather, "rgb")
-        target = self.alter_cat(outputs_gather, "target")
-        depths = self.alter_cat(outputs_gather, "depth")
-        del outputs_gather
-        if dummy_num != 0:
-            rgbs, depths = rgbs[:-dummy_num], depths[:-dummy_num]
-            if target is not None:
-                target = target[:-dummy_num]
-        return rgbs, target, depths
+    @torch.no_grad()
+    def psnr_each(self, preds, gts):
+        psnr_list = []
+        for (pred, gt) in zip(preds, gts): 
+            mse = torch.mean((pred - gt) ** 2)
+            psnr = -10.0 * torch.log(mse) / np.log(10)
+            psnr_list.append(psnr)
+        return torch.stack(psnr_list)
 
-    def load(self, trainer, ckpt_path):
-        return
+    @torch.no_grad()
+    def ssim_each(self, preds, gts):
+        ssim_model = SSIM().to(device=self.device)
+        ssim_list = []
+        for (pred, gt) in zip(preds, gts):        
+            pred = torch.clip(
+                pred.permute((2, 0, 1)).unsqueeze(0).float(), 
+                0, 1
+            )
+            gt = torch.clip(
+                gt.permute((2, 0, 1)).unsqueeze(0).float(),
+                0, 1
+            )
+            ssim = ssim_model(pred, gt)
+            ssim_list.append(ssim) 
+        del ssim_model
+        return torch.stack(ssim_list)
+
+    @torch.no_grad()
+    def lpips_each(self, preds, gts):
+        lpips_model = LPIPS(network="vgg").to(device=self.device)
+        lpips_list = []
+        for (pred, gt) in zip(preds, gts):
+            pred = torch.clip(
+                pred.permute((2, 0, 1)).unsqueeze(0).float(), 
+                0, 1
+            )
+            gt = torch.clip(
+                gt.permute((2, 0, 1)).unsqueeze(0).float(),
+                0, 1
+            )
+            lpips = lpips_model(pred, gt)
+            lpips_list.append(lpips) 
+        del lpips_model
+        return torch.stack(lpips_list)
+
+    @torch.no_grad()
+    def psnr(self, preds, gts, i_train, i_val, i_test):
+        ret = {}
+        ret["name"] = "PSNR"
+        psnr_list = self.psnr_each(preds, gts)
+        ret["mean"] = psnr_list.mean().item()
+        if self.trainer.datamodule.eval_test_only:
+            ret["test"] = psnr_list.mean().item()
+        else:
+            ret["train"] = psnr_list[i_train].mean().item()
+            ret["val"] = psnr_list[i_val].mean().item()
+            ret["test"] = psnr_list[i_test].mean().item()
+            
+        return ret
+    
+    @torch.no_grad()
+    def ssim(self, preds, gts, i_train, i_val, i_test):
+        ret = {}
+        ret["name"] = "SSIM"
+        ssim_list = self.ssim_each(preds, gts)
+        ret["mean"] = ssim_list.mean().item()
+        if self.trainer.datamodule.eval_test_only:
+            ret["test"] = ssim_list.mean().item()
+        else:
+            ret["train"] = ssim_list[i_train].mean().item()
+            ret["val"] = ssim_list[i_val].mean().item()
+            ret["test"] = ssim_list[i_test].mean().item()
+            
+        return ret
+    
+    @torch.no_grad()
+    def lpips(self, preds, gts, i_train, i_val, i_test):
+        ret = {}
+        ret["name"] = "LPIPS"
+        lpips_list = self.lpips_each(preds, gts)
+        ret["mean"] = lpips_list.mean().item()
+        if self.trainer.datamodule.eval_test_only:
+            ret["test"] = lpips_list.mean().item()
+        else:
+            ret["train"] = lpips_list[i_train].mean().item()
+            ret["val"] = lpips_list[i_val].mean().item()
+            ret["test"] = lpips_list[i_test].mean().item()
+            
+        return ret
+    
+    def write_stats(self, fpath, *stats):
+        
+        d = {}
+        for stat in stats:
+            d[stat["name"]] = {k : float(w) for (k, w) in stat.items() if k != "name" and k != "scene_wise"}
+
+        with open(fpath, 'w') as fp:
+            json.dump(d, fp, indent=4, sort_keys=True)

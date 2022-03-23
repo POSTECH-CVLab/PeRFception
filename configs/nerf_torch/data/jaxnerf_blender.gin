@@ -1,0 +1,9 @@
+
+run.dataset_name = "blender"
+run.datadir = "data/blender"
+run.logbase = "logs"
+
+LitData.ndc_coord = True
+LitData.batch_sampler = "single_image"
+
+LitNeRF.white_bkgd = True

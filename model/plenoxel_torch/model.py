@@ -3,14 +3,9 @@ import os
 import numpy as np
 import torch
 import pytorch_lightning as pl
-from dataloader.tnt import LitTnT
 
 from model.interface import LitModel
-from dataloader.blender import LitBlender
-from dataloader.llff import LitLLFF
-from dataloader.co3d import LitCo3D
 
-import utils.metrics as metrics
 import utils.store_image as store_image
 import utils.ray as ray
 import model.plenoxel_torch.sparse_grid as sparse_grid
@@ -18,103 +13,215 @@ import model.plenoxel_torch.utils as utils
 import model.plenoxel_torch.dataclass as dataclass
 import torch.nn as nn
 
-from config import str2bool
+from typing import *
 
 from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
+import gin
 
 class ResampleCallBack(pl.Callback):
-    def __init__(self, args):
-        self.args = args
-        self.upsamp_every = args.upsamp_every
+
+    def __init__(
+        self, 
+    ):
+        self.upsample_step = gin.query_parameter("LitPlenoxel.upsample_step")
 
     def on_train_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx
     ):
-        if trainer.global_step > 0 and trainer.global_step % self.upsamp_every == 0 \
+        if trainer.global_step > 0 and trainer.global_step in self.upsample_step \
             and pl_module.reso_idx + 1 < len(pl_module.reso_list):
-            if pl_module.args.tv_early_only:
-                pl_module.args.lambda_tv = 0.
-                pl_module.args.lambda_tv_sh = 0.
-            elif pl_module.args.tv_decay != 1.0:
-                pl_module.args.lambda_tv *= pl_module.args.tv_decay
-                pl_module.args.lambda_tv_sh *= pl_module.args.tv_decay
+            if pl_module.tv_early_only:
+                pl_module.lambda_tv = 0.
+                pl_module.lambda_tv_sh = 0.
+            elif pl_module.tv_decay != 1.0:
+                pl_module.lambda_tv *= pl_module.tv_decay
+                pl_module.lambda_tv_sh *= pl_module.tv_decay
 
             pl_module.reso_idx += 1
             reso = pl_module.reso_list[pl_module.reso_idx]
             pl_module.model.resample(
                 reso=reso,
-                sigma_thresh=pl_module.args.density_thresh,
-                weight_thresh=pl_module.args.weight_thresh / reso[2],
+                sigma_thresh=pl_module.density_thresh,
+                weight_thresh=pl_module.weight_thresh / reso[2],
                 dilate=2,
                 cameras=pl_module.generate_camera_list() if \
-                    pl_module.args.thresh_type == 'weight' else None,
-                max_elements=pl_module.args.max_grid_elements,
+                    pl_module.thresh_type == 'weight' else None,
+                max_elements=pl_module.max_grid_elements,
             )
 
             if pl_module.model.use_background and pl_module.reso_idx <= 1:
                 pl_module.model.sparsify_background(
-                    pl_module.args.background_density_thresh)
+                    pl_module.background_density_thresh)
 
-            if pl_module.args.upsample_density_add:
-                pl_module.model.density_data.data[:] += pl_module.args.upsample_density_add
+            if pl_module.upsample_density_add:
+                pl_module.model.density_data.data[:] += pl_module.upsample_density_add
 
 
+@gin.configurable()
 class LitPlenoxel(LitModel):
 
     # The external dataset will be called.
-    def __init__(self, args):
-        super(LitPlenoxel, self).__init__(args)
+    def __init__(
+        self, 
+        reso: List[List[int]] = [[256, 256, 256], [512, 512, 512]],
+        upsample_step: List[int] = [38400, 76800], 
+        ndc_coeffs: List[int] = [-1., -1.],
+        init_iters: int = 0,
+        upsample_density_add: float = 0.0, 
+        basis_type: str = "sh",
+        sh_dim: int = 9,
+        mlp_posenc_size: int = 4, 
+        mlp_width: int = 32, 
+        background_nlayers: int = 0,
+        background_reso: int = 512,
+        # Sigma Optim
+        sigma_optim: str = "rmsprop", 
+        lr_sigma: float = 3e1,
+        lr_sigma_final: float = 5e-2,
+        lr_sigma_decay_steps: int = 250000,
+        lr_sigma_delay_steps: int = 15000,
+        lr_sigma_delay_mult: float = 1e-2, 
+        # SH Optim
+        sh_optim: str = "rmsprop",
+        lr_sh: float = 1e-2,
+        lr_sh_final: float = 5e-6,
+        lr_sh_decay_steps: int = 250000, 
+        lr_sh_delay_steps: int = 0,
+        lr_sh_delay_mult: float = 1e-2,
+        lr_fg_begin_step: int = 0,
+        # BG Simga Optim
+        bg_optim: str = "rmsprop", 
+        lr_sigma_bg: float = 3e0,
+        lr_sigma_bg_final: float = 3e-3,
+        lr_sigma_bg_decay_steps: int = 250000,
+        lr_sigma_bg_delay_steps: int = 0, 
+        lr_sigma_bg_delay_mult: float = 1e-2, 
+        # BG Colors Optim
+        lr_color_bg: float = 1e-1,
+        lr_color_bg_final: float = 5e-6,
+        lr_color_bg_decay_steps: int = 250000,
+        lr_color_bg_delay_steps: int = 0, 
+        lr_color_bg_delay_mult: float = 1e-2,
+        # Basis Optim
+        basis_optim: str = "rmsprop", 
+        lr_basis: float = 1e-6,
+        lr_basis_final: float = 1e-6,
+        lr_basis_decay_steps: int = 250000,
+        lr_basis_delay_steps: int = 0,
+        lr_basis_begin_step: int = 0, 
+        lr_basis_delay_mult: float = 1e-2,
+        # RMSProp Option
+        rms_beta: float = 0.95,
+        # Init Option
+        init_sigma: float = 0.1,
+        init_sigma_bg: float = 0.1, 
+        thresh_type: str = "weight", 
+        weight_thresh: float = 0.0005 * 512,
+        density_thresh: float = 5.0,
+        background_density_thresh: float = 1.0 + 1e-9,
+        max_grid_elements: int = 44_000_000,
+        tune_mode: bool = False,
+        tune_nosave: bool = False, 
+        # Losses
+        lambda_tv: float = 1e-5,
+        tv_sparsity: float = 0.01,
+        tv_logalpha: bool = False,
+        lambda_tv_sh: float = 1e-3, 
+        tv_sh_sparsity: float = 0.01, 
+        lambda_tv_lumisphere: float = 0.0,
+        tv_lumisphere_sparsity: float = 0.01,
+        tv_lumisphere_dir_factor: float = 0.0, 
+        tv_decay: float = 1.0,
+        lambda_l2_sh: float = 0.0,
+        tv_early_only: int = 1, 
+        tv_contiguous: int = 1,
+        # Other Lambdas
+        lambda_sparsity: float = 0.0,
+        lambda_beta: float = 0.0,
+        lambda_tv_background_sigma: float = 1e-2,
+        lmabda_tv_background_sparsity: float = 0.01, 
+        lambda_tv_background_color: float = 1e-2,
+        # WD
+        weight_decay_sigma: float = 1.0,
+        weight_decay_sh: float = 1.0,
+        lr_decay: bool = True,
+        n_train: Optional[int] = None,
+        nosphereinit: bool = False,
+        # Render Options
+        step_size: float = 0.5,
+        sigma_thresh: float = 1e-8,
+        stop_thresh: float = 1e-7, 
+        background_brightness: float = 1.0, 
+        renderer_backend: str = "cuvol",
+        random_sigma_std: float = 0.0, 
+        random_sigma_std_background: float = 0.0, 
+        near_clip: float = 0.00,
+        use_spheric_clip: bool = False,
+        enable_random: bool = False,
+        last_sample_opaque: bool = False
+    ):
+        for name, value in vars().items():
+            if name not in ["self", "__class__"]:
+                setattr(self, name, value)
+        
+        super(LitPlenoxel, self).__init__()
+        assert basis_type in ["sh", "3d_texture", "mlp"]
+        assert sigma_optim in ["sgd", "rmsprop"]
+        assert sh_optim in ["sgd", "rmsprop"]
+        assert bg_optim in ["sgd", "rmsprop"]
+        assert basis_optim in ["sgd", "rmsprop"]
+        assert thresh_type in ["weight", "sigma"]
+        assert renderer_backend in ["cuvol", "svox1", "nvol"]
 
         self.automatic_optimization = False
         self.reso_idx = 0
-        self.reso_list = eval(args.reso)
+        self.reso_list = reso
         self.model = sparse_grid.SparseGrid(
-            args=args,
             reso=self.reso_list[self.reso_idx],
             center=self.scene_center,
             radius=self.scene_radius,
-            use_sphere_bound=self.use_sphere_bound and not args.nosphereinit,
-            basis_dim=args.sh_dim,
+            use_sphere_bound=self.use_sphere_bound and not nosphereinit,
+            basis_dim=sh_dim,
             use_z_order=True,
-            basis_type=eval("BASIS_TYPE_" + args.basis_type.upper()),
-            mlp_posenc_size=args.mlp_posenc_size,
-            mlp_width=args.mlp_width,
-            background_nlayers=args.background_nlayers,
-            background_reso=args.background_reso,
+            basis_type=eval("BASIS_TYPE_" + basis_type.upper()),
+            mlp_posenc_size=mlp_posenc_size,
+            mlp_width=mlp_width,
+            background_nlayers=background_nlayers,
+            background_reso=background_reso,
             device=self.device,
         )
         self.lr_sigma_func = self.get_expon_lr_func(
-            args.lr_sigma,
-            args.lr_sigma_final,
-            args.lr_sigma_delay_steps,
-            args.lr_sigma_delay_mult,
-            args.lr_sigma_decay_steps,
+            lr_sigma,
+            lr_sigma_final,
+            lr_sigma_delay_steps,
+            lr_sigma_delay_mult,
+            lr_sigma_decay_steps,
         )
         self.lr_sh_func = self.get_expon_lr_func(
-            args.lr_sh,
-            args.lr_sh_final,
-            args.lr_sh_delay_steps,
-            args.lr_sh_delay_mult,
-            args.lr_sh_decay_steps,
+            lr_sh,
+            lr_sh_final,
+            lr_sh_delay_steps,
+            lr_sh_delay_mult,
+            lr_sh_decay_steps,
         )
         self.lr_sigma_bg_func = self.get_expon_lr_func(
-            args.lr_sigma_bg,
-            args.lr_sigma_bg_final,
-            args.lr_sigma_bg_delay_steps,
-            args.lr_sigma_bg_delay_mult,
-            args.lr_sigma_bg_decay_steps,
+            lr_sigma_bg,
+            lr_sigma_bg_final,
+            lr_sigma_bg_delay_steps,
+            lr_sigma_bg_delay_mult,
+            lr_sigma_bg_decay_steps,
         )
         self.lr_color_bg_func = self.get_expon_lr_func(
-            args.lr_color_bg,
-            args.lr_color_bg_final,
-            args.lr_color_bg_delay_steps,
-            args.lr_color_bg_delay_mult,
-            args.lr_color_bg_decay_steps,
+            lr_color_bg,
+            lr_color_bg_final,
+            lr_color_bg_delay_steps,
+            lr_color_bg_delay_mult,
+            lr_color_bg_decay_steps,
         )
         self.model.sh_data.data[:] = 0.0
-        self.model.density_data.data[:] = 0. if args.lr_fg_begin_step > 0 else args.init_sigma
+        self.model.density_data.data[:] = 0. if lr_fg_begin_step > 0 else init_sigma
         if self.model.use_background:
-            self.model.background_data.data[..., -1] = args.init_sigma_bg
+            self.model.background_data.data[..., -1] = init_sigma_bg
 
     def generate_camera_list(self):
         extrinsics = self.extrinsics
@@ -157,16 +264,15 @@ class LitPlenoxel(LitModel):
         return None
 
     def training_step(self, batch, batch_idx):
-        args = self.args
         gstep = self.trainer.global_step
 
-        if args.lr_fg_begin_step > 0 and gstep == args.lr_fg_begin_step:
-            self.model.density_data.data[:] = args.init_sigma
+        if self.lr_fg_begin_step > 0 and gstep == self.lr_fg_begin_step:
+            self.model.density_data.data[:] = self.init_sigma
 
         lr_sigma = self.lr_sigma_func(gstep)
         lr_sh = self.lr_sh_func(gstep)
-        lr_sigma_bg = self.lr_sigma_bg_func(gstep - args.lr_basis_begin_step)
-        lr_color_bg = self.lr_color_bg_func(gstep - args.lr_basis_begin_step)
+        lr_sigma_bg = self.lr_sigma_bg_func(gstep - self.lr_basis_begin_step)
+        lr_color_bg = self.lr_color_bg_func(gstep - self.lr_basis_begin_step)
 
         rays, target = batch["ray"].to(torch.float32), batch["target"].to(
             torch.float32)
@@ -179,9 +285,9 @@ class LitPlenoxel(LitModel):
         rgb = self.model.volume_render_fused(
             rays,
             target,
-            beta_loss=self.args.lambda_beta,
-            sparsity_loss=self.args.lambda_sparsity,
-            randomize=self.args.enable_random,
+            beta_loss=self.lambda_beta,
+            sparsity_loss=self.lambda_sparsity,
+            randomize=self.enable_random,
         )
 
         img_loss = utils.img2mse(rgb, target)
@@ -193,67 +299,68 @@ class LitPlenoxel(LitModel):
             self.log("lr_color_bg", lr_color_bg, on_step=True)
             self.log("train_psnr", psnr, on_step=True, prog_bar=True, logger=True)
 
-        if args.lambda_tv > 0.0:
+        if self.lambda_tv > 0.0:
             self.model.inplace_tv_grad(
                 self.model.density_data.grad,
-                scaling=args.lambda_tv,
-                sparse_frac=args.tv_sparsity,
-                logalpha=args.tv_logalpha,
+                scaling=self.lambda_tv,
+                sparse_frac=self.tv_sparsity,
+                logalpha=self.tv_logalpha,
                 ndc_coeffs=self.dataset.ndc_coeffs,
-                contiguous=args.tv_contiguous,
+                contiguous=self.tv_contiguous,
             )
 
-        if args.lambda_tv_sh > 0.0:
+        if self.lambda_tv_sh > 0.0:
             self.model.inplace_tv_color_grad(
                 self.model.sh_data.grad,
-                scaling=args.lambda_tv_sh,
-                sparse_frac=args.tv_sh_sparsity,
+                scaling=self.lambda_tv_sh,
+                sparse_frac=self.tv_sh_sparsity,
                 ndc_coeffs=self.dataset.ndc_coeffs,
-                contiguous=args.tv_contiguous,
+                contiguous=self.tv_contiguous,
             )
 
-        if args.lambda_tv_lumisphere > 0.0:
+        if self.lambda_tv_lumisphere > 0.0:
             self.model.inplace_tv_lumisphere_grad(
                 self.model.sh_data.grad,
-                scaling=args.lambda_tv_lumisphere,
-                dir_factor=args.tv_lumisphere_dir_factor,
-                sparse_frac=args.tv_lumisphere_sparsity,
+                scaling=self.lambda_tv_lumisphere,
+                dir_factor=self.tv_lumisphere_dir_factor,
+                sparse_frac=self.tv_lumisphere_sparsity,
                 ndc_coeffs=self.dataset.ndc_coeffs,
             )
 
-        if args.lambda_l2_sh > 0.0:
+        if self.lambda_l2_sh > 0.0:
             self.model.inplace_l2_color_grad(
-                self.model.sh_data.grad, scaling=args.lambda_l2_sh
+                self.model.sh_data.grad, scaling=self.lambda_l2_sh
             )
 
         if self.model.use_background and (
-                args.lambda_tv_background_sigma > 0.0
-                or args.lambda_tv_background_color > 0.0):
+                self.lambda_tv_background_sigma > 0.0
+                or self.lambda_tv_background_color > 0.0):
+
             self.model.inplace_tv_background_grad(
                 self.model.background_data.grad,
-                scaling=args.lambda_tv_background_color,
-                scaling_density=args.lambda_tv_background_sigma,
-                sparse_frac=args.tv_background_sparsity,
-                contiguous=args.tv_contiguous,
+                scaling=self.lambda_tv_background_color,
+                scaling_density=self.lambda_tv_background_sigma,
+                sparse_frac=self.tv_background_sparsity,
+                contiguous=self.tv_contiguous,
             )
 
-        if gstep >= args.lr_fg_begin_step:
+        if gstep >= self.lr_fg_begin_step:
             self.model.optim_density_step(
-                lr_sigma, beta=args.rms_beta, optim=args.sigma_optim
+                lr_sigma, beta=self.rms_beta, optim=self.sigma_optim
             )
             self.model.optim_sh_step(
-                lr_sh, beta=args.rms_beta, optim=args.sh_optim
+                lr_sh, beta=self.rms_beta, optim=self.sh_optim
             )
 
         if self.model.use_background:
             self.model.optim_background_step(
-                lr_sigma_bg, lr_color_bg, beta=args.rms_beta, optim=args.bg_optim
+                lr_sigma_bg, lr_color_bg, beta=self.rms_beta, optim=self.bg_optim
             )
 
-        if args.weight_decay_sh < 1.0 and gstep % 20 == 0:
-            self.model.sh_data.data *= args.weight_decay_sigma
-        if args.weight_decay_sigma < 1.0 and gstep % 20 == 0:
-            self.model.density_data.data *= args.weight_decay_sh
+        if self.weight_decay_sh < 1.0 and gstep % 20 == 0:
+            self.model.sh_data.data *= self.weight_decay_sigma
+        if self.weight_decay_sigma < 1.0 and gstep % 20 == 0:
+            self.model.density_data.data *= self.weight_decay_sh
 
     def render_rays(self, batch, batch_idx, cpu=False):
         ret = {}
@@ -271,8 +378,8 @@ class LitPlenoxel(LitModel):
         rgb = self.model.volume_render_fused(
             rays,
             target,
-            beta_loss=self.args.lambda_beta,
-            sparsity_loss=self.args.lambda_sparsity,
+            beta_loss=self.lambda_beta,
+            sparsity_loss=self.lambda_sparsity,
             randomize=False,
         )
         depth = self.model.volume_render_depth(rays, None)
@@ -303,20 +410,20 @@ class LitPlenoxel(LitModel):
             np_rgbs = rgbs.view(-1, self.h, self.w, 3).numpy()
             np_target = target.view(-1, self.h, self.w, 3).numpy()
             np_depths = depths.view(-1, self.h, self.w).numpy()
-            psnr = metrics.psnr(np_rgbs, np_target, self.i_train, self.i_val,
+            psnr = self.psnr(np_rgbs, np_target, self.i_train, self.i_val,
                                 self.i_test)
-            ssim = metrics.ssim(np_rgbs, np_target, self.i_train, self.i_val,
+            ssim = self.ssim(np_rgbs, np_target, self.i_train, self.i_val,
                                 self.i_test)
-            lpips = metrics.lpips_v(np_rgbs, np_target, self.i_train,
+            lpips = self.lpips(np_rgbs, np_target, self.i_train,
                                     self.i_val, self.i_test)
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
             store_image.store_image(image_dir, np_rgbs, np_depths)
 
-            metrics.write_stats(os.path.join(self.logdir, "results.txt"), psnr,
+            self.write_stats(os.path.join(self.logdir, "results.txt"), psnr,
                                 ssim, lpips)
 
-            metrics.write_stats_json(
+            self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
             )
             
@@ -406,516 +513,42 @@ class LitPlenoxel(LitModel):
 
         return super().on_load_checkpoint(checkpoint)
 
-    @staticmethod
-    def add_model_specific_args(parser):
 
-        group = parser.add_argument_group("general")
-        group.add_argument(
-            "--reso",
-            type=str,
-            default="[[256, 256, 256], [512, 512, 512]]",
-            help="""
-            List of grid resolution (will be evaled as json);
-            resamples to the next one every upsamp_every iters, then
-            stays at the last one; 
-            should be a list where each item is a list of 3 ints or an int'
-            """,
-        )
-        group.add_argument(
-            "--upsamp_every",
-            type=int,
-            default=3 * 12800,
-            help="upsample the grid every x iters",
-        )
-        group.add_argument(
-            "--init_iters",
-            type=int,
-            default=0,
-            help="do not upsample for first x iters",
-        )
-        group.add_argument(
-            "--upsample_density_add",
-            type=float,
-            default=0.0,
-            help="add the remaining density by this amount when upsampling",
-        )
-        group.add_argument(
-            "--basis_type",
-            choices=["sh", "3d_texture", "mlp"],
-            default="sh",
-            help="Basis function type",
-        )
-        group.add_argument(
-            "--sh_dim",
-            type=int,
-            default=9,
-            help="SH/learned basis dimensions (at most 10)",
-        )
-
-        group.add_argument(
-            "--mlp_posenc_size",
-            type=int,
-            default=4,
-            help="Positional encoding size if using MLP basis; 0 to disable",
-        )
-        group.add_argument(
-            "--mlp_width",
-            type=int,
-            default=32,
-            help="MLP width if using MLP basis"
-        )
-
-        group.add_argument(
-            "--background_nlayers",
-            type=int,
-            default=0,
-            help="Number of background layers (0=disable BG model)",
-        )
-        group.add_argument(
-            "--background_reso",
-            type=int,
-            default=512,
-            help="Background resolution"
-        )
-
-        group = parser.add_argument_group("optimization")
-
-        group.add_argument(
-            "--sigma_optim",
-            choices=["sgd", "rmsprop"],
-            default="rmsprop",
-            help="Density optimizer",
-        )
-        group.add_argument(
-            "--lr_sigma",
-            type=float,
-            default=3e1,
-            help="SGD/rmsprop lr for sigma"
-        )
-        group.add_argument("--lr_sigma_final", type=float, default=5e-2)
-        group.add_argument("--lr_sigma_decay_steps", type=int, default=250000)
-        group.add_argument(
-            "--lr_sigma_delay_steps",
-            type=int,
-            default=15000,
-            help="Reverse cosine steps (0 means disable)",
-        )
-        group.add_argument("--lr_sigma_delay_mult", type=float, default=1e-2)
-
-        group.add_argument(
-            "--sh_optim",
-            choices=["sgd", "rmsprop"],
-            default="rmsprop",
-            help="SH optimizer",
-        )
-        group.add_argument(
-            "--lr_sh",
-            type=float,
-            default=1e-2,
-            help="SGD/rmsprop lr for SH"
-        )
-        group.add_argument("--lr_sh_final", type=float, default=5e-6)
-        group.add_argument("--lr_sh_decay_steps", type=int, default=250000)
-        group.add_argument(
-            "--lr_sh_delay_steps",
-            type=int,
-            default=0,
-            help="Reverse cosine steps (0 means disable)",
-        )
-        group.add_argument("--lr_sh_delay_mult", type=float, default=1e-2)
-        group.add_argument(
-            "--lr_fg_begin_step",
-            type=int,
-            default=0,
-            help="Foreground begins training at given step number",
-        )
-
-        # BG LRs
-        group.add_argument(
-            "--bg_optim",
-            choices=["sgd", "rmsprop"],
-            default="rmsprop",
-            help="Background optimizer",
-        )
-        group.add_argument(
-            "--lr_sigma_bg",
-            type=float,
-            default=3e0,
-            help="SGD/rmsprop lr for background",
-        )
-        group.add_argument(
-            "--lr_sigma_bg_final",
-            type=float,
-            default=3e-3,
-            help="SGD/rmsprop lr for background",
-        )
-        group.add_argument(
-            "--lr_sigma_bg_decay_steps",
-            type=int,
-            default=250000
-        )
-        group.add_argument(
-            "--lr_sigma_bg_delay_steps",
-            type=int,
-            default=0,
-            help="Reverse cosine steps (0 means disable)",
-        )
-        group.add_argument(
-            "--lr_sigma_bg_delay_mult",
-            type=float,
-            default=1e-2
-        )
-
-        group.add_argument(
-            "--lr_color_bg",
-            type=float,
-            default=1e-1,
-            help="SGD/rmsprop lr for background",
-        )
-        group.add_argument(
-            "--lr_color_bg_final",
-            type=float,
-            default=5e-6,
-            help="SGD/rmsprop lr for background",
-        )
-        group.add_argument(
-            "--lr_color_bg_decay_steps",
-            type=int,
-            default=250000
-        )
-        group.add_argument(
-            "--lr_color_bg_delay_steps",
-            type=int,
-            default=0,
-            help="Reverse cosine steps (0 means disable)",
-        )
-        group.add_argument(
-            "--lr_color_bg_delay_mult",
-            type=float,
-            default=1e-2
-        )
-
-        group.add_argument(
-            "--basis_optim",
-            choices=["sgd", "rmsprop"],
-            default="rmsprop",
-            help="Learned basis optimizer",
-        )
-        group.add_argument(
-            "--lr_basis",
-            type=float,
-            default=1e-6,
-            help="SGD/rmsprop lr for SH"
-        )
-        group.add_argument("--lr_basis_final", type=float, default=1e-6)
-        group.add_argument("--lr_basis_decay_steps", type=int, default=250000)
-        group.add_argument(
-            "--lr_basis_delay_steps",
-            type=int,
-            default=0,
-            help="Reverse cosine steps (0 means disable)",
-        )
-        group.add_argument("--lr_basis_begin_step", type=int, default=0)
-        group.add_argument("--lr_basis_delay_mult", type=float, default=1e-2)
-
-        group.add_argument(
-            "--rms_beta",
-            type=float,
-            default=0.95,
-            help="RMSProp exponential averaging factor",
-        )
-
-        group.add_argument(
-            "--init_sigma",
-            type=float,
-            default=0.1,
-            help="initialization sigma"
-        )
-        group.add_argument(
-            "--init_sigma_bg",
-            type=float,
-            default=0.1,
-            help="initialization sigma (for BG)",
-        )
-
-        group = parser.add_argument_group("misc experiments")
-        group.add_argument(
-            "--thresh_type",
-            choices=["weight", "sigma"],
-            default="weight",
-            help="Upsample threshold type",
-        )
-        group.add_argument(
-            "--weight_thresh",
-            type=float,
-            default=0.0005 * 512,
-            #  default=0.025 * 512,
-            help=
-            "Upsample weight threshold; will be divided by resulting z-resolution",
-        )
-        group.add_argument(
-            "--density_thresh",
-            type=float,
-            default=5.0,
-            help="Upsample sigma threshold"
-        )
-        group.add_argument(
-            "--background_density_thresh",
-            type=float,
-            default=1.0 + 1e-9,
-            help="Background sigma threshold for sparsification",
-        )
-        group.add_argument(
-            "--max_grid_elements",
-            type=int,
-            default=44_000_000,
-            help="Max items to store after upsampling "
-            "(the number here is given for 22GB memory)",
-        )
-
-        group.add_argument(
-            "--tune_mode",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="hypertuning mode (do not save, for speed)",
-        )
-        group.add_argument(
-            "--tune_nosave",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="do not save any checkpoint even at the end",
-        )
-
-        group = parser.add_argument_group("losses")
-        # Foreground TV
-        group.add_argument("--lambda_tv", type=float, default=1e-5)
-        group.add_argument("--tv_sparsity", type=float, default=0.01)
-        group.add_argument(
-            "--tv_logalpha",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="Use log(1-exp(-delta * sigma)) as in neural volumes",
-        )
-
-        group.add_argument("--lambda_tv_sh", type=float, default=1e-3)
-        group.add_argument("--tv_sh_sparsity", type=float, default=0.01)
-
-        group.add_argument("--lambda_tv_lumisphere", type=float, default=0.0)
-        group.add_argument(
-            "--tv_lumisphere_sparsity",
-            type=float,
-            default=0.01
-        )
-        group.add_argument(
-            "--tv_lumisphere_dir_factor",
-            type=float,
-            default=0.0
-        )
-
-        group.add_argument("--tv_decay", type=float, default=1.0)
-
-        group.add_argument("--lambda_l2_sh", type=float, default=0.0)  # 1e-4)
-        group.add_argument(
-            "--tv_early_only",
-            type=int,
-            default=1,
-            help="Turn off TV regularization after the first split/prune",
-        )
-
-        group.add_argument(
-            "--tv_contiguous",
-            type=int,
-            default=1,
-            help="Apply TV only on contiguous link chunks, which is faster",
-        )
-        # End Foreground TV
-
-        group.add_argument(
-            "--lambda_sparsity",
-            type=float,
-            default=0.0,
-            help="""
-            Weight for sparsity loss as in SNeRG/PlenOctrees
-            (but applied on the ray)
-            """,
-        )
-        group.add_argument(
-            "--lambda_beta",
-            type=float,
-            default=0.0,
-            help=
-            "Weight for beta distribution sparsity loss as in neural volumes",
-        )
-
-        # Background TV
-        group.add_argument(
-            "--lambda_tv_background_sigma",
-            type=float,
-            default=1e-2
-        )
-        group.add_argument(
-            "--lambda_tv_background_color",
-            type=float,
-            default=1e-2
-        )
-
-        group.add_argument(
-            "--tv_background_sparsity",
-            type=float,
-            default=0.01
-        )
-        # End Background TV
-
-        group.add_argument("--weight_decay_sigma", type=float, default=1.0)
-        group.add_argument("--weight_decay_sh", type=float, default=1.0)
-        group.add_argument(
-            "--lr_decay",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=True
-        )
-
-        group.add_argument(
-            "--n_train",
-            type=int,
-            default=None,
-            help="Number of training images. Defaults to use all avaiable.",
-        )
-
-        group.add_argument(
-            "--nosphereinit",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="do not start with sphere bounds (please do not use for 360)",
-        )
-
-        group = parser.add_argument_group("Render options")
-        group.add_argument(
-            "--step_size",
-            type=float,
-            default=0.5,
-            help="Render step size (in voxel size units)",
-        )
-        group.add_argument(
-            "--sigma_thresh",
-            type=float,
-            default=1e-8,
-            help="Skips voxels with sigma < this",
-        )
-        group.add_argument(
-            "--stop_thresh",
-            type=float,
-            default=1e-7,
-            help="Ray march stopping threshold",
-        )
-        group.add_argument(
-            "--background_brightness",
-            type=float,
-            default=1.0,
-            help="Brightness of the infinite background",
-        )
-        group.add_argument(
-            "--renderer_backend",
-            "-B",
-            choices=["cuvol", "svox1", "nvol"],
-            default="cuvol",
-            help="Renderer backend",
-        )
-        group.add_argument(
-            "--random_sigma_std",
-            type=float,
-            default=0.0,
-            help=
-            "Random Gaussian std to add to density values (only if enable_random)",
-        )
-        group.add_argument(
-            "--random_sigma_std_background",
-            type=float,
-            default=0.0,
-            help=
-            "Random Gaussian std to add to density values for BG (only if enable_random)",
-        )
-        group.add_argument(
-            "--near_clip",
-            type=float,
-            default=0.00,
-            help=
-            "Near clip distance (in world space distance units, only for FG)",
-        )
-        group.add_argument(
-            "--use_spheric_clip",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="Use spheric ray clipping instead of voxel grid AABB "
-            "(only for FG; changes near_clip to mean 1-near_intersection_radius; "
-            "far intersection is always at radius 1)",
-        )
-        group.add_argument(
-            "--enable_random",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="Random Gaussian std to add to density values",
-        )
-        group.add_argument(
-            "--last_sample_opaque",
-            type=str2bool,
-            nargs="?",
-            const=True,
-            default=False,
-            help="Last sample has +1e9 density (used for LLFF)",
-        )
-
-        return parser.parse_args()
+# class LitPlenoxelBlender(LitPlenoxel):
+#     def __init__(self, args):
+#         self.dataset = LitBlender(args)
+#         self.scene_center = [0.0, 0.0, 0.0]
+#         self.scene_radius = [1.0, 1.0, 1.0]
+#         self.use_sphere_bound = True
+#         super(LitPlenoxelBlender, self).__init__(args)
 
 
-class LitPlenoxelBlender(LitPlenoxel):
-    def __init__(self, args):
-        self.dataset = LitBlender(args)
-        self.scene_center = [0.0, 0.0, 0.0]
-        self.scene_radius = [1.0, 1.0, 1.0]
-        self.use_sphere_bound = True
-        super(LitPlenoxelBlender, self).__init__(args)
+# class LitPlenoxelLLFF(LitPlenoxel):
+#     def __init__(self, args):
+#         self.dataset = LitLLFF(args)
+#         K = self.dataset.intrinsics
+#         radx = 1 + 2 * 250 / self.dataset.w
+#         rady = 1 + 2 * 250 / self.dataset.h
+#         radz = 1.0
+#         self.scene_center = [0.0, 0.0, 0.0]
+#         self.scene_radius = [radx, rady, radz]
+#         self.use_sphere_bound = False
+#         super(LitPlenoxelLLFF, self).__init__(args)
 
 
-class LitPlenoxelLLFF(LitPlenoxel):
-    def __init__(self, args):
-        self.dataset = LitLLFF(args)
-        K = self.dataset.intrinsics
-        radx = 1 + 2 * 250 / self.dataset.w
-        rady = 1 + 2 * 250 / self.dataset.h
-        radz = 1.0
-        self.scene_center = [0.0, 0.0, 0.0]
-        self.scene_radius = [radx, rady, radz]
-        self.use_sphere_bound = False
-        super(LitPlenoxelLLFF, self).__init__(args)
+# class LitPlenoxelTnT(LitPlenoxel):
+#     def __init__(self, args):
+#         self.dataset = LitTnT(args)
+#         self.scene_center = [0.0, 0.0, 0.0]
+#         self.scene_radius = [1.0, 1.0, 1.0]
+#         self.use_sphere_bound = True
+#         super(LitPlenoxelTnT, self).__init__(args)
 
+# class LitPlenoxelCo3D(LitPlenoxel):
 
-class LitPlenoxelTnT(LitPlenoxel):
-    def __init__(self, args):
-        self.dataset = LitTnT(args)
-        self.scene_center = [0.0, 0.0, 0.0]
-        self.scene_radius = [1.0, 1.0, 1.0]
-        self.use_sphere_bound = True
-        super(LitPlenoxelTnT, self).__init__(args)
-
-class LitPlenoxelCo3D(LitPlenoxel):
-
-    def __init__(self, args):
-        self.dataset = LitCo3D(args)
-        self.scene_center = [0.0, 0.0, 0.0]
-        self.scene_radius = [1.0, 1.0, 1.0]
-        self.use_sphere_bound = True
-        super(LitPlenoxelCo3D, self).__init__(args)
+#     def __init__(self, args):
+#         self.dataset = LitCo3D(args)
+#         self.scene_center = [0.0, 0.0, 0.0]
+#         self.scene_radius = [1.0, 1.0, 1.0]
+#         self.use_sphere_bound = True
+#         super(LitPlenoxelCo3D, self).__init__(args)

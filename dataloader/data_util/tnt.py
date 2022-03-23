@@ -100,17 +100,38 @@ def load_tnt_data(datadir, cam_scale_factor=0.95):
     i_train = np.arange(len(train_imgfile))
     i_val = np.arange(len(val_imgfile)) + len(train_imgfile)
     i_test = np.arange(len(test_imgfile)) + len(train_imgfile) + len(val_imgfile)
-    i_split = (i_train, i_val, i_test)
+    i_all = np.arange(len(train_imgfile) + len(val_imgfile) + len(test_imgfile))
+    i_split = (i_train, i_val, i_test, i_all)
 
-    im = np.stack([imageio.imread(imgfile) for imgfile in train_imgfile + val_imgfile + test_imgfile]) / 255.
-    H, W = im[0].shape[:2]
+    images = np.stack([imageio.imread(imgfile) for imgfile in train_imgfile + val_imgfile + test_imgfile]) / 255.
+    h, w = images[0].shape[:2]
 
-    intrinsics = parse_txt(intrinsics_files[0])
-    poses = np.stack([parse_txt(pose_file) for pose_file in pose_files])
-    T, sscale = similarity_from_cameras(poses)
+    intrinsics = np.stack([
+        parse_txt(intrinsics_file) for intrinsics_file in intrinsics_files
+    ])
+    extrinsics = np.stack([parse_txt(pose_file) for pose_file in pose_files])
+    T, sscale = similarity_from_cameras(extrinsics)
 
-    poses = np.einsum("nij, ki -> nkj", poses, T)
+    extrinsics = np.einsum("nij, ki -> nkj", extrinsics, T)
     scene_scale = cam_scale_factor * sscale
-    poses[:, :3, 3] *= scene_scale
+    extrinsics[:, :3, 3] *= scene_scale
+    num_frame = len(extrinsics)
+    
+    image_sizes = np.array([[h, w] for i in range(num_frame)])
 
-    return im, poses, poses, (H, W), intrinsics, i_split
+    near = 0.
+    far = 1.
+
+    render_poses = extrinsics
+
+    return (
+        images, 
+        intrinsics, 
+        extrinsics, 
+        image_sizes,
+        near,
+        far, 
+        (-1, -1),
+        i_split,
+        render_poses
+    ) 
