@@ -29,6 +29,8 @@ class LitModel(pl.LightningModule):
     def psnr_each(self, preds, gts):
         psnr_list = []
         for (pred, gt) in zip(preds, gts): 
+            pred = torch.clip(pred, 0, 1)
+            gt = torch.clip(gt, 0, 1)
             mse = torch.mean((pred - gt) ** 2)
             psnr = -10.0 * torch.log(mse) / np.log(10)
             psnr_list.append(psnr)
