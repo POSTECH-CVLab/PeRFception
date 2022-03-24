@@ -2,10 +2,10 @@
 LitNeRF.num_coarse_samples = 192
 LitNeRF.num_fine_samples = 384
 LitNeRF.perturb = 1.0
-LitNeRF.lr_init = 1.0e-3
-LitNeRF.lr_final = 1.0e-5
-LitNeRF.lr_delay_steps = 5000
-LitNeRF.lr_delay_mult = 0.2
+LitNeRF.lr_init = 5.0e-4
+LitNeRF.lr_final = 5.0e-6
+LitNeRF.lr_delay_steps = 2500
+LitNeRF.lr_delay_mult = 0.01
 LitNeRF.netwidth = 512
 LitNeRF.netwidth_fine = 512
 
