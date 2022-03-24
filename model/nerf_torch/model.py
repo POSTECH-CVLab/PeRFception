@@ -209,7 +209,7 @@ class LitNeRF(LitModel):
             loss = loss + loss0
         
         self.log("train_psnr1", psnr, on_step=True, prog_bar=True, logger=True)
-        self.log("train_psnr0", psnr0, on_step=True)
+        self.log("train_psnr0", psnr0, on_step=True, prog_bar=True, logger=True)
         self.log("train_loss", loss, on_step=True)
 
         return loss
