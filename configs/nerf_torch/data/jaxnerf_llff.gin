@@ -4,7 +4,7 @@ run.datadir = "data/llff"
 run.logbase = "logs"
 
 LitData.batch_sampler = "all_images_wo_replace"
-LitData.ndc_coord = False
+LitData.ndc_coord = True
 
 LitDataLLFF.factor = 4
 LitDataLLFF.llffhold = 8
