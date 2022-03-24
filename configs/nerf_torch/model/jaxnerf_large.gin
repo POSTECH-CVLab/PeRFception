@@ -5,7 +5,7 @@ LitNeRF.perturb = 1.0
 LitNeRF.lr_init = 1.0e-3
 LitNeRF.lr_final = 1.0e-5
 LitNeRF.lr_delay_steps = 5000
-LitNeRF.lr_delay_mult = 0
+LitNeRF.lr_delay_mult = 0.2
 LitNeRF.netwidth = 512
 LitNeRF.netwidth_fine = 512
 
