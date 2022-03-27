@@ -25,7 +25,6 @@ class LitData(pl.LightningDataModule):
         chunk: int = 1024 * 32, 
         num_workers: int = 4,
         ndc_coord: bool = False,
-        ndc_coeffs: Tuple[float, float] = (-1, -1),
         batch_sampler: str = "all_images_wo_replace",
         eval_test_only: bool = True,
         epoch_size: int = 50000,

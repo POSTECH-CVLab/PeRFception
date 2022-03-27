@@ -15,9 +15,9 @@ class LitDataLLFF(LitData):
         num_gpus: int,
         num_tpus: int,
         # LLFF specific arguments
-        factor: int = 8, 
+        factor: int = 4, 
         llffhold: int = 8, 
-        spherify: bool = True,
+        spherify: bool = False,
         path_zflat: bool = False,
     ):
         ndc_coord = gin.query_parameter("LitData.ndc_coord")

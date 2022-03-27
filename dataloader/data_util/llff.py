@@ -350,14 +350,15 @@ def load_llff_data(
     
     # Transforming the coordinate
     poses = transform_pose_llff(poses)
+    render_poses = np.stack(render_poses)[:, :3, :4]
     render_poses = transform_pose_llff(render_poses)
+    extrinsics = poses[:, :3, :4]
 
     if not isinstance(i_test, list):
         i_test = [i_test]
 
     num_frame = len(poses)
     hwf = poses[0, :3, -1]
-    extrinsics = poses[:, :3, :4]
     h, w, focal = hwf
     h, w = int(h), int(w)
     hwf = [h, w, focal]

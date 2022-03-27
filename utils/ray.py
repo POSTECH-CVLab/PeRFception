@@ -25,6 +25,7 @@ def convert_to_ndc(
 
     return origins, directions
 
+
 def batchified_get_rays(
     intrinsics, 
     extrinsics, 
