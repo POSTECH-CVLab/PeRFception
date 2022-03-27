@@ -43,11 +43,24 @@ class DDPSequnetialSampler(DDPSampler):
 
 class SingleImageDDPSampler(DDPSampler):
     
-    def __init__(self, batch_size, num_replicas, rank, N_img, N_pixels, epoch_size, tpu):
+    def __init__(
+        self, 
+        batch_size, 
+        num_replicas, 
+        rank, 
+        N_img, 
+        N_pixels, 
+        epoch_size, 
+        tpu,
+        precrop,
+        precrop_steps,
+    ):
         super(SingleImageDDPSampler, self).__init__(batch_size, num_replicas, rank, tpu)
         self.N_pixels = N_pixels
         self.N_img = N_img
         self.epoch_size = epoch_size
+        self.precrop = precrop
+        self.precrop_steps = precrop_steps
 
     def __iter__(self):
         image_choice = np.random.choice(
@@ -56,10 +69,30 @@ class SingleImageDDPSampler(DDPSampler):
             replace=True
         )
         image_shape = self.N_pixels[image_choice]
-        idx_choice = [
-            np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size) \
+        if not self.precrop:
+            idx_choice = [
+                np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size)
                 for i in range(self.epoch_size)
-        ]
+            ]
+        else:
+            idx_choice = []
+            h_pick = [
+                np.random.choice(
+                    np.arange(image_shape[i, 0] // 2), self.batch_size
+                ) + image_shape[i, 0] // 4 for i in range(self.precrop_steps)
+            ]
+            w_pick = [
+                np.random.choice(
+                    np.arange(image_shape[i, 1] // 2), self.batch_size
+                ) + image_shape[i, 1] // 4 for i in range(self.precrop_steps)
+            ]
+            idx_choice = [h_pick[i] * image_shape[i, 1] + w_pick[i] for i in range(self.precrop_steps)]
+                
+            idx_choice += [
+                np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size) 
+                for i in range(self.epoch_size - self.precrop_steps)
+            ]
+
         for ((h, w), image_idx, idx) in zip(image_shape, image_choice, idx_choice):
             idx_ret = image_idx * h * w + idx
             yield idx_ret[self.rank::self.num_replicas]

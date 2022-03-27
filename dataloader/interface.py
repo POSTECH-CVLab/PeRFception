@@ -31,6 +31,8 @@ class LitData(pl.LightningDataModule):
         epoch_size: int = 50000,
         use_pixel_centers: bool = True,
         white_bkgd: bool = False,
+        precrop: bool = False,
+        precrop_steps: int = 0, 
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -129,7 +131,9 @@ class LitData(pl.LightningDataModule):
                     N_img=len(self.i_train), 
                     N_pixels=self.image_len, 
                     epoch_size=self.epoch_size, 
-                    tpu=True
+                    tpu=True, 
+                    precrop=self.precrop,
+                    precrop_steps=self.precrop_steps
                 )
             else:
                 sampler = SingleImageDDPSampler(
@@ -139,7 +143,9 @@ class LitData(pl.LightningDataModule):
                     N_img=len(self.i_train), 
                     N_pixels=self.image_sizes[self.i_train], 
                     epoch_size=self.epoch_size, 
-                    tpu=False
+                    tpu=False,
+                    precrop=self.precrop,
+                    precrop_steps=self.precrop_steps
                 )
         elif self.batch_sampler == "all_images":
             if self.use_tpu:
