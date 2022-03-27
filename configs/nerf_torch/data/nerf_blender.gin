@@ -5,4 +5,6 @@ run.logbase = "logs"
 
 LitData.batch_sampler = "single_image"
 
+LitNeRF.lr_delay_steps = 2500
+LitNeRF.lr_delay_mult = 0.1
 LitNeRF.white_bkgd = True
