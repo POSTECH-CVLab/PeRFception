@@ -4,8 +4,6 @@ LitNeRF.num_fine_samples = 128
 LitNeRF.perturb = 1.0
 LitNeRF.lr_init = 5.0e-4
 LitNeRF.lr_final = 5.0e-6
-LitNeRF.lr_delay_steps = 2500
-LitNeRF.lr_delay_mult = 0.1
 LitNeRF.netwidth = 256
 LitNeRF.netwidth_fine = 256
 

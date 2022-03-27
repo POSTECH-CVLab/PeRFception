@@ -161,10 +161,6 @@ class LitNeRF(LitModel):
                 "far": far
             }
 
-        # NDC only good for LLFF-style forward facing data
-        if ndc_coeffs[0] != -1 or ndc_coeffs[1] != -1:
-            render_kwargs_train["lindisp"] = self.lindisp
-
         render_kwargs_test = {
             k: render_kwargs_train[k]
             for k in render_kwargs_train

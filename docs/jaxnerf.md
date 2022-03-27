@@ -38,14 +38,16 @@ We provide the pretrained checkpoints, per-scene qualities, and mean qualities f
 
 ### Blender (NeRF-Synthetic)
 
-Although we only ran 200K iterations(1M in the official JaxNeRF+), our implementation achieves better quality then JaxNeRF when training a large model.
+Although we only ran 200K iterations(1M in the official JaxNeRF+), our implementation achieves better quality then JaxNeRF when training a large model. 
+However, one of the shortcomings of JaxNeRF+ is its unstable training process on the blender dataset. As authors mentioned in the official repository, 
+the performance strongly depends on the seed we use. Consider using different learning rate warmup configs when the model fails to be trained. 
 
 #### Large Model (JaxNeRF+)
-| | Chair | Drums | Ficus | Hotdog | Lego | Materials | Mic | Ship |
+| | Chair | Drums | Ficus* | Hotdog | Lego | Materials | Mic* | Ship |
 |--- |---|---|---|---|---|---|---|---|
-| PSNR (Test) | 35.26 | 26.17 | 34.45 | 37.73 | 36.35 | 30.52 | 35.85 | 30.95 |
-| SSIM (Test) | 0.9817 | 0.9417 | 0.9842 | 0.9818 | 0.9803 | 0.9582 | 0.9892 | 0.8878 |
-| LPIPS (Test) | 0.02711 | 0.06676 | 0.01892 | 0.03351 | 0.02273 | 0.05283 | 0.01407 | 0.1522 |
+| PSNR (Test) | 35.23 | 27.12 | 34.45 | 37.46 | 37.26 | 31.08 | 35.85 | 31.88 |
+| SSIM (Test) | 0.9823 | 0.9446 | 0.9842 | 0.9804 | 0.9816 | 0.9623 | 0.9892 | 0.8743 |
+| LPIPS (Test) | 0.02398 | 0.07061 | 0.01892 | 0.03685 | 0.02082 | 0.05041 | 0.01407 | 0.1762 |
 
 #### Base Model (JaxNeRF)
 | | Chair | Drums | Ficus | Hotdog | Lego | Materials | Mic | Ship |
