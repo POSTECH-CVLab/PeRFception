@@ -18,3 +18,4 @@ run.max_steps = 200000
 run.log_every_n_steps = 100
 run.model_name = "nerf"
 run.postfix = "standard"
+run.seed = 0
