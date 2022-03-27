@@ -38,8 +38,6 @@ class LitData(pl.LightningDataModule):
             if name not in ["self", "__class__"]:
                 setattr(self, name, value)
 
-        gin.bind_parameter("LitData.precrop", precrop)
-        gin.bind_parameter("LitData.precrop_steps", precrop_steps)
         self.use_tpu = accelerator == "tpu"
 
     def setup(self, stage):
