@@ -92,6 +92,7 @@ class SingleImageDDPSampler(DDPSampler):
                 np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size) 
                 for i in range(self.epoch_size - self.precrop_steps)
             ]
+            self.precrop = False
 
         for ((h, w), image_idx, idx) in zip(image_shape, image_choice, idx_choice):
             idx_ret = image_idx * h * w + idx

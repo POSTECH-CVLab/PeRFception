@@ -8,7 +8,7 @@ In addition, we have implemented the heavy model, dubbed JaxNeRF+, to reproduce 
 
 :white_check_mark: DDP support!
 
-:white_check_mark: Large Model (JaxNeRF+)
+:white_check_mark: Large Model (NeRF+)
 
 ## Differences
 This section compares the JaxNeRF and the original NeRF. In addition, we also provide additional details that we have changed in this implementation and their corrsponding reasons.
