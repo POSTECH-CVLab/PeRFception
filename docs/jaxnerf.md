@@ -42,14 +42,14 @@ Although we only ran 200K iterations(1M in the official JaxNeRF+), our implement
 However, one of the shortcomings of JaxNeRF+ is its unstable training process on the blender dataset. As authors mentioned in the official repository, 
 the performance strongly depends on the seed we use. Consider using different learning rate warmup configs when the model fails to be trained. 
 
-#### Large Model (JaxNeRF+)
+#### Large Model (NeRF+)
 | | Chair | Drums | Ficus* | Hotdog | Lego | Materials | Mic* | Ship |
 |--- |---|---|---|---|---|---|---|---|
-| PSNR (Test) | 35.23 | 27.12 | 34.45 | 37.46 | 37.26 | 31.08 | 35.85 | 31.88 |
-| SSIM (Test) | 0.9823 | 0.9446 | 0.9842 | 0.9804 | 0.9816 | 0.9623 | 0.9892 | 0.8743 |
+| PSNR (Test) | 35.23 | 27.12 | 34.46 | 37.46 | 37.26 | 31.08 | 35.64 | 31.88 |
+| SSIM (Test) | 0.9823 | 0.9446 | 0.9854 | 0.9804 | 0.9816 | 0.9623 | 0. | 0.8743 |
 | LPIPS (Test) | 0.02398 | 0.07061 | 0.01892 | 0.03685 | 0.02082 | 0.05041 | 0.01407 | 0.1762 |
 
-#### Base Model (JaxNeRF)
+#### Base Model (NeRF)
 | | Chair | Drums | Ficus | Hotdog | Lego | Materials | Mic | Ship |
 |--- |---|---|---|---|---|---|---|---|
 | PSNR (Test) | 32.79 | 25.17 | 31.01 | 36.13 | 32.52 | 29.42 | 33.01 | 28.43 |
@@ -58,14 +58,14 @@ the performance strongly depends on the seed we use. Consider using different le
 
 ### LLFF (NeRF-Real)
 
-#### Large Model (JaxNeRF+)
+#### Large Model (NeRF+)
 | | Fern | Flower | Fortress | Horns | Leaves | Orchids | Room | Trex |
 |--- |---|---|---|---|---|---|---|---|
 | PSNR (Test) | 25.32 | 28.13 | 31.72 | 28.47 | 21.12 | 20.17 | 33.46 | 27.51 |
 | SSIM (Test) | 0.8161 | 0.8601 | 0.9001 | 0.8761 | 0.7250 | 0.6520 | 0.9594 | 0.9126 |
 | LPIPS (Test) | 0.2397 | 0.1734 | 0.1410 | 0.1948 | 0.2615 | 0.3030 | 0.1418 | 0.2044 |
 
-#### Base Model (JaxNeRF)
+#### Base Model (NeRF)
 | | Fern | Flower | Fortress | Horns | Leaves | Orchids | Room | Trex |
 |--- |---|---|---|---|---|---|---|---|
 | PSNR (Test) | 24.83 | 27.06 | 30.89 | 26.79 | 20.75 | 20.24 | 31.94 | 26.08 |
