@@ -178,13 +178,6 @@ class LitNeRF(LitModel):
             params=self.parameters(), lr=self.lr_init, betas=(0.9, 0.999)
         )
 
-    def on_train_epoch_start(self) -> None:
-        precrop = gin.query_parameter("LitData.precrop")
-        precrop_steps = gin.query_parameter("LitData.precrop_steps")
-        if self.trainer.global_step > precrop_steps and precrop:
-            self.trainer.datamodule.train_dataloader().batch_sampler.precrop = False
-        return super().on_train_epoch_start()
-
     def forward_train(self, batch_rays):
         return self.forward_fun(
             rays=batch_rays,
