@@ -34,7 +34,7 @@ def pose_spherical(theta, phi, radius):
 def load_blender_data(
     datadir: str, 
     scene_name: str,
-    testskip: int, 
+    test_skip: int, 
     cam_scale_factor: float,
     white_bkgd: bool,
 ):
@@ -54,10 +54,10 @@ def load_blender_data(
         meta = metas[s]
         imgs = []
         poses = []
-        if s=='train' or testskip==0:
+        if s=='train' or test_skip==0:
             skip = 1
         else:
-            skip = testskip
+            skip = test_skip
             
         for frame in meta['frames'][::skip]:
             fname = os.path.join(basedir, frame['file_path'] + '.png')

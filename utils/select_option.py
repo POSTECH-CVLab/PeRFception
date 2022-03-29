@@ -1,5 +1,5 @@
 from dataloader.litdata import (
-    LitDataBlender, LitDataLLFF, LitDataTnT
+    LitDataBlender, LitDataLLFF, LitDataNSVF, LitDataTnT
 )
 from model.nerf_torch.model import LitNeRF
 from model.plenoxel_torch.model import LitPlenoxel
@@ -28,22 +28,19 @@ def select_dataset(
     num_tpus: int,
 ):
     if dataset_name == "blender":
-        return LitDataBlender(
-            datadir=datadir, 
-            scene_name=scene_name, 
-            accelerator=accelerator,
-            num_gpus=num_gpus,
-            num_tpus=num_tpus,
-        )
-    if dataset_name == "llff":
-        return LitDataLLFF(
-            datadir=datadir, 
-            scene_name=scene_name, 
-            accelerator=accelerator,
-            num_gpus=num_gpus,
-            num_tpus=num_tpus,
-        )
+        data_fun = LitDataBlender
+    elif dataset_name == "llff":
+        data_fun = LitDataLLFF
+    elif dataset_name == "nsvf":
+        data_fun = LitDataNSVF
 
+    return data_fun(
+        datadir=datadir, 
+        scene_name=scene_name, 
+        accelerator=accelerator,
+        num_gpus=num_gpus,
+        num_tpus=num_tpus,
+    )
 
 def select_callback(model_name):
 

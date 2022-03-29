@@ -1,6 +1,7 @@
 from dataloader.data_util.llff import load_llff_data
 from dataloader.data_util.blender import load_blender_data
 from dataloader.data_util.tnt import load_tnt_data
+from dataloader.data_util.nsvf import load_nsvf_data
 from dataloader.interface import LitData
 import gin
 
@@ -83,7 +84,7 @@ class LitDataBlender(LitData):
         load_blender_data(
             datadir=datadir, 
             scene_name=scene_name,
-            testskip=test_skip, 
+            test_skip=test_skip, 
             cam_scale_factor=cam_scale_factor,
             white_bkgd=white_bkgd,
         )
@@ -136,3 +137,47 @@ class LitDataTnT(LitData):
             num_tpus=num_tpus,
         )
 
+@gin.configurable()
+class LitDataNSVF(LitData):
+    
+    def __init__(self,        
+        datadir: str,
+        scene_name: str,
+        accelerator: bool,
+        num_gpus: int,
+        num_tpus: int,
+        # NSVF specific
+        test_skip: int = 8, 
+        cam_scale_factor: float = 0.95,
+        white_bkgd: bool = True,
+        data_bbox_scale = 1.1,
+    ):
+
+        (
+            self.images, 
+            self.intrinsics, 
+            self.extrinsics, 
+            self.image_sizes, 
+            self.near, 
+            self.far,
+            self.ndc_coeffs,
+            self.i_split,
+            self.render_poses
+        ) = \
+        load_nsvf_data(
+            datadir=datadir, 
+            scene_name=scene_name,
+            test_skip=test_skip, 
+            cam_scale_factor=cam_scale_factor,
+            white_bkgd=white_bkgd,
+            data_bbox_scale=data_bbox_scale,
+        )
+        
+        self.i_train, self.i_val, self.i_test, self.i_all = self.i_split
+
+        super(LitDataNSVF, self).__init__(
+            datadir=datadir,
+            accelerator=accelerator,
+            num_gpus=num_gpus,
+            num_tpus=num_tpus,
+        )
