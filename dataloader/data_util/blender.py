@@ -3,8 +3,6 @@ import torch
 import json
 import imageio
 import os
-import cv2
-
 
 trans_t = lambda t : torch.tensor([
     [1,0,0,0],
@@ -33,7 +31,14 @@ def pose_spherical(theta, phi, radius):
     return c2w
 
 
-def load_blender_data(basedir, testskip=1, scene_scale=1):
+def load_blender_data(
+    datadir: str, 
+    scene_name: str,
+    test_skip: int, 
+    cam_scale_factor: float,
+    white_bkgd: bool,
+):
+    basedir = os.path.join(datadir, scene_name)
     cam_trans = np.diag(np.array([1, -1, -1, 1], dtype=np.float32))
     splits = ['train', 'val', 'test']
     metas = {}
@@ -41,17 +46,18 @@ def load_blender_data(basedir, testskip=1, scene_scale=1):
         with open(os.path.join(basedir, 'transforms_{}.json'.format(s)), 'r') as fp:
             metas[s] = json.load(fp)
 
-    all_imgs = []
-    all_poses = []
-    counts = [0]
+    images = []
+    extrinsics = []
+    counts = [0]        
+    
     for s in splits:
         meta = metas[s]
         imgs = []
         poses = []
-        if s=='train' or testskip==0:
+        if s=='train' or test_skip==0:
             skip = 1
         else:
-            skip = testskip
+            skip = test_skip
             
         for frame in meta['frames'][::skip]:
             fname = os.path.join(basedir, frame['file_path'] + '.png')
@@ -60,23 +66,55 @@ def load_blender_data(basedir, testskip=1, scene_scale=1):
         imgs = (np.array(imgs) / 255.).astype(np.float32) # keep all 4 channels (RGBA)
         poses = np.array(poses).astype(np.float32)
         counts.append(counts[-1] + imgs.shape[0])
-        all_imgs.append(imgs)
-        all_poses.append(poses)
+        images.append(imgs)
+        extrinsics.append(poses)
     
     i_split = [np.arange(counts[i], counts[i+1]) for i in range(3)]
     
-    imgs = np.concatenate(all_imgs, 0)
-    poses = np.concatenate(all_poses, 0)
-    poses[:, :3, 3] *= scene_scale
-    poses = poses @ cam_trans
+    images = np.concatenate(images, 0)
 
-    H, W = imgs[0].shape[:2]
+    extrinsics = np.concatenate(extrinsics, 0)
+
+    extrinsics[:, :3, 3] *= cam_scale_factor
+    extrinsics = extrinsics @ cam_trans
+
+    h, w = imgs[0].shape[:2]
+    num_frame = len(extrinsics)
+    i_split += [np.arange(num_frame)]
+
     camera_angle_x = float(meta['camera_angle_x'])
-    focal = .5 * W / np.tan(.5 * camera_angle_x)
-    
+    focal = .5 * w / np.tan(.5 * camera_angle_x)
+    intrinsics = np.array(
+        [
+            [
+                [focal, 0., 0.5 * w],
+                [0., focal, 0.5 * h],
+                [0., 0., 1.]
+            ] for _ in range(num_frame)
+        ]
+    )
+    image_sizes = np.array([[h, w] for _ in range(num_frame)])
+
     render_poses = torch.stack(
         [pose_spherical(angle, -30.0, 4.0) @ cam_trans for angle in np.linspace(-180,180,40+1)[:-1]], 0
     )
-    render_poses[:, :3, 3] *= scene_scale
-    
-    return imgs, poses, render_poses, [H, W, focal], i_split
+    render_poses[:, :3, 3] *= cam_scale_factor
+    near = 2.
+    far = 6.
+
+    if white_bkgd:
+        images = images[..., :3] * images[..., -1:] + (1. - images[..., -1:])
+    else:
+        images = images[..., :3]
+
+    return (
+        images, 
+        intrinsics, 
+        extrinsics,
+        image_sizes,
+        near,
+        far,
+        (-1, -1),
+        i_split,
+        render_poses
+    )

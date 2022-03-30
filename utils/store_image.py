@@ -13,17 +13,13 @@ def norm8b(x):
     return to8b(x)
 
 
-def store_image(dirpath, rgbs, depths):
-    for (i, (rgb, depth)) in enumerate(zip(rgbs, depths)):
+def store_image(dirpath, rgbs):
+    for (i, rgb) in enumerate(rgbs):
         imgname = f"image{str(i).zfill(3)}.jpg"
-        depthname = f"depth{str(i).zfill(3)}.jpg"
-        rgbimg = Image.fromarray(to8b(rgb))
+        rgbimg = Image.fromarray(to8b(rgb.detach().cpu().numpy()))
         imgpath = os.path.join(dirpath, imgname)
-        depthimg = Image.fromarray(norm8b(depth))
-        depthpath = os.path.join(dirpath, depthname)
         rgbimg.save(imgpath)
-        depthimg.save(depthpath)
-
+        
 
 def store_video(dirpath, rgbs, depths):    
     rgbimgs = [to8b(rgb) for rgb in rgbs]

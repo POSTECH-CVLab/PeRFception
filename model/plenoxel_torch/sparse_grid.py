@@ -26,7 +26,6 @@ class SparseGrid(nn.Module):
 
     def __init__(
         self,
-        args,
         reso: Union[int, List[int], Tuple[int, int, int]] = 128,
         radius: Union[float, List[float]] = 1.0,
         center: Union[float, List[float]] = [0.0, 0.0, 0.0],
@@ -41,7 +40,6 @@ class SparseGrid(nn.Module):
         device: Union[torch.device, str] = "cpu",
     ):
         super().__init__()
-        self.args = args
         self.basis_type = basis_type
         if basis_type == BASIS_TYPE_SH:
             assert (
