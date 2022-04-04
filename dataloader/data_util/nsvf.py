@@ -93,13 +93,15 @@ def similarity_from_cameras(c2w):
 def load_nsvf_data(
     datadir: str,
     scene_name: str, 
+    val_skip: int,
     test_skip: int,
     cam_scale_factor: float,
-    white_bkgd: bool,
     data_bbox_scale: float,
+    white_bkgd: bool,
 ):
 
     basedir = os.path.join(datadir, scene_name)
+    cam_trans = np.diag(np.array([1, 1, 1, 1], dtype=np.float32))
     img_files = sorted(os.listdir(os.path.join(basedir, "rgb")))
     i_train = [i for i in range(len(img_files)) if img_files[i].startswith("0_")]
     i_val = [i for i in range(len(img_files)) if img_files[i].startswith("1_")]
@@ -109,8 +111,9 @@ def load_nsvf_data(
         i_test = i_val
 
     if test_skip > 0: 
-        i_val = i_val[::test_skip]
         i_test = i_test[::test_skip]
+    if val_skip > 0: 
+        i_val = i_val[::val_skip]
 
     i_all = i_train + i_val + i_test
 
@@ -137,24 +140,7 @@ def load_nsvf_data(
         images.append(image)
 
     poses = np.stack(poses)
-
-    # bbox_path = os.path.join(basedir, "bbox.txt")
-    # if os.path.exists(bbox_path):
-    #     bbox_data = np.loadtxt(bbox_path)
-    #     center = (bbox_data[:3] + bbox_data[3:6]) * 0.5
-    #     radius = (bbox_data[3:6] - bbox_data[:3]) * 0.5 * data_bbox_scale
-
-    #     # Recenter
-    #     poses[:, :3, 3] -= center
-    #     # Rescale
-    #     scene_scale = 1.0 / radius.max()
-
-    # Select subset of files
-    T, sscale = similarity_from_cameras(poses)
-
-    poses = T @ poses
-    scene_scale = cam_scale_factor * sscale
-    poses[:, :3, 3] *= scene_scale
+    poses = poses @ cam_trans
 
     images = np.stack(images) / 255.0
 
@@ -182,8 +168,27 @@ def load_nsvf_data(
         ]) for _ in i_all
     ])
     extrinsics = poses
+
+    # Not used, but could be helpful
+    # bbox_path = os.path.join(basedir, "bbox.txt")
+    # if os.path.exists(bbox_path):
+    #     bbox_data = np.loadtxt(bbox_path)
+    #     center = (bbox_data[:3] + bbox_data[3:6]) * 0.5
+    #     radius = (bbox_data[3:6] - bbox_data[:3]) * 0.5 * data_bbox_scale
+
+    #     # Recenter
+    #     extrinsics[:, :3, 3] -= center
+    #     # Rescale
+    #     scene_scale = 1.0 / radius.max()
+    # # Select subset of files
+    T, sscale = similarity_from_cameras(extrinsics)
+
+    extrinsics = T @ extrinsics
+    scene_scale = cam_scale_factor * sscale
+    extrinsics[:, :3, 3] *= scene_scale
+
     image_sizes = np.array(image_sizes)
-    near, far = 0, 1
+    near, far = 0., 1.
     ndc_coeffs = (-1, -1)
 
     i_train = np.arange(len(i_train))
@@ -197,7 +202,6 @@ def load_nsvf_data(
         [pose_spherical(angle, -30.0, 4.0)
         for angle in np.linspace(-180,180,40+1)[:-1]], 0
     )
-    render_poses[:, :3, 3] *= scene_scale
 
     return (
         images, 

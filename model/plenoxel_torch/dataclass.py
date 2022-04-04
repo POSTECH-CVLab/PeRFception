@@ -131,3 +131,7 @@ class Camera:
     @property
     def is_cuda(self) -> bool:
         return self.c2w.is_cuda
+
+
+if __name__ == "__main__": 
+    print(1)
