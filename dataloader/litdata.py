@@ -102,12 +102,14 @@ class LitDataTnT(LitData):
     def __init__(
         self,         
         datadir: str,
-        batch_size: int, 
+        scene_name: str,
         accelerator: bool,
         num_gpus: int,
         num_tpus: int,
         # TnT specific
-        cam_scale_factor: float = 1.0,
+        cam_scale_factor: float = 0.95,
+        val_skip: int = 8,
+        test_skip: int = 8,
     ):
         (
             self.images, 
@@ -122,12 +124,14 @@ class LitDataTnT(LitData):
         ) = \
         load_tnt_data(
             datadir=datadir,
-            cam_scale_factor=cam_scale_factor
+            scene_name=scene_name,
+            cam_scale_factor=cam_scale_factor,
+            val_skip=val_skip, 
+            test_skip=test_skip
         )
 
         super(LitDataTnT, self).__init__(
             datadir=datadir,
-            batch_size=batch_size,
             accelerator=accelerator,
             num_gpus=num_gpus,
             num_tpus=num_tpus,

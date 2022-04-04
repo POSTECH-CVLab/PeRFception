@@ -72,7 +72,15 @@ def similarity_from_cameras(c2w):
     return transform, scale
 
 
-def load_tnt_data(datadir, cam_scale_factor=0.95):
+def load_tnt_data(
+    datadir: str, 
+    scene_name: str, 
+    val_skip: int,
+    test_skip: int, 
+    cam_scale_factor: float,
+):
+
+    basedir = os.path.join(datadir, scene_name)
 
     def parse_txt(filename):
         assert os.path.isfile(filename)
@@ -80,23 +88,25 @@ def load_tnt_data(datadir, cam_scale_factor=0.95):
         return np.array([float(x) for x in nums]).reshape([4, 4]).astype(np.float32)
 
     # camera parameters files
-    intrinsics_files = find_files('{}/train/intrinsics'.format(datadir), exts=['*.txt'])
-    pose_files = find_files('{}/train/pose'.format(datadir), exts=['*.txt'])
-    pose_files += find_files('{}/validation/pose'.format(datadir), exts=['*.txt'])
-    pose_files += find_files('{}/test/pose'.format(datadir), exts=['*.txt'])
+    intrinsics_files = find_files('{}/train/intrinsics'.format(basedir), exts=['*.txt'])
+    intrinsics_files += find_files('{}/validation/intrinsics'.format(basedir), exts=['*.txt'])[::val_skip]
+    intrinsics_files += find_files('{}/test/intrinsics'.format(basedir), exts=['*.txt'])[::test_skip]
+    pose_files = find_files('{}/train/pose'.format(basedir), exts=['*.txt'])
+    pose_files += find_files('{}/validation/pose'.format(basedir), exts=['*.txt'])[::val_skip]
+    pose_files += find_files('{}/test/pose'.format(basedir), exts=['*.txt'])[::test_skip]
     cam_cnt = len(pose_files)
 
     # img files
-    img_files = find_files('{}/rgb'.format(datadir), exts=['*.png', '*.jpg'])
+    img_files = find_files('{}/rgb'.format(basedir), exts=['*.png', '*.jpg'])
     if len(img_files) > 0:
         assert(len(img_files) == cam_cnt)
     else:
         img_files = [None, ] * cam_cnt
 
     # assume all images have the same size as training image
-    train_imgfile = find_files('{}/train/rgb'.format(datadir), exts=['*.png', '*.jpg'])
-    val_imgfile = find_files('{}/validation/rgb'.format(datadir), exts=['*.png', '*.jpg'])
-    test_imgfile = find_files('{}/test/rgb'.format(datadir), exts=['*.png', '*.jpg'])
+    train_imgfile = find_files('{}/train/rgb'.format(basedir), exts=['*.png', '*.jpg'])
+    val_imgfile = find_files('{}/validation/rgb'.format(basedir), exts=['*.png', '*.jpg'])[::val_skip]
+    test_imgfile = find_files('{}/test/rgb'.format(basedir), exts=['*.png', '*.jpg'])[::test_skip]
     i_train = np.arange(len(train_imgfile))
     i_val = np.arange(len(val_imgfile)) + len(train_imgfile)
     i_test = np.arange(len(test_imgfile)) + len(train_imgfile) + len(val_imgfile)

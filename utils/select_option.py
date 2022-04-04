@@ -1,5 +1,5 @@
 from dataloader.litdata import (
-    LitDataBlender, LitDataLLFF, LitDataNSVF, LitDataTnT
+    LitDataBlender, LitDataCo3D, LitDataLLFF, LitDataNSVF, LitDataTnT
 )
 from model.nerf_torch.model import LitNeRF
 from model.plenoxel_torch.model import LitPlenoxel
@@ -33,6 +33,12 @@ def select_dataset(
         data_fun = LitDataLLFF
     elif dataset_name == "nsvf":
         data_fun = LitDataNSVF
+    elif dataset_name == "tanks_and_temples":
+        data_fun = LitDataTnT
+    elif dataset_name == "co3d":
+        data_fun = LitDataCo3D
+    elif dataset_name == "scannet":
+        data_fun = None
 
     return data_fun(
         datadir=datadir, 
