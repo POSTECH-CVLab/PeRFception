@@ -538,6 +538,28 @@ def net_from_dict(in_dict, prefix: str, model: nn.Module):
             )
 
 
+def convert_to_ndc(origins, directions, ndc_coeffs, near: float = 1.0):
+    """Convert a set of rays to NDC coordinates."""
+    # Shift ray origins to near plane, not sure if needed
+    t = (near - origins[Ellipsis, 2]) / directions[Ellipsis, 2]
+    origins = origins + t[Ellipsis, None] * directions
+
+    dx, dy, dz = directions.unbind(-1)
+    ox, oy, oz = origins.unbind(-1)
+
+    # Projection
+    o0 = ndc_coeffs[0] * (ox / oz)
+    o1 = ndc_coeffs[1] * (oy / oz)
+    o2 = 1 - 2 * near / oz
+
+    d0 = ndc_coeffs[0] * (dx / dz - ox / oz)
+    d1 = ndc_coeffs[1] * (dy / dz - oy / oz)
+    d2 = 2 * near / oz
+
+    origins = torch.stack([o0, o1, o2], -1)
+    directions = torch.stack([d0, d1, d2], -1)
+    return origins, directions
+
 
 def xyz2equirect(bearings, reso):
     """

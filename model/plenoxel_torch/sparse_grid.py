@@ -1,21 +1,22 @@
 from dataclasses import dataclass
-from typing import Union, List, Optional, Tuple
-from warnings import warn
 from functools import reduce
+from typing import List, Optional, Tuple, Union
+from warnings import warn
 
 import numpy as np
-from scipy.spatial.transform import Rotation
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import tqdm
+from scipy.spatial.transform import Rotation
 
 import model.plenoxel_torch.autograd as autograd
 import model.plenoxel_torch.dataclass as dataclass
 import model.plenoxel_torch.utils as utils
 from model.plenoxel_torch.__global__ import (
-    BASIS_TYPE_SH,
     BASIS_TYPE_3D_TEXTURE,
     BASIS_TYPE_MLP,
+    BASIS_TYPE_SH,
     _get_c_extension,
 )
 
@@ -23,20 +24,19 @@ _C = _get_c_extension()
 
 
 class SparseGrid(nn.Module):
-
     def __init__(
         self,
         reso: Union[int, List[int], Tuple[int, int, int]] = 128,
         radius: Union[float, List[float]] = 1.0,
         center: Union[float, List[float]] = [0.0, 0.0, 0.0],
         basis_type: int = BASIS_TYPE_SH,
-        basis_dim: int = 9, 
+        basis_dim: int = 9,
         use_z_order: bool = False,
         use_sphere_bound: bool = False,
         mlp_posenc_size: int = 0,
         mlp_width: int = 16,
-        background_nlayers: int = 0,  
-        background_reso: int = 256, 
+        background_nlayers: int = 0,
+        background_reso: int = 256,
         device: Union[torch.device, str] = "cpu",
     ):
         super().__init__()
@@ -326,11 +326,12 @@ class SparseGrid(nn.Module):
             self.opt.backend,
         )
 
-
     def volume_render_fused(
         self,
         rays: dataclass.Rays,
         rgb_gt: torch.Tensor,
+        foreground: bool = True,
+        background: bool = True,
         randomize: bool = False,
         beta_loss: float = 0.0,
         sparsity_loss: float = 0.0,
@@ -372,7 +373,7 @@ class SparseGrid(nn.Module):
         if self.basis_type != BASIS_TYPE_SH:
             grad_holder.grad_basis_out = grad_basis
         grad_holder.mask_out = self.sparse_grad_indexer
-        if self.use_background:
+        if self.use_background and background:
             grad_holder.grad_background_out = grad_bg
             self.sparse_background_indexer = torch.zeros(
                 list(self.background_data.shape[:-1]),
@@ -386,7 +387,9 @@ class SparseGrid(nn.Module):
         cu_fn(
             self._to_cpp(replace_basis_data=basis_data),
             rays._to_cpp(),
-            self.opt._to_cpp(randomize=randomize),
+            self.opt._to_cpp(
+                randomize=randomize, foreground=foreground, background=background
+            ),
             rgb_gt,
             beta_loss,
             sparsity_loss,
@@ -401,26 +404,27 @@ class SparseGrid(nn.Module):
         return rgb_out
 
     def volume_render_depth(
-        self, rays: dataclass.Rays, sigma_thresh: Optional[float] = None
+        self,
+        rays: dataclass.Rays,
+        sigma_thresh,
+        foreground: bool = True,
+        background: bool = True,
     ):
         """
         Volumetric depth rendering for rays
 
         :param rays: Rays, (origins (N, 3), dirs (N, 3))
-        :param sigma_thresh: Optional[float]. If None then finds the standard expected termination
-        (NOTE: this is the absolute length along the ray, not the z-depth as usually expected);
-        else then finds the first point where sigma strictly exceeds sigma_thresh
+        :param sigma_thresh: finds the first point where sigma strictly exceeds sigma_thresh
 
         :return: (N,)
         """
-        if sigma_thresh is None:
-            return _C.volume_render_expected_term(
-                self._to_cpp(), rays._to_cpp(), self.opt._to_cpp()
-            )
-        else:
-            return _C.volume_render_sigma_thresh(
-                self._to_cpp(), rays._to_cpp(), self.opt._to_cpp(), sigma_thresh
-            )
+        assert not sigma_thresh is None
+        return _C.volume_render_sigma_thresh(
+            self._to_cpp(),
+            rays._to_cpp(),
+            self.opt._to_cpp(foreground=foreground, background=background),
+            sigma_thresh,
+        )
 
     def resample(
         self,
@@ -629,9 +633,7 @@ class SparseGrid(nn.Module):
                 self.accelerate()
 
     def sparsify_background(
-        self,
-        sigma_thresh: float = 1.0,
-        dilate: int = 1,  # BEFORE resampling!
+        self, sigma_thresh: float = 1.0, dilate: int = 1  # BEFORE resampling!
     ):
         device = self.background_links.device
         sigma_mask = torch.zeros(
@@ -1385,3 +1387,50 @@ class SparseGrid(nn.Module):
             return torch.randint(
                 0, grid_size, (sparse_num,), dtype=torch.int32, device=self.links.device
             )
+
+    def to_svox1(self, device: Union[torch.device, str, None] = None, logdir=None):
+        """
+        Convert the grid to a svox 1 octree. Requires svox (pip install svox)
+        :param device: device to put the octree. None = grid data's device
+        """
+        assert (
+            self.is_cubic_pow2
+        ), "Grid must be cubic and power-of-2 to be compatible with svox octree"
+        if device is None:
+            device = self.sh_data.device
+        import svox
+
+        n_refine = int(np.log2(self.links.size(0))) - 1
+
+        t = svox.N3Tree(
+            data_format=f"SH{self.basis_dim}",
+            init_refine=0,
+            radius=self.radius.tolist(),
+            center=self.center.tolist(),
+            device=device,
+        )
+
+        curr_reso = self.links.shape
+        dtype = torch.float32
+        X = (torch.arange(curr_reso[0], dtype=dtype, device=device) + 0.5) / curr_reso[
+            0
+        ]
+        Y = (torch.arange(curr_reso[1], dtype=dtype, device=device) + 0.5) / curr_reso[
+            0
+        ]
+        Z = (torch.arange(curr_reso[2], dtype=dtype, device=device) + 0.5) / curr_reso[
+            0
+        ]
+        X, Y, Z = torch.meshgrid(X, Y, Z)
+        points = torch.stack((X, Y, Z), dim=-1).view(-1, 3)
+
+        mask = self.links.view(-1) >= 0
+        points = points[mask.to(device=device)]
+        index = svox.LocalIndex(points)
+        print("n_refine", n_refine)
+        for i in tqdm.tqdm(range(n_refine)):
+            t[index].refine()
+
+        t[index, :-1] = self.sh_data.data.to(device=device)
+        t[index, -1:] = self.density_data.data.to(device=device)
+        t.save(f"{logdir}/svox")

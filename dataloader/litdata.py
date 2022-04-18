@@ -21,6 +21,7 @@ class LitDataLLFF(LitData):
         llffhold: int = 8, 
         spherify: bool = False,
         path_zflat: bool = False,
+        offset: int = 250,
     ):
         ndc_coord = gin.query_parameter("LitData.ndc_coord")
         (
@@ -45,6 +46,12 @@ class LitDataLLFF(LitData):
             llffhold=llffhold,
             path_zflat=path_zflat,
         )
+
+        radx = 1 + 2 * offset / self.image_sizes[0][1]
+        rady = 1 + 2 * offset / self.image_sizes[0][0]
+        radz = 1.0
+        self.scene_radius = [radx, rady, radz]
+        self.use_sphere_bound = False
 
         super(LitDataLLFF, self).__init__(
             datadir=datadir,

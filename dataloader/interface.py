@@ -39,6 +39,10 @@ class LitData(pl.LightningDataModule):
 
         self.use_tpu = accelerator == "tpu"
 
+        self.scene_center = [0., 0., 0.]
+        self.scene_radius = [1., 1., 1.]
+        self.use_sphere_bound = True
+
     def setup(self, stage):
         if stage == "fit" or stage is None:
             self.train_dset, _ = self.split_each(
