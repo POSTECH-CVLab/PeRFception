@@ -43,7 +43,7 @@ class RenderOptions:
         self.use_spheric_clip = use_spheric_clip
 
     def _to_cpp(
-        self, randomize: bool = False, foreground: bool = True, background: bool = True
+        self, randomize: bool = False
     ):
         """
         Generate object to pass to C++
@@ -57,10 +57,6 @@ class RenderOptions:
         opt.use_spheric_clip = self.use_spheric_clip
         opt.last_sample_opaque = self.last_sample_opaque
 
-        opt.randomize = randomize
-        opt.foreground = foreground
-        opt.background = background
-
         return opt
 
 
@@ -68,7 +64,6 @@ class RenderOptions:
 class Rays:
     origins: torch.Tensor
     dirs: torch.Tensor
-    depths: torch.Tensor
 
     def _to_cpp(self):
         """
@@ -77,11 +72,10 @@ class Rays:
         spec = _C.RaysSpec()
         spec.origins = self.origins
         spec.dirs = self.dirs
-        spec.depths = self.depths
         return spec
 
     def __getitem__(self, key):
-        return Rays(self.origins[key], self.dirs[key], self.depths)
+        return Rays(self.origins[key], self.dirs[key])
 
     @property
     def is_cuda(self) -> bool:

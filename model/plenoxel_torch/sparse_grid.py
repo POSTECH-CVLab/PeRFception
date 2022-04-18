@@ -330,8 +330,6 @@ class SparseGrid(nn.Module):
         self,
         rays: dataclass.Rays,
         rgb_gt: torch.Tensor,
-        foreground: bool = True,
-        background: bool = True,
         randomize: bool = False,
         beta_loss: float = 0.0,
         sparsity_loss: float = 0.0,
@@ -388,7 +386,7 @@ class SparseGrid(nn.Module):
             self._to_cpp(replace_basis_data=basis_data),
             rays._to_cpp(),
             self.opt._to_cpp(
-                randomize=randomize, foreground=foreground, background=background
+                randomize=randomize
             ),
             rgb_gt,
             beta_loss,
@@ -407,8 +405,6 @@ class SparseGrid(nn.Module):
         self,
         rays: dataclass.Rays,
         sigma_thresh,
-        foreground: bool = True,
-        background: bool = True,
     ):
         """
         Volumetric depth rendering for rays
@@ -422,7 +418,7 @@ class SparseGrid(nn.Module):
         return _C.volume_render_sigma_thresh(
             self._to_cpp(),
             rays._to_cpp(),
-            self.opt._to_cpp(foreground=foreground, background=background),
+            self.opt._to_cpp(),
             sigma_thresh,
         )
 

@@ -336,9 +336,6 @@ class LitPlenoxel(LitModel):
         rays = dataclass.Rays(
             rays[:, 0].contiguous(),
             rays[:, 1].contiguous(),
-            batch["depth"]
-            if "depth" in batch.keys()
-            else -torch.ones_like(rays[:, 0, :1]),
         )
 
         rgb = self.model.volume_render_fused(
@@ -423,8 +420,6 @@ class LitPlenoxel(LitModel):
         self,
         batch,
         batch_idx,
-        foreground=True,
-        background=True,
         prefix="",
         cpu=False,
         randomize=False,
@@ -445,17 +440,10 @@ class LitPlenoxel(LitModel):
             rays = torch.stack(
                 ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1
             )
-        depths = (
-            batch["depth"]
-            if "depth" in batch.keys()
-            else -torch.ones_like(rays[:, 0, :1])
-        )
-        rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous(), depths)
+        rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
             rays,
             target,
-            foreground=foreground,
-            background=background,
             beta_loss=self.lambda_beta,
             sparsity_loss=self.lambda_sparsity,
             randomize=randomize,
@@ -463,8 +451,6 @@ class LitPlenoxel(LitModel):
         depth = self.model.volume_render_depth(
             rays,
             self.model.opt.sigma_thresh,
-            foreground=foreground,
-            background=background,
         )
         if cpu:
             rgb = rgb.detach().cpu()
