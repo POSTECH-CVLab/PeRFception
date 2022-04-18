@@ -21,9 +21,9 @@ lr_sh: 1.0e-2
 lr_sigma_delay_steps: 15000
 weight_thresh: 1.28
 thresh_type: "weight"
-lambda_tv": 5.0e-5
+lambda_tv: 5.0e-5
 lambda_tv_sh": 5.0e-3
-lambda_tv_background_sigma": 1.0e-3
+lambda_tv_background_sigma: 1.0e-3
 lambda_tv_background_color: 1.0e-3
 lambda_beta: 1.0e-5
 lambda_sparsity: 1.0e-11

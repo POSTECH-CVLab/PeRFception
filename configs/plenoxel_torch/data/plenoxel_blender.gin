@@ -11,5 +11,5 @@ LitPlenoxel.lambda_tv = 1.0e-5
 LitPlenoxel.lambda_tv_sh = 1.0e-3
 
 ResampleCallBack.upsamp_every = 38400
-run.max_steps = 128000
+run.max_steps = 153600
 LitDataBlender.cam_scale_factor = 0.6666

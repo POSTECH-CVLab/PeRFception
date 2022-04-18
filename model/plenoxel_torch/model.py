@@ -331,9 +331,7 @@ class LitPlenoxel(LitModel):
                 ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1
             )
 
-        rays = dataclass.Rays(
-            rays[:, 0].contiguous(), rays[:, 1].contiguous(),
-        )
+        rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
 
         rgb = self.model.volume_render_fused(
             rays,
@@ -586,7 +584,9 @@ class LitPlenoxel(LitModel):
     def on_save_checkpoint(self, checkpoint) -> None:
         checkpoint["reso_idx"] = self.reso_idx
         density_data = checkpoint["state_dict"]["model.density_data"]
-        density_data, density_min, density_scale = self.quantize_data(density_data)
+        density_positive = torch.where(density_data >= -1e6)[0]
+        density_data_pruned = density_data[density_positive]
+        density_data, density_min, density_scale = self.quantize_data(density_data_pruned)
 
         sh = checkpoint["state_dict"]["model.sh_data"]
         sh_data, sh_min, sh_scale = self.quantize_data(sh)

@@ -19,4 +19,4 @@ LitPlenoxel.tv_early_only = 0
 LitPlenoxel.last_sample_opaque = False
 
 ResampleCallBack.upsamp_every = 38400
-run.max_steps = 128000
+run.max_steps = 153600
