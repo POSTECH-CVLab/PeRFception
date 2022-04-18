@@ -47,18 +47,18 @@ class LitDataLLFF(LitData):
             path_zflat=path_zflat,
         )
 
-        radx = 1 + 2 * offset / self.image_sizes[0][1]
-        rady = 1 + 2 * offset / self.image_sizes[0][0]
-        radz = 1.0
-        self.scene_radius = [radx, rady, radz]
-        self.use_sphere_bound = False
-
         super(LitDataLLFF, self).__init__(
             datadir=datadir,
             accelerator=accelerator,
             num_gpus=num_gpus,
             num_tpus=num_tpus,
         )
+
+        radx = 1 + 2 * offset / self.image_sizes[0][1]
+        rady = 1 + 2 * offset / self.image_sizes[0][0]
+        radz = 1.0
+        self.scene_radius = [radx, rady, radz]
+        self.use_sphere_bound = False
 
 
 @gin.configurable()

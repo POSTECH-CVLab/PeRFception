@@ -82,7 +82,6 @@ class LitPlenoxel(LitModel):
         self, 
         reso: List[List[int]] = [[256, 256, 256], [512, 512, 512]],
         upsample_step: List[int] = [38400, 76800], 
-        ndc_coeffs: List[int] = [-1., -1.],
         init_iters: int = 0,
         upsample_density_add: float = 0.0, 
         basis_type: str = "sh",
@@ -250,6 +249,7 @@ class LitPlenoxel(LitModel):
             if self.model.use_background:
                 self.model.background_data.data[..., -1] = self.init_sigma_bg
 
+        self.ndc_coeffs = dmodule.ndc_coeffs
         return super().setup(stage)
 
     def generate_camera_list(
@@ -267,8 +267,7 @@ class LitPlenoxel(LitModel):
                 self.intrinsics[1, 2] if intrinsics is None else intrinsics[i, 1, 2],
                 self.w if image_size is None else image_size[i, 0],
                 self.h if image_size is None else image_size[i, 1],
-                # This should be changed.
-                dmodule.ndc_coeffs if ndc_coeffs is None else ndc_coeffs[i],
+                self.ndc_coeffs if ndc_coeffs is None else ndc_coeffs[i],
             )
             for i in dmodule.i_train
         ]
@@ -315,7 +314,6 @@ class LitPlenoxel(LitModel):
     def training_step(self, batch, batch_idx):
 
         gstep = self.trainer.global_step
-        dmodule = self.trainer.datamodule
 
         if self.lr_fg_begin_step > 0 and gstep == self.lr_fg_begin_step:
             self.model.density_data.data[:] = self.init_sigma
@@ -334,8 +332,7 @@ class LitPlenoxel(LitModel):
             )
 
         rays = dataclass.Rays(
-            rays[:, 0].contiguous(),
-            rays[:, 1].contiguous(),
+            rays[:, 0].contiguous(), rays[:, 1].contiguous(),
         )
 
         rgb = self.model.volume_render_fused(
@@ -361,7 +358,7 @@ class LitPlenoxel(LitModel):
                 scaling=self.lambda_tv,
                 sparse_frac=self.tv_sparsity,
                 logalpha=self.tv_logalpha,
-                ndc_coeffs=dmodule.ndc_coeffs,
+                ndc_coeffs=self.ndc_coeffs,
                 contiguous=self.tv_contiguous,
             )
 
@@ -370,7 +367,7 @@ class LitPlenoxel(LitModel):
                 self.model.sh_data.grad,
                 scaling=self.lambda_tv_sh,
                 sparse_frac=self.tv_sh_sparsity,
-                ndc_coeffs=dmodule.ndc_coeffs,
+                ndc_coeffs=self.ndc_coeffs,
                 contiguous=self.tv_contiguous,
             )
 
@@ -380,7 +377,7 @@ class LitPlenoxel(LitModel):
                 scaling=self.lambda_tv_lumisphere,
                 dir_factor=self.tv_lumisphere_dir_factor,
                 sparse_frac=self.tv_lumisphere_sparsity,
-                ndc_coeffs=dmodule.ndc_coeffs,
+                ndc_coeffs=self.ndc_coeffs,
             )
 
         if self.lambda_l2_sh > 0.0:
@@ -440,6 +437,7 @@ class LitPlenoxel(LitModel):
             rays = torch.stack(
                 ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1
             )
+            
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb = self.model.volume_render_fused(
             rays,
@@ -474,7 +472,7 @@ class LitPlenoxel(LitModel):
         return self.render_rays(batch, batch_idx)
 
     def test_step(self, batch, batch_idx):
-        return self.render_rays(batch, batch_idx, cpu=True)
+        return self.render_rays(batch, batch_idx)
 
     def predict_step(self, batch, batch_idx):
         ret = {}
@@ -588,20 +586,16 @@ class LitPlenoxel(LitModel):
     def on_save_checkpoint(self, checkpoint) -> None:
         checkpoint["reso_idx"] = self.reso_idx
         density_data = checkpoint["state_dict"]["model.density_data"]
-        density_positive = torch.where(density_data >= self.filter_threshold)[0]
-        density_data_pruned = density_data[density_positive]
-        density_data, density_min, density_scale = self.quantize_data(density_data_pruned)
+        density_data, density_min, density_scale = self.quantize_data(density_data)
 
         sh = checkpoint["state_dict"]["model.sh_data"]
-        sh_data_pruned = sh[density_positive]
-        sh_data, sh_min, sh_scale = self.quantize_data(sh_data_pruned)
+        sh_data, sh_min, sh_scale = self.quantize_data(sh)
 
         model_links = checkpoint["state_dict"]["model.links"]
         reso_list = self.reso_list[self.reso_idx]
 
         argsort_val = model_links[torch.where(model_links >= 0)].argsort()
         links_compressed = torch.stack(torch.where(model_links >= 0))[:, argsort_val]
-        links_compressed = links_compressed[:, density_positive]
         links_idx = (
             reso_list[1] * reso_list[2] * links_compressed[0]
             + reso_list[2] * links_compressed[1]
