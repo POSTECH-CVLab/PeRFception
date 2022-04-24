@@ -371,7 +371,7 @@ class SparseGrid(nn.Module):
         if self.basis_type != BASIS_TYPE_SH:
             grad_holder.grad_basis_out = grad_basis
         grad_holder.mask_out = self.sparse_grad_indexer
-        if self.use_background and background:
+        if self.use_background:
             grad_holder.grad_background_out = grad_bg
             self.sparse_background_indexer = torch.zeros(
                 list(self.background_data.shape[:-1]),
