@@ -584,9 +584,6 @@ class LitPlenoxel(LitModel):
     def on_save_checkpoint(self, checkpoint) -> None:
         checkpoint["reso_idx"] = self.reso_idx
         density_data = checkpoint["state_dict"]["model.density_data"]
-        density_positive = torch.where(density_data >= -1e6)[0]
-        density_data_pruned = density_data[density_positive]
-        density_data, density_min, density_scale = self.quantize_data(density_data_pruned)
 
         sh = checkpoint["state_dict"]["model.sh_data"]
         sh_data, sh_min, sh_scale = self.quantize_data(sh)
@@ -624,8 +621,6 @@ class LitPlenoxel(LitModel):
         checkpoint["state_dict"].pop("model.links")
 
         checkpoint["state_dict"]["model.density_data"] = density_data
-        checkpoint["model.density_data_min"] = density_min
-        checkpoint["model.density_data_scale"] = density_scale
 
         checkpoint["state_dict"]["model.sh_data"] = sh_data
         checkpoint["model.sh_data_min"] = sh_min
@@ -660,9 +655,6 @@ class LitPlenoxel(LitModel):
             checkpoint["state_dict"]["model.background_data"] = bgd_data
 
         density_data = state_dict["model.density_data"]
-        density_scale = checkpoint["model.density_data_scale"]
-        density_min = checkpoint["model.density_data_min"]
-        density_data = self.dequantize_data(density_data, density_min, density_scale)
 
         self.model.register_parameter("density_data", nn.Parameter(density_data))
         checkpoint["state_dict"]["model.density_data"] = density_data
