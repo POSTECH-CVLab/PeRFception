@@ -12,6 +12,7 @@ import utils.ray as ray
 import utils.store_image as store_image
 from model.interface import LitModel
 from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
+import gin
 
 import gin
 from typing import *
@@ -194,7 +195,6 @@ class LitPlenoxel(LitModel):
         self.automatic_optimization = False
         self.reso_idx = 0
         self.reso_list = reso
-
         self.lr_sigma_func = self.get_expon_lr_func(
             lr_sigma,
             lr_sigma_final,
@@ -312,7 +312,6 @@ class LitPlenoxel(LitModel):
         return data.type(torch.FloatTensor) * data_scale + data_min
 
     def training_step(self, batch, batch_idx):
-
         gstep = self.trainer.global_step
 
         if self.lr_fg_begin_step > 0 and gstep == self.lr_fg_begin_step:
@@ -513,7 +512,6 @@ class LitPlenoxel(LitModel):
         lpips = self.lpips(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
 
         if self.trainer.is_global_zero:
-
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
             store_image.store_image(image_dir, rgbs)
