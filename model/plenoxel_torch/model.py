@@ -155,8 +155,8 @@ class LitPlenoxel(LitModel):
         lambda_sparsity: float = 0.0,
         lambda_beta: float = 0.0,
         lambda_tv_background_sigma: float = 1e-2,
-        lmabda_tv_background_sparsity: float = 0.01, 
         lambda_tv_background_color: float = 1e-2,
+        tv_background_sparsity: float = 0.01, 
         # WD
         weight_decay_sigma: float = 1.0,
         weight_decay_sh: float = 1.0,

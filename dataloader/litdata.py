@@ -115,6 +115,7 @@ class LitDataTnT(LitData):
         num_tpus: int,
         # TnT specific
         cam_scale_factor: float = 0.95,
+        train_skip: int = 1,
         val_skip: int = 8,
         test_skip: int = 8,
     ):
@@ -133,6 +134,7 @@ class LitDataTnT(LitData):
             datadir=datadir,
             scene_name=scene_name,
             cam_scale_factor=cam_scale_factor,
+            train_skip=train_skip,
             val_skip=val_skip, 
             test_skip=test_skip
         )
