@@ -71,7 +71,7 @@ class LitDataBlender(LitData):
         num_gpus: int,
         num_tpus: int,
         # Blender specific
-        test_skip: int = 1, 
+        test_skip: int = 8, 
         cam_scale_factor: float = 1.0,
         white_bkgd: bool = True,
     ):
@@ -116,8 +116,8 @@ class LitDataTnT(LitData):
         # TnT specific
         cam_scale_factor: float = 0.95,
         train_skip: int = 1,
-        val_skip: int = 1,
-        test_skip: int = 1,
+        val_skip: int = 8,
+        test_skip: int = 8,
     ):
         (
             self.images, 
@@ -156,8 +156,8 @@ class LitDataNSVF(LitData):
         num_gpus: int,
         num_tpus: int,
         # NSVF specific
-        val_skip: int = 1,
-        test_skip: int = 1, 
+        val_skip: int = 8,
+        test_skip: int = 8, 
         cam_scale_factor: float = 0.95,
         data_bbox_scale: float = 1.1,
         white_bkgd: bool = True,
@@ -171,12 +171,17 @@ class LitDataNSVF(LitData):
             self.near, 
             self.far,
             self.ndc_coeffs,
+<<<<<<< HEAD
             (self.i_train, self.i_val, self.i_test, self.i_all),
+=======
+            self.i_split,
+>>>>>>> 9cad96f091c5e2c751872bdcb0dffc7ab3ff9459
             self.render_poses
         ) = \
         load_nsvf_data(
             datadir=datadir, 
             scene_name=scene_name,
+<<<<<<< HEAD
             val_skip=val_skip,
             test_skip=test_skip, 
             cam_scale_factor=cam_scale_factor,
@@ -225,6 +230,17 @@ class LitDataCo3D(LitData):
         )
 
         super(LitDataCo3D, self).__init__(
+=======
+            test_skip=test_skip, 
+            cam_scale_factor=cam_scale_factor,
+            white_bkgd=white_bkgd,
+            data_bbox_scale=data_bbox_scale,
+        )
+        
+        self.i_train, self.i_val, self.i_test, self.i_all = self.i_split
+
+        super(LitDataNSVF, self).__init__(
+>>>>>>> 9cad96f091c5e2c751872bdcb0dffc7ab3ff9459
             datadir=datadir,
             accelerator=accelerator,
             num_gpus=num_gpus,
