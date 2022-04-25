@@ -71,7 +71,7 @@ class LitDataBlender(LitData):
         num_gpus: int,
         num_tpus: int,
         # Blender specific
-        test_skip: int = 8, 
+        test_skip: int = 1, 
         cam_scale_factor: float = 1.0,
         white_bkgd: bool = True,
     ):
@@ -116,8 +116,8 @@ class LitDataTnT(LitData):
         # TnT specific
         cam_scale_factor: float = 0.95,
         train_skip: int = 1,
-        val_skip: int = 8,
-        test_skip: int = 8,
+        val_skip: int = 1,
+        test_skip: int = 1,
     ):
         (
             self.images, 
@@ -156,8 +156,8 @@ class LitDataNSVF(LitData):
         num_gpus: int,
         num_tpus: int,
         # NSVF specific
-        val_skip: int = 8,
-        test_skip: int = 8, 
+        val_skip: int = 1,
+        test_skip: int = 1, 
         cam_scale_factor: float = 0.95,
         data_bbox_scale: float = 1.1,
         white_bkgd: bool = True,

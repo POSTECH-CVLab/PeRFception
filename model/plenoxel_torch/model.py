@@ -178,6 +178,7 @@ class LitPlenoxel(LitModel):
         last_sample_opaque: bool = False,
         # Quantization
         filter_threshold: float = 0.0,
+        quantize: bool = False, 
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -584,7 +585,8 @@ class LitPlenoxel(LitModel):
         density_data = checkpoint["state_dict"]["model.density_data"]
 
         sh = checkpoint["state_dict"]["model.sh_data"]
-        sh_data, sh_min, sh_scale = self.quantize_data(sh)
+        if self.quantize:
+            sh, sh_min, sh_scale = self.quantize_data(sh)
 
         model_links = checkpoint["state_dict"]["model.links"]
         reso_list = self.reso_list[self.reso_idx]
@@ -607,10 +609,11 @@ class LitPlenoxel(LitModel):
         background_data = checkpoint["state_dict"]["model.background_data"]
 
         if self.model.use_background:
-            background_data, bkgd_min, bkgd_scale = self.quantize_data(background_data)
+            if self.quantize:
+                background_data, bkgd_min, bkgd_scale = self.quantize_data(background_data)
+                checkpoint["model.background_data_min"] = bkgd_min
+                checkpoint["model.background_data_scale"] = bkgd_scale
             checkpoint["state_dict"].pop("model.background_data")
-            checkpoint["model.background_data_min"] = bkgd_min
-            checkpoint["model.background_data_scale"] = bkgd_scale
 
         checkpoint["state_dict"]["model.background_data"] = background_data
 
@@ -619,12 +622,15 @@ class LitPlenoxel(LitModel):
         checkpoint["state_dict"].pop("model.links")
 
         checkpoint["state_dict"]["model.density_data"] = density_data
-
-        checkpoint["state_dict"]["model.sh_data"] = sh_data
-        checkpoint["model.sh_data_min"] = sh_min
-        checkpoint["model.sh_data_scale"] = sh_scale
         checkpoint["state_dict"]["model.links_idx"] = links_idx
-
+        checkpoint["state_dict"]["model.sh_data"] = sh
+        if self.quantize:
+            checkpoint["model.sh_data_min"] = sh_min
+            checkpoint["model.sh_data_scale"] = sh_scale
+            if self.model.use_background:
+                checkpoint["model.background_data_min"] = bkgd_min
+                checkpoint["model.background_data_scale"] = bkgd_scale
+                
         return super().on_save_checkpoint(checkpoint)
 
     def on_load_checkpoint(self, checkpoint) -> None:
@@ -645,9 +651,10 @@ class LitPlenoxel(LitModel):
         if "model.background_data_min" in checkpoint.keys():
             del self.model.background_data
             bgd_data = state_dict["model.background_data"]
-            bgd_min = checkpoint["model.background_data_min"]
-            bgd_scale = checkpoint["model.background_data_scale"]
-            bgd_data = self.dequantize_data(bgd_data, bgd_min, bgd_scale)
+            if self.quantize:
+                bgd_min = checkpoint["model.background_data_min"]
+                bgd_scale = checkpoint["model.background_data_scale"]
+                bgd_data = self.dequantize_data(bgd_data, bgd_min, bgd_scale)
 
             self.model.register_parameter("background_data", nn.Parameter(bgd_data))
             checkpoint["state_dict"]["model.background_data"] = bgd_data
@@ -658,9 +665,10 @@ class LitPlenoxel(LitModel):
         checkpoint["state_dict"]["model.density_data"] = density_data
 
         sh_data = state_dict["model.sh_data"]
-        sh_data_min = checkpoint["model.sh_data_min"]
-        sh_data_scale = checkpoint["model.sh_data_scale"]
-        sh_data = self.dequantize_data(sh_data, sh_data_min, sh_data_scale)
+        if self.quantize:
+            sh_data_min = checkpoint["model.sh_data_min"]
+            sh_data_scale = checkpoint["model.sh_data_scale"]
+            sh_data = self.dequantize_data(sh_data, sh_data_min, sh_data_scale)
 
         self.model.register_parameter("sh_data", nn.Parameter(sh_data))
         checkpoint["state_dict"]["model.sh_data"] = sh_data
