@@ -5,6 +5,11 @@ from model.nerf_torch.model import LitNeRF
 from model.plenoxel_torch.model import LitPlenoxel
 from typing import *
 
+import os
+import gdown
+
+url_co3d_list = "https://drive.google.com/uc?id=1jCDaA41ZddkgPl4Yw2h-XI7mt9o56kb7"
+
 def select_model(
     model_name: str,
 ):
@@ -37,6 +42,9 @@ def select_dataset(
         data_fun = LitDataTnT
     elif dataset_name == "co3d":
         data_fun = LitDataCo3D
+        co3d_list_json_path = os.path.join("dataloader/co3d_lists/co3d_list.json")
+        if not os.path.exists(co3d_list_json_path):
+            gdown.download(url_co3d_list, co3d_list_json_path)
     elif dataset_name == "scannet":
         data_fun = None
 

@@ -1,4 +1,3 @@
-*data/*
 *logs/*
 logs 
 *wandb/*
@@ -11,3 +10,10 @@ logs_collection
 *.egg-info*
 *.eggs*
 *_debug*
+
+cache/*
+!cache/.gitkeep
+data/*
+!data/.gitkeep
+dataloader/co3d_lists/*
+!dataloader/co3d_lists/.gitkeep

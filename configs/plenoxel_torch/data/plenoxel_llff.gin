@@ -3,7 +3,6 @@ run.datadir = "data/llff"
 run.logbase = "logs"
 
 LitData.batch_sampler = "all_images_wo_replace"
-LitData.batch_size = 5000
 LitData.ndc_coord = True
 
 LitPlenoxel.reso = [[256, 256, 256], [512, 512, 512], [1408, 1156, 128]]

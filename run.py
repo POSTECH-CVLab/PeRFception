@@ -49,7 +49,8 @@ def run(
     num_tpus: Optional[int] = None,
     num_sanity_val_steps: int = 0,
     seed: int = 777,
-    debug: bool = False
+    debug: bool = False,
+    save_last_only: bool = False,
 ):
 
     logging.getLogger("lightning").setLevel(logging.ERROR)
@@ -87,6 +88,7 @@ def run(
         filename="best",
         save_top_k=1,
         mode="max",
+        save_last=save_last_only
     )
     tqdm_progrss = TQDMProgressBar(
         refresh_rate=progressbar_refresh_rate
@@ -127,9 +129,12 @@ def run(
     model.logdir = logdir
     if run_train:
         trainer.fit(model, data_module, ckpt_path=ckpt_path)
+        if save_last_only:
+            pass
     
     if run_eval:
-        trainer.test(model, data_module, ckpt_path="best")
+        ckpt_path=f"{logdir}/best.ckpt"
+        trainer.test(model, data_module, ckpt_path=ckpt_path)
 
     if run_render:
         trainer.predict(model, data_module, ckpt_path="best")

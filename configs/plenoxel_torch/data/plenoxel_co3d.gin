@@ -3,7 +3,6 @@ run.datadir = "data/co3d"
 run.logbase = "logs"
 
 LitData.batch_sampler = "all_images_wo_replace"
-LitData.batch_size = 5000
 
 LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]
 LitPlenoxel.background_nlayers = 16
@@ -26,3 +25,4 @@ LitPlenoxel.quantize = True
 
 ResampleCallBack.upsamp_every = 25600
 run.max_steps = 51200
+run.save_last_only = True
