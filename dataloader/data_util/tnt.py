@@ -72,7 +72,16 @@ def similarity_from_cameras(c2w):
     return transform, scale
 
 
-def load_tnt_data(datadir, cam_scale_factor=0.95):
+def load_tnt_data(
+    datadir: str, 
+    scene_name: str, 
+    train_skip: int,
+    val_skip: int,
+    test_skip: int, 
+    cam_scale_factor: float,
+):
+
+    basedir = os.path.join(datadir, scene_name)
 
     def parse_txt(filename):
         assert os.path.isfile(filename)
@@ -80,37 +89,60 @@ def load_tnt_data(datadir, cam_scale_factor=0.95):
         return np.array([float(x) for x in nums]).reshape([4, 4]).astype(np.float32)
 
     # camera parameters files
-    intrinsics_files = find_files('{}/train/intrinsics'.format(datadir), exts=['*.txt'])
-    pose_files = find_files('{}/train/pose'.format(datadir), exts=['*.txt'])
-    pose_files += find_files('{}/validation/pose'.format(datadir), exts=['*.txt'])
-    pose_files += find_files('{}/test/pose'.format(datadir), exts=['*.txt'])
+    intrinsics_files = find_files('{}/train/intrinsics'.format(basedir), exts=['*.txt'])[::train_skip]
+    intrinsics_files += find_files('{}/validation/intrinsics'.format(basedir), exts=['*.txt'])[::val_skip]
+    intrinsics_files += find_files('{}/test/intrinsics'.format(basedir), exts=['*.txt'])[::test_skip]
+    pose_files = find_files('{}/train/pose'.format(basedir), exts=['*.txt'])[::train_skip]
+    pose_files += find_files('{}/validation/pose'.format(basedir), exts=['*.txt'])[::val_skip]
+    pose_files += find_files('{}/test/pose'.format(basedir), exts=['*.txt'])[::test_skip]
     cam_cnt = len(pose_files)
 
     # img files
-    img_files = find_files('{}/rgb'.format(datadir), exts=['*.png', '*.jpg'])
+    img_files = find_files('{}/rgb'.format(basedir), exts=['*.png', '*.jpg'])
     if len(img_files) > 0:
         assert(len(img_files) == cam_cnt)
     else:
         img_files = [None, ] * cam_cnt
 
     # assume all images have the same size as training image
-    train_imgfile = find_files('{}/train/rgb'.format(datadir), exts=['*.png', '*.jpg'])
-    val_imgfile = find_files('{}/validation/rgb'.format(datadir), exts=['*.png', '*.jpg'])
-    test_imgfile = find_files('{}/test/rgb'.format(datadir), exts=['*.png', '*.jpg'])
+    train_imgfile = find_files('{}/train/rgb'.format(basedir), exts=['*.png', '*.jpg'])[::train_skip]
+    val_imgfile = find_files('{}/validation/rgb'.format(basedir), exts=['*.png', '*.jpg'])[::val_skip]
+    test_imgfile = find_files('{}/test/rgb'.format(basedir), exts=['*.png', '*.jpg'])[::test_skip]
     i_train = np.arange(len(train_imgfile))
     i_val = np.arange(len(val_imgfile)) + len(train_imgfile)
     i_test = np.arange(len(test_imgfile)) + len(train_imgfile) + len(val_imgfile)
-    i_split = (i_train, i_val, i_test)
+    i_all = np.arange(len(train_imgfile) + len(val_imgfile) + len(test_imgfile))
+    i_split = (i_train, i_val, i_test, i_all)
 
-    im = np.stack([imageio.imread(imgfile) for imgfile in train_imgfile + val_imgfile + test_imgfile]) / 255.
-    H, W = im[0].shape[:2]
+    images = np.stack([imageio.imread(imgfile) for imgfile in train_imgfile + val_imgfile + test_imgfile]) / 255.
+    h, w = images[0].shape[:2]
 
-    intrinsics = parse_txt(intrinsics_files[0])
-    poses = np.stack([parse_txt(pose_file) for pose_file in pose_files])
-    T, sscale = similarity_from_cameras(poses)
+    intrinsics = np.stack([
+        parse_txt(intrinsics_file) for intrinsics_file in intrinsics_files
+    ])
+    extrinsics = np.stack([parse_txt(pose_file) for pose_file in pose_files])
+    T, sscale = similarity_from_cameras(extrinsics)
 
-    poses = np.einsum("nij, ki -> nkj", poses, T)
+    extrinsics = np.einsum("nij, ki -> nkj", extrinsics, T)
     scene_scale = cam_scale_factor * sscale
-    poses[:, :3, 3] *= scene_scale
+    extrinsics[:, :3, 3] *= scene_scale
+    num_frame = len(extrinsics)
+    
+    image_sizes = np.array([[h, w] for i in range(num_frame)])
 
-    return im, poses, poses, (H, W), intrinsics, i_split
+    near = 0.
+    far = 1.
+
+    render_poses = extrinsics
+
+    return (
+        images, 
+        intrinsics, 
+        extrinsics, 
+        image_sizes,
+        near,
+        far, 
+        (-1, -1),
+        i_split,
+        render_poses
+    ) 

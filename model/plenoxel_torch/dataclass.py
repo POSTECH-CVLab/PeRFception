@@ -1,8 +1,10 @@
-import torch
 from dataclasses import dataclass
-import model.plenoxel_torch.utils as utils
-from typing import Optional, Union, Tuple, List
+from random import random
+from typing import List, Optional, Tuple, Union
 
+import torch
+
+import model.plenoxel_torch.utils as utils
 from model.plenoxel_torch.__global__ import _get_c_extension
 
 _C = _get_c_extension()
@@ -20,28 +22,29 @@ class RenderOptions:
     :param stop_thresh: float
     """
 
-    backend: str = "cuvol"  # One of cuvol, svox1, nvol
+    def __init__(
+        self,
+        backend: str = "cuvol",
+        background_brightness: float = 1.0,
+        step_size: float = 0.5,
+        sigma_thresh: float = 1e-10,
+        stop_thresh: float = 1e-7,
+        last_sample_opaque: bool = False,
+        near_clip: float = 0.0,
+        use_spheric_clip: bool = False,
+    ):
+        self.backend = backend
+        self.background_brightness = background_brightness
+        self.step_size = step_size
+        self.sigma_thresh = sigma_thresh
+        self.stop_thresh = stop_thresh
+        self.last_sample_opaque = last_sample_opaque
+        self.near_clip = near_clip
+        self.use_spheric_clip = use_spheric_clip
 
-    background_brightness: float = 1.0  # [0, 1], the background color black-white
-
-    step_size: float = 0.5  # Step size, in normalized voxels (not used for svox1)
-    #  (i.e. 1 = 1 voxel width, different from svox where 1 = grid width!)
-
-    sigma_thresh: float = 1e-10  # Voxels with sigmas < this are ignored, in [0, 1]
-    #  make this higher for fast rendering
-
-    stop_thresh: float = 1e-7
-    #  make this higher for fast rendering
-
-    last_sample_opaque: bool = False  # Make the last sample opaque (for forward-facing)
-
-    near_clip: float = 0.0
-    use_spheric_clip: bool = False
-
-    random_sigma_std: float = 1.0  # Noise to add to sigma (only if randomize=True)
-    random_sigma_std_background: float = 1.0  # Noise to add to sigma
-
-    def _to_cpp(self, randomize: bool = False):
+    def _to_cpp(
+        self, randomize: bool = False
+    ):
         """
         Generate object to pass to C++
         """
@@ -52,7 +55,6 @@ class RenderOptions:
         opt.stop_thresh = self.stop_thresh
         opt.near_clip = self.near_clip
         opt.use_spheric_clip = self.use_spheric_clip
-
         opt.last_sample_opaque = self.last_sample_opaque
 
         return opt

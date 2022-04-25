@@ -1,0 +1,13 @@
+
+run.dataset_name = "nsvf"
+run.datadir = "data/nsvf"
+run.logbase = "logs"
+
+LitData.batch_sampler = "single_image"
+
+LitNeRF.white_bkgd = True
+LitData.precrop_steps = 500
+LitData.precrop = True
+
+LitNeRF.lr_delay_steps = 2500
+LitNeRF.lr_delay_mult = 0.1

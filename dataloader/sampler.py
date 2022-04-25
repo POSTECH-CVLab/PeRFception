@@ -26,6 +26,7 @@ class DDPSampler(SequentialSampler):
         self.rank = rank
         self.num_replicas = num_replicas
 
+
 class DDPSequnetialSampler(DDPSampler): 
 
     def __init__(self, batch_size, num_replicas, rank, N_total, tpu):
@@ -42,69 +43,106 @@ class DDPSequnetialSampler(DDPSampler):
 
 class SingleImageDDPSampler(DDPSampler):
     
-    def __init__(self, batch_size, num_replicas, rank, N_img, N_pixels, i_validation, tpu):
+    def __init__(
+        self, 
+        batch_size, 
+        num_replicas, 
+        rank, 
+        N_img, 
+        N_pixels, 
+        epoch_size, 
+        tpu,
+        precrop,
+        precrop_steps,
+    ):
         super(SingleImageDDPSampler, self).__init__(batch_size, num_replicas, rank, tpu)
         self.N_pixels = N_pixels
         self.N_img = N_img
-        self.i_validation = i_validation
+        self.epoch_size = epoch_size
+        self.precrop = precrop
+        self.precrop_steps = precrop_steps
 
     def __iter__(self):
-        image_choice = np.random.choice(np.arange(self.N_img),
-                                        self.i_validation,
-                                        replace=True)
-        idx_choice = [
-            np.random.choice(np.arange(self.N_pixels), self.batch_size) \
-                for _ in range(self.i_validation)
-        ]
-        for (image_idx, idx) in zip(image_choice, idx_choice):
-            idx_ret = image_idx * self.N_pixels + idx
+        image_choice = np.random.choice(
+            np.arange(self.N_img),
+            self.epoch_size,
+            replace=True
+        )
+        image_shape = self.N_pixels[image_choice]
+        if not self.precrop:
+            idx_choice = [
+                np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size)
+                for i in range(self.epoch_size)
+            ]
+        else:
+            idx_choice = []
+            h_pick = [
+                np.random.choice(
+                    np.arange(image_shape[i, 0] // 2), self.batch_size
+                ) + image_shape[i, 0] // 4 for i in range(self.precrop_steps)
+            ]
+            w_pick = [
+                np.random.choice(
+                    np.arange(image_shape[i, 1] // 2), self.batch_size
+                ) + image_shape[i, 1] // 4 for i in range(self.precrop_steps)
+            ]
+            idx_choice = [h_pick[i] * image_shape[i, 1] + w_pick[i] for i in range(self.precrop_steps)]
+                
+            idx_choice += [
+                np.random.choice(np.arange(image_shape[i, 0] * image_shape[i, 1]), self.batch_size) 
+                for i in range(self.epoch_size - self.precrop_steps)
+            ]
+            self.precrop = False
+
+        for ((h, w), image_idx, idx) in zip(image_shape, image_choice, idx_choice):
+            idx_ret = image_idx * h * w + idx
             yield idx_ret[self.rank::self.num_replicas]
 
     def __len__(self):
-        return self.i_validation
+        return self.epoch_size
 
 
 class MultipleImageDDPSampler(DDPSampler):
-    def __init__(self, batch_size, num_replicas, rank, total_len, i_validation, tpu):
+    def __init__(self, batch_size, num_replicas, rank, total_len, epoch_size, tpu):
         super(MultipleImageDDPSampler, self).__init__(batch_size, num_replicas, rank, tpu)
         self.total_len = total_len
-        self.i_validation = i_validation
+        self.epoch_size = epoch_size
 
     def __iter__(self):
         full_index = np.arange(self.total_len)
         indices = [
             np.random.choice(full_index, self.batch_size) \
-                for _ in range(self.i_validation)
+                for _ in range(self.epoch_size)
         ]
         for batch in indices:
             yield batch[self.rank::self.num_replicas]
 
     def __len__(self):
-        return self.i_validation
+        return self.epoch_size
 
 
 class MultipleImageWOReplaceDDPSampler(MultipleImageDDPSampler):
 
-    def __init__(self, batch_size, num_replicas, rank, total_len, i_validation, tpu):
+    def __init__(self, batch_size, num_replicas, rank, total_len, epoch_size, tpu):
         super(MultipleImageWOReplaceDDPSampler, self).__init__(
-            batch_size, num_replicas, rank, total_len, i_validation, tpu
+            batch_size, num_replicas, rank, total_len, epoch_size, tpu
         )
 
     def __iter__(self):
         indices = [
             np.random.permutation(self.total_len) \
                 for _ in range(int(
-                    np.ceil(self.i_validation * self.batch_size / self.total_len)
+                    np.ceil(self.epoch_size * self.batch_size / self.total_len)
                 ))
         ]
-        indices = np.concatenate(indices)[:self.i_validation * self.batch_size]
-        indices = indices.reshape(self.i_validation, self.batch_size)
+        indices = np.concatenate(indices)[:self.epoch_size * self.batch_size]
+        indices = indices.reshape(self.epoch_size, self.batch_size)
 
         for batch in indices:
             yield batch[self.rank::self.num_replicas]
 
     def __len__(self):
-        return self.i_validation
+        return self.epoch_size
 
 
 class RaySet(Dataset):
