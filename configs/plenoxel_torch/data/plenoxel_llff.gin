@@ -2,7 +2,7 @@ run.dataset_name = "llff"
 run.datadir = "data/llff"
 run.logbase = "logs"
 
-LitData.batch_sampler = "all_images_wo_replace"
+LitData.batch_sampler = "all_images"
 LitData.ndc_coord = True
 LitData.epoch_size = 38400
 

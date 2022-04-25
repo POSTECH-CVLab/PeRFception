@@ -2,7 +2,7 @@ run.dataset_name = "blender"
 run.datadir = "data/blender"
 run.logbase = "logs"
 
-LitData.batch_sampler = "all_images_wo_replace"
+LitData.batch_sampler = "all_images"
 LitData.epoch_size = 38400
 
 LitPlenoxel.reso = [[256, 256, 256], [512, 512, 512]]

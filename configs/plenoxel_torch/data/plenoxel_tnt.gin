@@ -2,7 +2,7 @@ run.dataset_name = "tanks_and_temples"
 run.datadir = "data/tanks_and_temples"
 run.logbase = "logs"
 
-LitData.batch_sampler = "all_images_wo_replace"
+LitData.batch_sampler = "all_images"
 LitData.epoch_size = 38400
 
 LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256], [512, 512, 512], [640, 640, 640]]
