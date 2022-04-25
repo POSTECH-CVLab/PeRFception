@@ -3,6 +3,7 @@ run.datadir = "data/co3d"
 run.logbase = "logs"
 
 LitData.batch_sampler = "all_images_wo_replace"
+LitData.epoch_size = 38400
 
 LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]
 LitPlenoxel.background_nlayers = 16
