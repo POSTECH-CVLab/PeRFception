@@ -345,7 +345,7 @@ class LitPlenoxel(LitModel):
             self.log("lr_sh", lr_sh, on_step=True)
             self.log("lr_sigma_bg", lr_sigma_bg, on_step=True)
             self.log("lr_color_bg", lr_color_bg, on_step=True)
-            self.log("train_psnr", psnr, on_step=True, prog_bar=True, logger=True)
+            self.log("train/psnr", psnr, on_step=True, prog_bar=True, logger=True)
 
         if self.lambda_tv > 0.0:
             self.model.inplace_tv_grad(
@@ -509,6 +509,10 @@ class LitPlenoxel(LitModel):
         ssim = self.ssim(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
         lpips = self.lpips(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
 
+        self.log("test/psnr", psnr["test"], on_epoch=True, rank_zero_only=True)
+        self.log("test/ssim", ssim["test"], on_epoch=True, rank_zero_only=True)
+        self.log("test/lpips", lpips["test"], on_epoch=True, rank_zero_only=True)
+
         if self.trainer.is_global_zero:
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
@@ -573,9 +577,9 @@ class LitPlenoxel(LitModel):
         psnr_mean = self.psnr_each(rgbs, targets).mean()
         ssim_mean = self.ssim_each(rgbs, targets).mean()
         lpips_mean = self.lpips_each(rgbs, targets).mean()
-        self.log("val_psnr", psnr_mean.item(), on_epoch=True, sync_dist=True)
-        self.log("val_ssim", ssim_mean.item(), on_epoch=True, sync_dist=True)
-        self.log("val_lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/psnr", psnr_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/ssim", ssim_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)
 
     def on_save_checkpoint(self, checkpoint) -> None:
         checkpoint["reso_idx"] = self.reso_idx
