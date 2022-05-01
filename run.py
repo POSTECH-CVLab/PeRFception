@@ -84,7 +84,7 @@ def run(
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
     model_checkpoint = ModelCheckpoint(
-        monitor="val_psnr",
+        monitor="val/psnr",
         dirpath=logdir,
         filename="best",
         save_top_k=1,
