@@ -31,6 +31,7 @@ def run(
     logbase: Optional[str] = None,
     scene_name: Optional[str] = None,
     model_name: Optional[str] = None, 
+    proj_name: Optional[str] = None,
     dataset_name: Optional[str] = None,
     postfix: Optional[str] = None,
     entity: Optional[str] = None,
@@ -60,7 +61,7 @@ def run(
         model_name + "_" + dataset_name + "_"  + scene_name
     )
     if postfix is not None:
-        exp_name += "_" + postfix
+        exp_name += "_" + str(postfix)
     if debug:
         exp_name += "_debug"
 
@@ -74,7 +75,7 @@ def run(
     # WANDB fails when using TPUs
     wandb_logger = pl_loggers.WandbLogger(
         name=exp_name, entity=entity,
-        project=model_name
+        project=model_name if proj_name is None else proj_name
     ) if accelerator == "gpu" else pl_loggers.TensorBoardLogger(
         save_dir=logdir, name=exp_name
     )
@@ -130,7 +131,7 @@ def run(
     if run_train:
         trainer.fit(model, data_module, ckpt_path=ckpt_path)
         if save_last_only:
-            pass
+            os.remove(os.path.join(logdir, "best.ckpt"))
     
     if run_eval:
         ckpt_path=f"{logdir}/best.ckpt"

@@ -3,7 +3,7 @@ run.datadir = "data/co3d"
 run.logbase = "logs"
 
 LitData.batch_sampler = "all_images"
-LitData.epoch_size = 38400
+LitData.epoch_size = 25600
 
 LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]
 LitPlenoxel.background_nlayers = 16
@@ -13,6 +13,7 @@ LitPlenoxel.lr_sh = 1.0e-2
 LitPlenoxel.lr_sigma_delay_steps = 15000
 LitPlenoxel.weight_thresh = 1.28
 LitPlenoxel.thresh_type = "weight"
+LitPlenoxel.near_clip = 0.00
 LitPlenoxel.lambda_tv = 5.0e-5
 LitPlenoxel.lambda_tv_sh = 5.0e-3
 LitPlenoxel.lambda_tv_background_color = 1.0e-3
@@ -27,3 +28,4 @@ LitPlenoxel.quantize = True
 ResampleCallBack.upsamp_every = 25600
 run.max_steps = 51200
 run.save_last_only = True
+run.proj_name = "co3d"
