@@ -36,12 +36,9 @@ class ResampleCallBack(pl.Callback):
                 pl_module.lambda_tv *= pl_module.tv_decay
                 pl_module.lambda_tv_sh *= pl_module.tv_decay
 
-            image_data = pl_module.dataset.image_data
-            intrinsics, extrinsics, image_sizes = None, None, None
-            if image_data is not None:
-                intrinsics = np.array([data["intrinsic"] for data in image_data])
-                extrinsics = np.array([data["pose"] for data in image_data])
-                image_sizes = np.array([data["image_size"] for data in image_data])
+            intrinsics = trainer.datamodule.intrinsics
+            extrinsics = trainer.datamodule.extrinsics
+            image_sizes = trainer.datamodule.image_sizes
 
             # NDC should be updated.
             camera_list = (
@@ -266,8 +263,8 @@ class LitPlenoxel(LitModel):
                 self.intrinsics[1, 1] if intrinsics is None else intrinsics[i, 1, 1],
                 self.intrinsics[0, 2] if intrinsics is None else intrinsics[i, 0, 2],
                 self.intrinsics[1, 2] if intrinsics is None else intrinsics[i, 1, 2],
-                self.w if image_size is None else image_size[i, 0],
-                self.h if image_size is None else image_size[i, 1],
+                self.w if image_size is None else image_size[i, 1],
+                self.h if image_size is None else image_size[i, 0],
                 self.ndc_coeffs if ndc_coeffs is None else ndc_coeffs[i],
             )
             for i in dmodule.i_train

@@ -2,7 +2,7 @@ from dataloader.litdata import (
     LitDataBlender, LitDataCo3D, LitDataLLFF, LitDataNSVF, LitDataTnT
 )
 from model.nerf_torch.model import LitNeRF
-from model.plenoxel_torch.model import LitPlenoxel
+from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
 from typing import *
 
 import os
@@ -60,8 +60,7 @@ def select_callback(model_name):
 
     callbacks = []
     
-    if model_name == "plenoxel_torch":
-        import model.plenoxel_torch.model as model
-        callbacks += [model.ResampleCallBack()]
+    if model_name == "plenoxel":
+        callbacks += [ResampleCallBack()]
 
     return callbacks
