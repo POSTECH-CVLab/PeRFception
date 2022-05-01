@@ -133,12 +133,12 @@ def run(
         if save_last_only:
             os.remove(os.path.join(logdir, "best.ckpt"))
     
+    ckpt_path = f"{logdir}/best.ckpt" if not save_last_only else f"{logdir}/last.ckpt"
     if run_eval:
-        ckpt_path=f"{logdir}/best.ckpt"
         trainer.test(model, data_module, ckpt_path=ckpt_path)
 
     if run_render:
-        trainer.predict(model, data_module, ckpt_path="best")
+        trainer.predict(model, data_module, ckpt_path=ckpt_path)
 
 
 if __name__ == "__main__":
