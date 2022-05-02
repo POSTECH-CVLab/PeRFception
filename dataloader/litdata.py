@@ -204,7 +204,7 @@ class LitDataCo3D(LitData):
         num_tpus: int,
         # Co3D specific arguments
         max_image_dim: int = 800,
-        cam_scale_factor: float = 0.95,
+        cam_scale_factor: float = 1.00,
     ):
         (
             self.images, 
