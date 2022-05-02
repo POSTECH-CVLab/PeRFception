@@ -39,11 +39,12 @@ class ResampleCallBack(pl.Callback):
             intrinsics = trainer.datamodule.intrinsics
             extrinsics = trainer.datamodule.extrinsics
             image_sizes = trainer.datamodule.image_sizes
+            ndc_coeffs = trainer.datamodule.ndc_coeffs
 
             # NDC should be updated.
             camera_list = (
                 pl_module.generate_camera_list(
-                    intrinsics, extrinsics, None, image_sizes
+                    intrinsics, extrinsics, ndc_coeffs, image_sizes
                 )
                 if pl_module.thresh_type == "weight"
                 else None
@@ -254,6 +255,8 @@ class LitPlenoxel(LitModel):
         self, intrinsics=None, extrinsics=None, ndc_coeffs=None, image_size=None
     ):
         dmodule = self.trainer.datamodule
+        if len(ndc_coeffs) == 1:
+            ndc_coeffs = [ndc_coeffs for _ in dmodule.i_train]
         return [
             dataclass.Camera(
                 torch.from_numpy(
