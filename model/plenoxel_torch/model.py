@@ -177,6 +177,7 @@ class LitPlenoxel(LitModel):
         # Quantization
         filter_threshold: float = 0.0,
         quantize: bool = False, 
+        store_efficient: bool = False,
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -585,14 +586,15 @@ class LitPlenoxel(LitModel):
         self.log("val/lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)
 
     def on_save_checkpoint(self, checkpoint) -> None:
+
         checkpoint["reso_idx"] = self.reso_idx
-        density_data = checkpoint["state_dict"]["model.density_data"]
+        density_data = checkpoint["state_dict"]["model.density_data"].cpu()
 
         sh = checkpoint["state_dict"]["model.sh_data"]
         if self.quantize:
             sh, sh_min, sh_scale = self.quantize_data(sh)
 
-        model_links = checkpoint["state_dict"]["model.links"]
+        model_links = checkpoint["state_dict"]["model.links"].cpu()
         reso_list = self.reso_list[self.reso_idx]
 
         argsort_val = model_links[torch.where(model_links >= 0)].argsort()
@@ -603,14 +605,14 @@ class LitPlenoxel(LitModel):
             + links_compressed[2]
         )
 
-        links = - torch.ones_like(model_links)
+        links = - torch.ones_like(model_links, device="cpu")
         links[
             links_compressed[0], links_compressed[1], links_compressed[2]
         ] = torch.arange(
-            len(links_compressed[0]), dtype=torch.int32, device=self.device
+            len(links_compressed[0]), dtype=torch.int32, device="cpu"
         )
 
-        background_data = checkpoint["state_dict"]["model.background_data"]
+        background_data = checkpoint["state_dict"]["model.background_data"].cpu()
 
         if self.model.use_background:
             if self.quantize:
@@ -638,7 +640,7 @@ class LitPlenoxel(LitModel):
         return super().on_save_checkpoint(checkpoint)
 
     def on_load_checkpoint(self, checkpoint) -> None:
-
+    
         state_dict = checkpoint["state_dict"]
 
         self.reso_idx = checkpoint["reso_idx"]
