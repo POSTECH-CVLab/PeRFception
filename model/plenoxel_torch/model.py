@@ -255,8 +255,6 @@ class LitPlenoxel(LitModel):
         self, intrinsics=None, extrinsics=None, ndc_coeffs=None, image_size=None
     ):
         dmodule = self.trainer.datamodule
-        if len(ndc_coeffs) == 1:
-            ndc_coeffs = [ndc_coeffs for _ in dmodule.i_train]
         return [
             dataclass.Camera(
                 torch.from_numpy(
