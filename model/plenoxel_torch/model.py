@@ -39,12 +39,11 @@ class ResampleCallBack(pl.Callback):
             intrinsics = trainer.datamodule.intrinsics
             extrinsics = trainer.datamodule.extrinsics
             image_sizes = trainer.datamodule.image_sizes
-            ndc_coeffs = trainer.datamodule.ndc_coeffs
 
             # NDC should be updated.
             camera_list = (
                 pl_module.generate_camera_list(
-                    intrinsics, extrinsics, ndc_coeffs, image_sizes
+                    intrinsics, extrinsics, None, image_sizes
                 )
                 if pl_module.thresh_type == "weight"
                 else None
