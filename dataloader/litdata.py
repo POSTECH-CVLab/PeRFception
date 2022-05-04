@@ -204,7 +204,7 @@ class LitDataCo3D(LitData):
         num_tpus: int,
         # Co3D specific arguments
         max_image_dim: int = 800,
-        cam_scale_factor: float = 0.95,
+        cam_scale_factor: float = 1.50,
     ):
         (
             self.images, 
@@ -215,7 +215,8 @@ class LitDataCo3D(LitData):
             self.far,
             self.ndc_coeffs,
             (self.i_train, self.i_val, self.i_test, self.i_all),
-            self.render_poses
+            self.render_poses,
+            self.label_info
         ) = \
         load_co3d_data(
             datadir=datadir, 

@@ -15,6 +15,7 @@ from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
 import gin
 
 import gin
+import json
 from typing import *
 
 @gin.configurable()
@@ -309,6 +310,23 @@ class LitPlenoxel(LitModel):
 
     def dequantize_data(self, data, data_min, data_scale):
         return data.type(torch.FloatTensor) * data_scale + data_min
+
+    def on_train_start(self) -> None:
+
+        # For Co3D information storing
+        if hasattr(self.trainer.datamodule, "label_info"): 
+            label_info = self.trainer.datamodule.label_info
+            np.savez(os.path.join(self.logdir, "label_info"), **label_info)
+            with open(os.path.join(self.logdir, "class_info.txt"), "w") as fp:
+                fp.write(label_info["class_label"])
+
+        if os.path.exists(os.path.join(self.logdir, "best.ckpt")):
+            os.remove(os.path.join(self.logdir, "best.ckpt"))
+
+        if os.path.exists(os.path.join(self.logdir, "last.ckpt")):
+            os.remove(os.path.join(self.logdir, "last.ckpt"))       
+
+        return super().on_train_start()
 
     def training_step(self, batch, batch_idx):
         gstep = self.trainer.global_step

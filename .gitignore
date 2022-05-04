@@ -18,3 +18,5 @@ data/*
 dataloader/co3d_lists/*
 !dataloader/co3d_lists/.gitkeep
 *.ipynb_checkpoints*
+
+playground/*

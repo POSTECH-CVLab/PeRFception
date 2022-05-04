@@ -182,6 +182,7 @@ def load_co3d_data(
     #     pcd_mean = pcd.mean(axis=0, keepdims=True)
     #     pcd -= pcd_mean
     #     pcd *= sscale
+    #     print(1 / np.linalg.norm(pcd, axis=1).max() * 0.6)
     #     sscale /= np.linalg.norm(pcd, axis=1).max()
 
     extrinsics[:, :3, 3] *= sscale * cam_scale_factor
@@ -197,6 +198,14 @@ def load_co3d_data(
     near, far = 0., 1.
     ndc_coeffs = (-1., -1.)
 
+    label_info = {}
+    label_info["T"] = T
+    label_info["sscale"] = sscale * cam_scale_factor
+    label_info["class_label"] = basedir.rstrip("/").split("/")[-2]
+    label_info["extrinsics"] = extrinsics
+    label_info["intrinsics"] = intrinsics
+    label_info["image_sizes"] = image_sizes
+
     return (
         images, 
         intrinsics, 
@@ -207,4 +216,5 @@ def load_co3d_data(
         ndc_coeffs, 
         i_split,
         render_poses,
+        label_info
     )

@@ -3,10 +3,11 @@ import argparse
 from utils.select_option import select_model, select_callback, select_dataset
 
 import torch
+import pytorch_lightning.loggers as pl_loggers
 from pytorch_lightning import Trainer, seed_everything
-from pytorch_lightning import loggers as pl_loggers
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint, TQDMProgressBar
 from pytorch_lightning.plugins import DDPPlugin
+from utils.logger import RetryingWandbLogger
 
 import logging
 import gin
@@ -46,7 +47,7 @@ def run(
     run_eval: bool = True,
     run_render: bool = False,
     accelerator: str = "gpu", 
-    num_gpus: Optional[int] = None,
+    num_gpus: Optional[int] = 1,
     num_tpus: Optional[int] = None,
     num_sanity_val_steps: int = 0,
     seed: int = 777,
@@ -73,7 +74,7 @@ def run(
     os.makedirs(logdir, exist_ok=True)
 
     # WANDB fails when using TPUs
-    wandb_logger = pl_loggers.WandbLogger(
+    wandb_logger = RetryingWandbLogger(
         name=exp_name, entity=entity,
         project=model_name if proj_name is None else proj_name
     ) if accelerator == "gpu" else pl_loggers.TensorBoardLogger(
@@ -167,6 +168,18 @@ if __name__ == "__main__":
         default=None,
         help="path to checkpoints"
     )
+    parser.add_argument(
+        "--scene_name", 
+        type=str, 
+        default=None,
+        help="scene name"
+    )
+    parser.add_argument(
+        "--entity",
+        type=str,
+        default=None,
+        help="entity"
+    )
     args = parser.parse_args()
 
     ginbs = []
@@ -175,8 +188,20 @@ if __name__ == "__main__":
     logging.info(f"Gin configuration files: {args.ginc}")
     logging.info(f"Gin bindings: {ginbs}")
 
+    # TODO!
+    # This part is for the wandb sweep. 
+    # We should remove this in the final version
+
+    if args.ginc is None:
+        args.ginc = [
+            "configs/plenoxel_torch/data/plenoxel_co3d.gin",
+            "configs/plenoxel_torch/model/plenoxel.gin",
+        ]
+
     gin.parse_config_files_and_bindings(args.ginc, ginbs)
     run(
         resume_training=args.resume_training,
         ckpt_path=args.ckpt_path,
+        scene_name=args.scene_name,
+        entity=args.entity
     )
