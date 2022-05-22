@@ -35,12 +35,14 @@ __device__ __inline__ void trace_ray_cuvol(
         float* __restrict__ sphfunc_val,
         WarpReducef::TempStorage& __restrict__ temp_storage,
         float* __restrict__ out,
+        bool* __restrict__ mask_out,
         float* __restrict__ out_log_transmit) {
     const uint32_t lane_colorgrp_id = lane_id % grid.basis_dim;
     const uint32_t lane_colorgrp = lane_id / grid.basis_dim;
 
     if (ray.tmin > ray.tmax) {
         out[lane_colorgrp] = (grid.background_nlayers == 0) ? opt.background_brightness : 0.f;
+        mask_out[lane_colorgrp] = false;
         if (out_log_transmit != nullptr) {
             *out_log_transmit = 0.f;
         }
@@ -51,7 +53,6 @@ __device__ __inline__ void trace_ray_cuvol(
     float outv = 0.f;
 
     float log_transmit = 0.f;
-    // printf("tmin %f, tmax %f \n", ray.tmin, ray.tmax);
 
     while (t <= ray.tmax) {
 #pragma unroll 3
@@ -62,9 +63,11 @@ __device__ __inline__ void trace_ray_cuvol(
             ray.pos[j] -= static_cast<float>(ray.l[j]);
         }
 
-        const float skip = compute_skip_dist(ray,
-                       grid.links, grid.stride_x,
-                       grid.size[2], 0);
+        const float skip = compute_skip_dist(
+            ray,
+            grid.links, grid.stride_x,
+            grid.size[2], 0
+        );
 
         if (skip >= opt.step_size) {
             // For consistency, we skip the by step size
@@ -81,7 +84,6 @@ __device__ __inline__ void trace_ray_cuvol(
         if (opt.last_sample_opaque && t + opt.step_size > ray.tmax) {
             ray.world_step = 1e9;
         }
-        // if (opt.randomize && opt.random_sigma_std > 0.0) sigma += ray.rng.randn() * opt.random_sigma_std;
 
         if (sigma > opt.sigma_thresh) {
             float lane_color = trilerp_cuvol_one(
@@ -98,7 +100,8 @@ __device__ __inline__ void trace_ray_cuvol(
             log_transmit -= pcnt;
 
             float lane_color_total = WarpReducef(temp_storage).HeadSegmentedSum(
-                                           lane_color, lane_colorgrp_id == 0);
+                lane_color, lane_colorgrp_id == 0
+            );
             outv += weight * fmaxf(lane_color_total + 0.5f, 0.f);  // Clamp to [+0, infty)
             if (_EXP(log_transmit) < opt.stop_thresh) {
                 log_transmit = -1e3f;
@@ -117,6 +120,7 @@ __device__ __inline__ void trace_ray_cuvol(
         }
         out[lane_colorgrp] = outv;
     }
+    mask_out[lane_colorgrp] = (_EXP(log_transmit) < opt.mask_transmit_threshold);
 }
 
 __device__ __inline__ void trace_ray_expected_term(
@@ -613,6 +617,7 @@ __global__ void render_ray_kernel(
         PackedRaysSpec rays,
         RenderOptions opt,
         torch::PackedTensorAccessor32<float, 2, torch::RestrictPtrTraits> out,
+        torch::PackedTensorAccessor32<bool, 2, torch::RestrictPtrTraits> mask_out,
         float* __restrict__ log_transmit_out = nullptr) {
     CUDA_GET_THREAD_ID(tid, int(rays.origins.size(0)) * WARP_SIZE);
     const int ray_id = tid >> 5;
@@ -643,50 +648,10 @@ __global__ void render_ray_kernel(
         sphfunc_val[ray_blk_id],
         temp_storage[ray_blk_id],
         out[ray_id].data(),
+        mask_out[ray_id].data(),
         log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
 }
 
-// __launch_bounds__(TRACE_RAY_CUDA_THREADS, MIN_BLOCKS_PER_SM)
-// __global__ void render_ray_image_kernel(
-//         PackedSparseGridSpec grid,
-//         PackedCameraSpec cam,
-//         RenderOptions opt,
-//         float* __restrict__ out,
-//         float* __restrict__ log_transmit_out = nullptr) {
-//     CUDA_GET_THREAD_ID(tid, cam.height * cam.width * WARP_SIZE);
-//     const int ray_id = tid >> 5;
-//     const int ray_blk_id = threadIdx.x >> 5;
-//     const int lane_id = threadIdx.x & 0x1F;
-
-//     if (lane_id >= grid.sh_data_dim)
-//         return;
-
-//     const int ix = ray_id % cam.width;
-//     const int iy = ray_id / cam.width;
-
-//     __shared__ float sphfunc_val[TRACE_RAY_CUDA_RAYS_PER_BLOCK][9];
-//     __shared__ SingleRaySpec ray_spec[TRACE_RAY_CUDA_RAYS_PER_BLOCK];
-//     __shared__ typename WarpReducef::TempStorage temp_storage[
-//         TRACE_RAY_CUDA_RAYS_PER_BLOCK];
-
-//     cam2world_ray(ix, iy, cam, ray_spec[ray_blk_id].dir, ray_spec[ray_blk_id].origin);
-//     calc_sphfunc(grid, lane_id,
-//                  ray_id,
-//                  ray_spec[ray_blk_id].dir,
-//                  sphfunc_val[ray_blk_id]);
-//     ray_find_bounds(ray_spec[ray_blk_id], grid, opt, ray_id);
-//     __syncwarp((1U << grid.sh_data_dim) - 1);
-
-//     trace_ray_cuvol(
-//         grid,
-//         ray_spec[ray_blk_id],
-//         opt,
-//         lane_id,
-//         sphfunc_val[ray_blk_id],
-//         temp_storage[ray_blk_id],
-//         out + ray_id * 3,
-//         log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
-// }
 
 __launch_bounds__(TRACE_RAY_BKWD_CUDA_THREADS, MIN_BLOCKS_PER_SM)
 __global__ void render_ray_backward_kernel(
@@ -715,17 +680,21 @@ __global__ void render_ray_backward_kernel(
     __shared__ SingleRaySpec ray_spec[TRACE_RAY_BKWD_CUDA_RAYS_PER_BLOCK];
     __shared__ typename WarpReducef::TempStorage temp_storage[
         TRACE_RAY_CUDA_RAYS_PER_BLOCK];
-    ray_spec[ray_blk_id].set(rays.origins[ray_id].data(),
-                             rays.dirs[ray_id].data());
-    const float vdir[3] = {ray_spec[ray_blk_id].dir[0],
-                     ray_spec[ray_blk_id].dir[1],
-                     ray_spec[ray_blk_id].dir[2] };
+    ray_spec[ray_blk_id].set(
+        rays.origins[ray_id].data(),
+        rays.dirs[ray_id].data()
+    );
+    const float vdir[3] = {
+        ray_spec[ray_blk_id].dir[0],
+        ray_spec[ray_blk_id].dir[1],
+        ray_spec[ray_blk_id].dir[2] 
+    };
     if (lane_id < grid.basis_dim) {
         grad_sphfunc_val[ray_blk_id][lane_id] = 0.f;
     }
-    calc_sphfunc(grid, lane_id,
-                 ray_id,
-                 vdir, sphfunc_val[ray_blk_id]);
+    calc_sphfunc(
+        grid, lane_id, ray_id, vdir, sphfunc_val[ray_blk_id]
+    );
     if (lane_id == 0) {
         ray_find_bounds(ray_spec[ray_blk_id], grid, opt, ray_id);
     }
@@ -761,14 +730,16 @@ __global__ void render_ray_backward_kernel(
         sparsity_loss,
         grads,
         accum_out == nullptr ? nullptr : accum_out + ray_id,
-        log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id);
+        log_transmit_out == nullptr ? nullptr : log_transmit_out + ray_id
+    );
     calc_sphfunc_backward(
-                 grid, lane_id,
-                 ray_id,
-                 vdir,
-                 sphfunc_val[ray_blk_id],
-                 grad_sphfunc_val[ray_blk_id],
-                 grads.grad_basis_out);
+        grid, lane_id,
+        ray_id,
+        vdir,
+        sphfunc_val[ray_blk_id],
+        grad_sphfunc_val[ray_blk_id],
+        grads.grad_basis_out
+    );
 }
 
 __launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
@@ -790,29 +761,6 @@ __global__ void render_background_kernel(
         log_transmit[ray_id],
         out[ray_id].data());
 }
-
-// __launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
-// __global__ void render_background_image_kernel(
-//         PackedSparseGridSpec grid,
-//         PackedCameraSpec cam,
-//         RenderOptions opt,
-//         const float* __restrict__ log_transmit,
-//         // Outputs
-//         float* __restrict__ out) {
-//     CUDA_GET_THREAD_ID(ray_id, cam.height * cam.width);
-//     if (log_transmit[ray_id] < -25.f) return;
-//     const int ix = ray_id % cam.width;
-//     const int iy = ray_id / cam.width;
-//     SingleRaySpec ray_spec;
-//     cam2world_ray(ix, iy, cam, ray_spec.dir, ray_spec.origin);
-//     ray_find_bounds_bg(ray_spec, grid, opt, ray_id);
-//     render_background_forward(
-//         grid,
-//         ray_spec,
-//         opt,
-//         log_transmit[ray_id],
-//         out + ray_id * 3);
-// }
 
 __launch_bounds__(TRACE_RAY_BG_CUDA_THREADS, MIN_BG_BLOCKS_PER_SM)
 __global__ void render_background_backward_kernel(
@@ -864,10 +812,7 @@ __global__ void render_ray_expected_term_kernel(
         PackedRaysSpec rays,
         RenderOptions opt,
         float* __restrict__ out) {
-        // const PackedSparseGridSpec& __restrict__ grid,
-        // SingleRaySpec& __restrict__ ray,
-        // const RenderOptions& __restrict__ opt,
-        // float* __restrict__ out) {
+
     CUDA_GET_THREAD_ID(ray_id, rays.origins.size(0));
     SingleRaySpec ray_spec(rays.origins[ray_id].data(), rays.dirs[ray_id].data());
     ray_find_bounds(ray_spec, grid, opt, ray_id);
@@ -885,10 +830,6 @@ __global__ void render_ray_sigma_thresh_kernel(
         RenderOptions opt,
         float sigma_thresh,
         float* __restrict__ out) {
-        // const PackedSparseGridSpec& __restrict__ grid,
-        // SingleRaySpec& __restrict__ ray,
-        // const RenderOptions& __restrict__ opt,
-        // float* __restrict__ out) {
     CUDA_GET_THREAD_ID(ray_id, rays.origins.size(0));
     SingleRaySpec ray_spec(rays.origins[ray_id].data(), rays.dirs[ray_id].data());
     ray_find_bounds(ray_spec, grid, opt, ray_id);
@@ -914,15 +855,17 @@ torch::Tensor _get_empty_1d(const torch::Tensor& origins) {
 
 }  // namespace
 
-torch::Tensor volume_render_cuvol(SparseGridSpec& grid, RaysSpec& rays, RenderOptions& opt) {
+torch::Tensor volume_render_cuvol(
+    SparseGridSpec& grid, RaysSpec& rays, RenderOptions& opt
+) {
     DEVICE_GUARD(grid.sh_data);
     grid.check();
     rays.check();
 
-
     const auto Q = rays.origins.size(0);
 
     torch::Tensor results = torch::empty_like(rays.origins);
+    torch::Tensor masks = torch::empty({rays.origins.sizes()[0], 1});
 
     bool use_background = grid.background_links.defined() &&
                           grid.background_links.size(0) > 0;
@@ -938,6 +881,7 @@ torch::Tensor volume_render_cuvol(SparseGridSpec& grid, RaysSpec& rays, RenderOp
                 grid, rays, opt,
                 // Output
                 results.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+                masks.packed_accessor32<bool, 2, torch::RestrictPtrTraits>(),
                 use_background ? log_transmit.data_ptr<float>() : nullptr);
     }
 
@@ -955,56 +899,6 @@ torch::Tensor volume_render_cuvol(SparseGridSpec& grid, RaysSpec& rays, RenderOp
     CUDA_CHECK_ERRORS;
     return results;
 }
-
-// torch::Tensor volume_render_cuvol_image(SparseGridSpec& grid, CameraSpec& cam, RenderOptions& opt) {
-//     DEVICE_GUARD(grid.sh_data);
-//     grid.check();
-//     cam.check();
-
-
-//     const auto Q = cam.height * cam.width;
-//     auto options =
-//         torch::TensorOptions()
-//         .dtype(grid.sh_data.dtype())
-//         .layout(torch::kStrided)
-//         .device(grid.sh_data.device())
-//         .requires_grad(false);
-
-//     torch::Tensor results = torch::empty({cam.height, cam.width, 3}, options);
-
-//     bool use_background = grid.background_links.defined() &&
-//                           grid.background_links.size(0) > 0;
-//     torch::Tensor log_transmit;
-//     if (use_background) {
-//         log_transmit = torch::empty({cam.height, cam.width}, options);
-//     }
-
-//     {
-//         const int cuda_n_threads = TRACE_RAY_CUDA_THREADS;
-//         const int blocks = CUDA_N_BLOCKS_NEEDED(Q * WARP_SIZE, cuda_n_threads);
-//         device::render_ray_image_kernel<<<blocks, cuda_n_threads>>>(
-//                 grid,
-//                 cam,
-//                 opt,
-//                 // Output
-//                 results.data_ptr<float>(),
-//                 use_background ? log_transmit.data_ptr<float>() : nullptr);
-//     }
-
-//     if (use_background) {
-//         // printf("RENDER BG\n");
-//         const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
-//         device::render_background_image_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
-//                 grid,
-//                 cam,
-//                 opt,
-//                 log_transmit.data_ptr<float>(),
-//                 results.data_ptr<float>());
-//     }
-
-//     CUDA_CHECK_ERRORS;
-//     return results;
-// }
 
 void volume_render_cuvol_backward(
         SparseGridSpec& grid,
@@ -1073,8 +967,12 @@ void volume_render_cuvol_fused(
         torch::Tensor rgb_gt,
         float beta_loss,
         float sparsity_loss,
+        bool render_fg,
+        bool render_bg,
         torch::Tensor rgb_out,
-        GridOutputGrads& grads) {
+        torch::Tensor mask_out,
+        GridOutputGrads& grads
+    ) {
 
     DEVICE_GUARD(grid.sh_data);
     CHECK_INPUT(rgb_gt);
@@ -1085,7 +983,8 @@ void volume_render_cuvol_fused(
     const auto Q = rays.origins.size(0);
 
     bool use_background = grid.background_links.defined() &&
-                          grid.background_links.size(0) > 0;
+        grid.background_links.size(0) > 0 &&
+        render_bg;
     bool need_log_transmit = use_background || beta_loss > 0.f;
     torch::Tensor log_transmit, accum;
     if (need_log_transmit) {
@@ -1095,13 +994,15 @@ void volume_render_cuvol_fused(
         accum = _get_empty_1d(rays.origins);
     }
 
-    {
+    if (render_fg){
         const int blocks = CUDA_N_BLOCKS_NEEDED(Q * WARP_SIZE, TRACE_RAY_CUDA_THREADS);
         device::render_ray_kernel<<<blocks, TRACE_RAY_CUDA_THREADS>>>(
-                grid, rays, opt,
-                // Output
-                rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
-                need_log_transmit ? log_transmit.data_ptr<float>() : nullptr);
+            grid, rays, opt,
+            // Output
+            rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+            mask_out.packed_accessor32<bool, 2, torch::RestrictPtrTraits>(),
+            need_log_transmit ? log_transmit.data_ptr<float>() : nullptr
+        );
     }
 
     if (use_background) {
@@ -1114,21 +1015,22 @@ void volume_render_cuvol_fused(
                 rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>());
     }
 
-    {
+    if (render_fg) {
         const int blocks = CUDA_N_BLOCKS_NEEDED(Q * WARP_SIZE, TRACE_RAY_BKWD_CUDA_THREADS);
         device::render_ray_backward_kernel<<<blocks, TRACE_RAY_BKWD_CUDA_THREADS>>>(
-                grid,
-                rgb_gt.data_ptr<float>(),
-                rgb_out.data_ptr<float>(),
-                rays, opt,
-                true,
-                beta_loss > 0.f ? log_transmit.data_ptr<float>() : nullptr,
-                beta_loss / Q,
-                sparsity_loss,
-                // Output
-                grads,
-                use_background ? accum.data_ptr<float>() : nullptr,
-                nullptr);
+            grid,
+            rgb_gt.data_ptr<float>(),
+            rgb_out.data_ptr<float>(),
+            rays, opt,
+            true,
+            beta_loss > 0.f ? log_transmit.data_ptr<float>() : nullptr,
+            beta_loss / Q,
+            sparsity_loss,
+            // Output
+            grads,
+            use_background ? accum.data_ptr<float>() : nullptr,
+            nullptr
+        );
     }
 
     if (use_background) {

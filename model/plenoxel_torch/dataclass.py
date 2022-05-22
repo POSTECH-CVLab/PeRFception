@@ -32,6 +32,7 @@ class RenderOptions:
         last_sample_opaque: bool = False,
         near_clip: float = 0.0,
         use_spheric_clip: bool = False,
+        mask_transmit_threshold = 0.9,
     ):
         self.backend = backend
         self.background_brightness = background_brightness
@@ -41,6 +42,7 @@ class RenderOptions:
         self.last_sample_opaque = last_sample_opaque
         self.near_clip = near_clip
         self.use_spheric_clip = use_spheric_clip
+        self.mask_transmit_threshold = mask_transmit_threshold
 
     def _to_cpp(
         self, randomize: bool = False
@@ -56,6 +58,7 @@ class RenderOptions:
         opt.near_clip = self.near_clip
         opt.use_spheric_clip = self.use_spheric_clip
         opt.last_sample_opaque = self.last_sample_opaque
+        opt.mask_transmit_threshold = self.mask_transmit_threshold
 
         return opt
 

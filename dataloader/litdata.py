@@ -225,6 +225,8 @@ class LitDataCo3D(LitData):
             cam_scale_factor=cam_scale_factor
         )
 
+        self.render_scale = 300 / max(self.image_sizes[0][0], self.image_sizes[0][1])
+
         super(LitDataCo3D, self).__init__(
             datadir=datadir,
             accelerator=accelerator,

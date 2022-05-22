@@ -1,9 +1,7 @@
 import numpy as np
 
 
-def random_pose(poses):
-
-    num_frames = 50
+def random_pose(poses, num_frames=50):
 
     rot_diff = np.einsum("ilk, jlm -> ijkm", poses[:, :3, :3], poses[:, :3, :3])
     rot_angle = (

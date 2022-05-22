@@ -20,3 +20,4 @@ dataloader/co3d_lists/*
 *.ipynb_checkpoints*
 
 playground/*
+render/*

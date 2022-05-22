@@ -4,31 +4,7 @@ import json
 import imageio
 import os
 
-trans_t = lambda t : torch.tensor([
-    [1,0,0,0],
-    [0,1,0,0],
-    [0,0,1,t],
-    [0,0,0,1]]).float()
-
-rot_phi = lambda phi : torch.tensor([
-    [1,0,0,0],
-    [0,np.cos(phi),-np.sin(phi),0],
-    [0,np.sin(phi), np.cos(phi),0],
-    [0,0,0,1]]).float()
-
-rot_theta = lambda th : torch.tensor([
-    [np.cos(th),0,-np.sin(th),0],
-    [0,1,0,0],
-    [np.sin(th),0, np.cos(th),0],
-    [0,0,0,1]]).float()
-
-
-def pose_spherical(theta, phi, radius):
-    c2w = trans_t(radius)
-    c2w = rot_phi(phi/180.*np.pi) @ c2w
-    c2w = rot_theta(theta/180.*np.pi) @ c2w
-    c2w = torch.tensor([[-1,0,0,0],[0,0,1,0],[0,1,0,0],[0,0,0,1]]).float() @ c2w
-    return c2w
+from dataloader.spherical_poses import spherical_poses
 
 
 def load_blender_data(
@@ -95,9 +71,7 @@ def load_blender_data(
     )
     image_sizes = np.array([[h, w] for _ in range(num_frame)])
 
-    render_poses = torch.stack(
-        [pose_spherical(angle, -30.0, 4.0) @ cam_trans for angle in np.linspace(-180,180,40+1)[:-1]], 0
-    )
+    render_poses = spherical_poses(cam_trans)
     render_poses[:, :3, 3] *= cam_scale_factor
     near = 2.
     far = 6.

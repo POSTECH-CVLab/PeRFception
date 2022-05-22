@@ -5,9 +5,10 @@ import os
 
 import cv2
 import numpy as np
-import plyfile
+import scipy as sp
 
 from dataloader.random_pose import random_pose
+from dataloader.spherical_poses import spherical_poses
 
 
 def find_files(dir, exts):
@@ -173,18 +174,6 @@ def load_co3d_data(
     T, sscale = similarity_from_cameras(extrinsics)
 
     extrinsics = T @ extrinsics
-
-    # For debugging
-    # ply_file = os.path.join(basedir, "pointcloud.ply")
-    # if os.path.exists(ply_file):
-    #     ply = plyfile.PlyData.read(ply_file)["vertex"]
-    #     pcd = np.stack([ply["x"], ply["y"], ply["z"]], axis=-1)
-    #     pcd_mean = pcd.mean(axis=0, keepdims=True)
-    #     pcd -= pcd_mean
-    #     pcd *= sscale
-    #     print(1 / np.linalg.norm(pcd, axis=1).max() * 0.6)
-    #     sscale /= np.linalg.norm(pcd, axis=1).max()
-
     extrinsics[:, :3, 3] *= sscale * cam_scale_factor
 
     i_all = np.arange(len(images))
@@ -193,7 +182,8 @@ def load_co3d_data(
     i_train = np.array([i for i in i_all if not i in i_test])
     i_split = (i_train, i_val, i_test, i_all)
 
-    render_poses = random_pose(extrinsics)
+    render_poses = random_pose(extrinsics[i_all], 50)
+    # render_poses = spherical_poses(sscale * cam_scale_factor * np.eye(4))
     
     near, far = 0., 1.
     ndc_coeffs = (-1., -1.)

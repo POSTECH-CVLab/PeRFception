@@ -11,6 +11,7 @@ from utils.logger import RetryingWandbLogger
 
 import logging
 import gin
+import shutil
 
 from typing import *
 
@@ -43,9 +44,9 @@ def run(
     log_every_n_steps: int = 1000,
     progressbar_refresh_rate: int = 5,
     # Run Mode
-    run_train: bool = True,
-    run_eval: bool = True,
-    run_render: bool = False,
+    run_train: bool = False,
+    run_eval: bool = False,
+    run_render: bool = True,
     accelerator: str = "gpu", 
     num_gpus: Optional[int] = 1,
     num_tpus: Optional[int] = None,
@@ -71,7 +72,9 @@ def run(
 
     os.makedirs(logbase, exist_ok=True)
     logdir = os.path.join(logbase, exp_name)
+    
     os.makedirs(logdir, exist_ok=True)
+
 
     # WANDB fails when using TPUs
     wandb_logger = RetryingWandbLogger(
@@ -104,13 +107,12 @@ def run(
         log_every_n_steps=log_every_n_steps,
         devices=num_gpus,
         max_steps=max_steps,
-        accelerator="gpu",
-        tpu_cores=num_tpus,
         replace_sampler_ddp=False,
         strategy=DDPPlugin(find_unused_parameters=False) \
             if num_gpus > 1 and accelerator == "gpu" else None,
         check_val_every_n_epoch=1,
         precision=precision,
+        accelerator="gpu",
         num_sanity_val_steps=num_sanity_val_steps,
         callbacks=callbacks,
     )
@@ -123,7 +125,7 @@ def run(
         dataset_name=dataset_name,
         scene_name=scene_name,
         datadir=datadir, 
-        accelerator=accelerator,
+        accelerator="gpu",
         num_gpus=num_gpus,
         num_tpus=num_tpus,
     )

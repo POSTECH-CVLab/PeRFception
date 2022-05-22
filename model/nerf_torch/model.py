@@ -10,7 +10,7 @@ from model.interface import LitModel
 
 import model.nerf_torch.utils as utils
 import model.nerf_torch.embedder as embedder
-import utils.store_image as store_image
+import utils.store_util as store_util
 
 import gin
 from typing import *
@@ -278,7 +278,7 @@ class LitNeRF(LitModel):
         if self.trainer.is_global_zero:
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs)
+            store_util.store_image(image_dir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
@@ -298,8 +298,8 @@ class LitNeRF(LitModel):
             depths = depths.view(-1, self.h, self.w).detach().cpu().numpy() 
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs, depths)
-            store_image.store_video(image_dir, rgbs, depths)
+            store_util.store_image(image_dir, rgbs, depths)
+            store_util.store_video(image_dir, rgbs, depths)
 
     def validation_epoch_end(self, outputs):
         val_image_sizes = self.trainer.datamodule.val_image_sizes

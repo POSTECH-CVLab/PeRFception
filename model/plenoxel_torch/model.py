@@ -9,14 +9,14 @@ import model.plenoxel_torch.dataclass as dataclass
 import model.plenoxel_torch.sparse_grid as sparse_grid
 import model.plenoxel_torch.utils as utils
 import utils.ray as ray
-import utils.store_image as store_image
+import utils.store_util as store_util
 from model.interface import LitModel
 from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
 import gin
 
 import gin
-import json
 from typing import *
+import json
 
 @gin.configurable()
 class ResampleCallBack(pl.Callback):
@@ -349,7 +349,7 @@ class LitPlenoxel(LitModel):
 
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
 
-        rgb = self.model.volume_render_fused(
+        rgb, _ = self.model.volume_render_fused(
             rays,
             target,
             beta_loss=self.lambda_beta,
@@ -431,9 +431,12 @@ class LitPlenoxel(LitModel):
         self,
         batch,
         batch_idx,
-        prefix="",
         cpu=False,
+        prefix="",
         randomize=False,
+        render_fg=True,
+        render_bg=True,
+        out_mask=False,
     ):
         ret = {}
         rays = batch["ray"].to(torch.float32)
@@ -453,12 +456,14 @@ class LitPlenoxel(LitModel):
             )
             
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
-        rgb = self.model.volume_render_fused(
+        rgb, mask = self.model.volume_render_fused(
             rays,
             target,
             beta_loss=self.lambda_beta,
             sparsity_loss=self.lambda_sparsity,
             randomize=randomize,
+            render_fg=render_fg,
+            render_bg=render_bg,
         )
         depth = self.model.volume_render_depth(
             rays,
@@ -468,8 +473,9 @@ class LitPlenoxel(LitModel):
             rgb = rgb.detach().cpu()
             depth = depth.detach().cpu()
             target = target.detach().cpu()
+            mask = mask.detach().cpu()
 
-        rgb_key, depth_key, target_key = "rgb", "depth", "target"
+        rgb_key, depth_key, target_key, mask_key = "rgb", "depth", "target", "mask"
         if prefix != "":
             rgb_key = f"{prefix}/{rgb_key}"
             depth_key = f"{prefix}/{depth_key}"
@@ -477,6 +483,8 @@ class LitPlenoxel(LitModel):
 
         ret[rgb_key] = rgb
         ret[depth_key] = depth[:, None]
+        if out_mask:
+            ret[mask_key] = mask
         if "target" in batch.keys():
             ret[target_key] = target
 
@@ -495,23 +503,25 @@ class LitPlenoxel(LitModel):
             batch_idx,
             cpu=True,
             prefix="fgbg",
-            randomize=self.randomize_render,
+            render_fg=True,
+            render_bg=True,
+            out_mask=True,
         )
         fg = self.render_rays(
             batch,
             batch_idx,
-            background=False,
             cpu=True,
             prefix="fg",
-            randomize=self.randomize_render,
+            render_fg=True,
+            render_bg=False,
         )
         bg = self.render_rays(
             batch,
             batch_idx,
-            foreground=False,
             cpu=True,
             prefix="bg",
-            randomize=self.randomize_render,
+            render_fg=False,
+            render_bg=True
         )
         ret.update(fgbg)
         ret.update(fg)
@@ -535,7 +545,7 @@ class LitPlenoxel(LitModel):
         if self.trainer.is_global_zero:
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs)
+            store_util.store_image(image_dir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
@@ -544,50 +554,46 @@ class LitPlenoxel(LitModel):
     def on_predict_epoch_end(self, outputs):
         # In the prediction step, be sure to use outputs[0]
         # instead of outputs.
-        rgbs_fgbg, _, depths_fgbg = self.gather_results(
-            outputs[0], self.pred_dummy, "fgbg"
+        render_poses = self.trainer.datamodule.render_poses
+        N_img = len(render_poses)
+        
+        image_sizes = np.stack(
+            [self.trainer.datamodule.image_sizes[0] for _ in range(N_img)]
         )
-        rgbs_fg, _, depths_fg = self.gather_results(outputs[0], self.pred_dummy, "fg")
-        rgbs_bg, _, depths_bg = self.gather_results(outputs[0], self.pred_dummy, "bg")
-        del outputs
+        if hasattr(self.trainer.datamodule, "render_scale"):
+            image_sizes = (
+                image_sizes * self.trainer.datamodule.render_scale
+            ).astype(image_sizes.dtype)
 
-        rgbs = [rgbs_fgbg, rgbs_fg, rgbs_bg]
-        depths = [depths_fgbg, depths_fg, depths_bg]
-        keys = ["fgbg", "fg", "bg"]
+        keys = ['fgbg/rgb', 'fg/rgb', 'bg/rgb', 'mask']
 
-        if self.trainer.is_global_zero:
-            for (_rgb, _depth, key) in zip(rgbs, depths, keys):
-                curr_idx = 0
-                rgbs_arr, depths_arr = [], []
-                for i in range(len(self.dataset.pred_image_size)):
-                    img_size = self.dataset.pred_image_size[i]
-                    rgb = (
-                        _rgb[curr_idx : curr_idx + img_size[0] * img_size[1]]
-                        .numpy()
-                        .reshape(img_size[1], img_size[0], 3)
-                    )
-                    depth = (
-                        _depth[curr_idx : curr_idx + img_size[0] * img_size[1]]
-                        .numpy()
-                        .reshape(img_size[1], img_size[0])
-                    )
-                    rgbs_arr.append(rgb)
-                    depths_arr.append(depth)
-                    curr_idx += img_size[0] * img_size[1]
+        rets = {}
+        for key in keys: 
+            ret = self.alter_gather_cat(outputs[0], key, image_sizes)
+            rets[key] = ret
 
-                image_dir = f"render/{self.cls_name}/{self.scene_name}/{key}"
-                os.makedirs(f"render/{self.cls_name}", exist_ok=True)
-                os.makedirs(f"render/{self.cls_name}/{self.scene_name}", exist_ok=True)
-                os.makedirs(image_dir, exist_ok=True)
-                if key == "fgbg":
-                    store_image.store_image(image_dir, rgbs_arr, depths_arr, norm=False)
-                else:
-                    store_image.store_image(image_dir, rgbs_arr, None, norm=False)
+        if self.trainer.is_global_zero: 
+            os.makedirs("render", exist_ok=True)
+            path_to_store = self.trainer.model.logdir
+            scene_number = "_".join(path_to_store.split("_")[-3:])
+            with open("dataloader/co3d_lists/co3d_list.json") as fp:
+                co3d_list = json.load(fp)
+            class_name = co3d_list[scene_number]
+            class_path = f"render/{class_name}"
+            scene_path = f"render/{class_name}/{scene_number}"
+            opt_list = ["fg", "bg", "fgbg"]
 
-            np.save(
-                f"render/{self.cls_name}/{self.scene_name}/pose.npy",
-                self.dataset.render_poses,
-            )
+            os.makedirs(class_path, exist_ok=True)
+            os.makedirs(scene_path, exist_ok=True)
+            for opt in opt_list:
+                opt_path = os.path.join(scene_path, opt)
+                os.makedirs(opt_path, exist_ok=True)
+                store_util.store_image(opt_path, rets[f"{opt}/rgb"])  
+            
+            if "mask" in rets.keys():
+                mask_path = os.path.join(scene_path, "mask")
+                os.makedirs(mask_path, exist_ok=True)
+                store_util.store_mask(mask_path, rets["mask"])
 
     def validation_epoch_end(self, outputs):
         val_image_sizes = self.trainer.datamodule.val_image_sizes

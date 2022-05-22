@@ -63,7 +63,7 @@ class LitData(pl.LightningDataModule):
             self.all_image_sizes = self.image_sizes[self.i_all]
         
         if stage == "predict" or stage is None:
-            render_poses = np.stack(render_poses)[..., :4]
+            render_poses = np.stack(self.render_poses)
             self.predict_dset, self.pred_dummy = self.split_each(
                 None, render_poses, np.arange(len(render_poses))
             )
@@ -85,12 +85,17 @@ class LitData(pl.LightningDataModule):
         else:
             extrinsics_idx = render_poses
             N_render = len(render_poses)
-            intrinsics_idx = np.concatenate(
+            intrinsics_idx = np.stack(
                 [self.intrinsics[0] for _ in range(N_render)]
             )
-            image_sizes_idx = np.concatenate(
+            image_sizes_idx = np.stack(
                 [self.image_sizes[0] for _ in range(N_render)]
             )
+
+            # Only when image is rescaled
+            if hasattr(self, "render_scale"): 
+                intrinsics_idx[:, [0, 0, 1, 1], [0, 2, 1, 2]] *= self.render_scale
+                image_sizes_idx = (image_sizes_idx * self.render_scale).astype(image_sizes_idx.dtype)
             
         rays_o, rays_d = batchified_get_rays(
             intrinsics_idx, 
