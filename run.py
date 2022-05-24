@@ -103,7 +103,7 @@ def run(
     callbacks += select_callback(model_name)
 
     trainer = Trainer(
-        logger=wandb_logger if run_train else None,
+        logger=wandb_logger if run_train or run_render else None,
         log_every_n_steps=log_every_n_steps,
         devices=num_gpus,
         max_steps=max_steps,
