@@ -165,10 +165,11 @@ def load_co3d_data(
     good_mask = dists < (med * 5.0)
     inlier = np.logical_and(inlier, good_mask)
 
-    intrinsics = intrinsics[inlier]
-    extrinsics = extrinsics[inlier]
-    image_sizes = image_sizes[inlier]
-    images = [images[i] for i in range(len(inlier)) if inlier[i]]
+    if inlier.sum() == 0: 
+        intrinsics = intrinsics[inlier]
+        extrinsics = extrinsics[inlier]
+        image_sizes = image_sizes[inlier]
+        images = [images[i] for i in range(len(inlier)) if inlier[i]]
 
     extrinsics = np.stack(extrinsics)
     T, sscale = similarity_from_cameras(extrinsics)
