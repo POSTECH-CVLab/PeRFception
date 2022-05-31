@@ -179,7 +179,7 @@ class LitPlenoxel(LitModel):
         quantize: bool = False, 
         store_efficient: bool = False,
         # Render Option
-        bkgd_only: bool = False
+        bkgd_only: bool = True
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
