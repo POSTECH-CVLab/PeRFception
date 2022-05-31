@@ -178,6 +178,8 @@ class LitPlenoxel(LitModel):
         filter_threshold: float = 0.0,
         quantize: bool = False, 
         store_efficient: bool = False,
+        # Render Option
+        bkgd_only: bool = False
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -250,6 +252,7 @@ class LitPlenoxel(LitModel):
                 self.model.background_data.data[..., -1] = self.init_sigma_bg
 
         self.ndc_coeffs = dmodule.ndc_coeffs
+
         return super().setup(stage)
 
     def generate_camera_list(
@@ -310,6 +313,11 @@ class LitPlenoxel(LitModel):
 
     def dequantize_data(self, data, data_min, data_scale):
         return data.type(torch.FloatTensor) * data_scale + data_min
+
+    def on_predict_start(self) -> None:
+        if self.bkgd_only:
+            self.model.density_data.data[:] = -1e3
+        return super().on_predict_start()
 
     def on_train_start(self) -> None:
 
@@ -427,6 +435,7 @@ class LitPlenoxel(LitModel):
         if self.weight_decay_sigma < 1.0 and gstep % 20 == 0:
             self.model.density_data.data *= self.weight_decay_sh
 
+
     def render_rays(
         self,
         batch,
@@ -434,7 +443,6 @@ class LitPlenoxel(LitModel):
         cpu=False,
         prefix="",
         randomize=False,
-        render_fg=True,
         render_bg=True,
         out_mask=False,
     ):
@@ -462,28 +470,27 @@ class LitPlenoxel(LitModel):
             beta_loss=self.lambda_beta,
             sparsity_loss=self.lambda_sparsity,
             randomize=randomize,
-            render_fg=render_fg,
+            render_fg=True,
             render_bg=render_bg,
         )
-        depth = self.model.volume_render_depth(
-            rays,
-            self.model.opt.sigma_thresh,
-        )
+        # depth = self.model.volume_render_depth(
+        #     rays,
+        #     self.model.opt.sigma_thresh,
+        # )
         if cpu:
             rgb = rgb.detach().cpu()
-            depth = depth.detach().cpu()
+            # depth = depth.detach().cpu()
             target = target.detach().cpu()
             mask = mask.detach().cpu()
 
-        rgb_key, depth_key, target_key, mask_key = "rgb", "depth", "target", "mask"
+        rgb_key, target_key, mask_key = "rgb", "target", "mask"
         if prefix != "":
             rgb_key = f"{prefix}/{rgb_key}"
-            depth_key = f"{prefix}/{depth_key}"
             target_key = f"{prefix}/{target_key}"
 
         ret[rgb_key] = rgb
-        ret[depth_key] = depth[:, None]
-        if out_mask:
+        # ret[depth_key] = depth[:, None]
+        if out_mask and not self.bkgd_only:
             ret[mask_key] = mask
         if "target" in batch.keys():
             ret[target_key] = target
@@ -498,34 +505,33 @@ class LitPlenoxel(LitModel):
 
     def predict_step(self, batch, batch_idx):
         ret = {}
-        fgbg = self.render_rays(
-            batch,
-            batch_idx,
-            cpu=True,
-            prefix="fgbg",
-            render_fg=True,
-            render_bg=True,
-            out_mask=True,
-        )
-        fg = self.render_rays(
-            batch,
-            batch_idx,
-            cpu=True,
-            prefix="fg",
-            render_fg=True,
-            render_bg=False,
-        )
-        bg = self.render_rays(
-            batch,
-            batch_idx,
-            cpu=True,
-            prefix="bg",
-            render_fg=False,
-            render_bg=True
-        )
-        ret.update(fgbg)
-        ret.update(fg)
-        ret.update(bg)
+        if self.bkgd_only: 
+            bg = self.render_rays(
+                batch,
+                batch_idx,
+                cpu=True,
+                prefix="bg",
+                render_bg=True
+            )
+            ret.update(bg)
+        else:
+            fgbg = self.render_rays(
+                batch,
+                batch_idx,
+                cpu=True,
+                prefix="fgbg",
+                render_bg=True,
+                out_mask=True,
+            )
+            fg = self.render_rays(
+                batch,
+                batch_idx,
+                cpu=True,
+                prefix="fg",
+                render_bg=False,
+            )
+            ret.update(fgbg)
+            ret.update(fg)
         return ret
 
     def test_epoch_end(self, outputs):
@@ -565,7 +571,7 @@ class LitPlenoxel(LitModel):
                 image_sizes * self.trainer.datamodule.render_scale
             ).astype(image_sizes.dtype)
 
-        keys = ['fgbg/rgb', 'fg/rgb', 'bg/rgb', 'mask']
+        keys = ['bg/rgb'] if self.bkgd_only else ['fgbg/rgb', 'fg/rgb', 'mask']
 
         rets = {}
         for key in keys: 
@@ -581,7 +587,7 @@ class LitPlenoxel(LitModel):
             class_name = co3d_list[scene_number]
             class_path = f"render/{class_name}"
             scene_path = f"render/{class_name}/{scene_number}"
-            opt_list = ["fg", "bg", "fgbg"]
+            opt_list = ["bg"] if self.bkgd_only else ["fg", "fgbg"]
 
             os.makedirs(class_path, exist_ok=True)
             os.makedirs(scene_path, exist_ok=True)

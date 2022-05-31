@@ -889,11 +889,13 @@ torch::Tensor volume_render_cuvol(
         // printf("RENDER BG\n");
         const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
         device::render_background_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
-                grid,
-                rays,
-                opt,
-                log_transmit.data_ptr<float>(),
-                results.packed_accessor32<float, 2, torch::RestrictPtrTraits>());
+            grid,
+            rays,
+            opt,
+            log_transmit.data_ptr<float>(),
+            results.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+            false    
+        );
     }
 
     CUDA_CHECK_ERRORS;
@@ -1008,11 +1010,12 @@ void volume_render_cuvol_fused(
     if (use_background) {
         const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
         device::render_background_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
-                grid,
-                rays,
-                opt,
-                log_transmit.data_ptr<float>(),
-                rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>());
+            grid,
+            rays,
+            opt,
+            log_transmit.data_ptr<float>(),
+            rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+        );
     }
 
     if (render_fg) {
@@ -1036,17 +1039,17 @@ void volume_render_cuvol_fused(
     if (use_background) {
         const int blocks = CUDA_N_BLOCKS_NEEDED(Q, TRACE_RAY_BG_CUDA_THREADS);
         device::render_background_backward_kernel<<<blocks, TRACE_RAY_BG_CUDA_THREADS>>>(
-                grid,
-                rgb_gt.data_ptr<float>(),
-                rgb_out.data_ptr<float>(),
-                rays,
-                opt,
-                log_transmit.data_ptr<float>(),
-                accum.data_ptr<float>(),
-                true,
-                sparsity_loss,
-                // Output
-                grads);
+            grid,
+            rgb_gt.data_ptr<float>(),
+            rgb_out.data_ptr<float>(),
+            rays,
+            opt,
+            log_transmit.data_ptr<float>(),
+            accum.data_ptr<float>(),
+            true,
+            sparsity_loss,
+            // Output
+            grads);
     }
 
     CUDA_CHECK_ERRORS;

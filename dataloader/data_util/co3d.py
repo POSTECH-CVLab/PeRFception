@@ -165,7 +165,7 @@ def load_co3d_data(
     good_mask = dists < (med * 5.0)
     inlier = np.logical_and(inlier, good_mask)
 
-    if inlier.sum() == 0: 
+    if inlier.sum() != 0: 
         intrinsics = intrinsics[inlier]
         extrinsics = extrinsics[inlier]
         image_sizes = image_sizes[inlier]
