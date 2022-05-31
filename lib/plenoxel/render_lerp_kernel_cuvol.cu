@@ -893,8 +893,7 @@ torch::Tensor volume_render_cuvol(
             rays,
             opt,
             log_transmit.data_ptr<float>(),
-            results.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
-            false    
+            results.packed_accessor32<float, 2, torch::RestrictPtrTraits>()
         );
     }
 
@@ -1014,7 +1013,7 @@ void volume_render_cuvol_fused(
             rays,
             opt,
             log_transmit.data_ptr<float>(),
-            rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>(),
+            rgb_out.packed_accessor32<float, 2, torch::RestrictPtrTraits>()
         );
     }
 
