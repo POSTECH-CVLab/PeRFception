@@ -33,6 +33,7 @@ class LitData(pl.LightningDataModule):
         precrop: bool = False,
         precrop_steps: int = 0, 
     ):
+        super(LitData, self).__init__()
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
                 setattr(self, name, value)
