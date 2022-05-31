@@ -600,6 +600,10 @@ class LitPlenoxel(LitModel):
                 mask_path = os.path.join(scene_path, "mask")
                 os.makedirs(mask_path, exist_ok=True)
                 store_util.store_mask(mask_path, rets["mask"])
+        
+        if self.bkgd_only:
+            np.save(f"{scene_path}/poses.npy", self.trainer.datamodule.render_poses)
+            np.save(f"{scene_path}/intrinsics.npy", self.trainer.datamodule.intrinsics)
 
     def validation_epoch_end(self, outputs):
         val_image_sizes = self.trainer.datamodule.val_image_sizes
