@@ -15,7 +15,12 @@
 - [Minsu Cho](http://cvlab.postech.ac.kr/~mcho/) [[Google Scholar](https://scholar.google.com/citations?user=5TyoF5QAAAAJ&hl=en&oi=ao)]
 - [Jaesik Park](http://jaesik.info/) [[Google Scholar](https://scholar.google.com/citations?user=_3q6KBIAAAAJ&hl=en&oi=ao)]
 
-![alt text](assets/figure1.png)
+### News
+- 22.08.04: The first version of PeRFception has been released. 
+
+<div style="text-align:center">
+<img src="assets/teaser.png" alt="teaser"/>
+</div>
 
 ## Abstract
 
@@ -90,13 +95,19 @@ ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and Co3D-v1 can
 We benchmark several 2D classification models on rendered PeRFception-Co3D. For faster reproducing, we also provide the rendered images from PeRFception-Co3D on the link [link](). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
 
 The pretrained models can be reached with the links below: 
-[2d_score](assets/2D_score.png)
+<div style="text-align:center">
+<img src="assets/2D_score.png" alt="2D score"/>
+</div>
 
 For recent updates, you can refer to the leaderboard link [here]().
 
 ### 3D object classification (PeRFception-Co3D)
 
 We also benchmark several 3D classification models on PeRFception-Co3D. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
+
+<div style="text-align:center">
+<img src="assets/3D_score.png" alt="3D score"/>
+</div>
 
 
 ### 3D semantic segmentation (PeRFception-ScanNet)
