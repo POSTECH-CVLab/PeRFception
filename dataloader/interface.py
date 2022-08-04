@@ -12,6 +12,60 @@ from dataloader.sampler import (
 from typing import *
 import gin
 
+def manipulating_intrinsic(intrinsic, num_frame):
+    
+    ret = []
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[0, 0] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[0, 0] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[1, 1] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[1, 1] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[[0, 1], [0, 1]] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[[0, 1], [0, 1]] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = intrinsic[0][0] * (0.2 * (i / 25))
+        intrinsic_copy[0, 1] += scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = intrinsic[0][0] * (0.2 * ((25 - i) / 25))
+        intrinsic_copy[0, 1] += scale
+        ret.append(intrinsic_copy)  
+
+    return ret
+
+
 @gin.configurable()
 class LitData(pl.LightningDataModule):
 
@@ -32,6 +86,7 @@ class LitData(pl.LightningDataModule):
         white_bkgd: bool = False,
         precrop: bool = False,
         precrop_steps: int = 0, 
+        manipulate_intrinsics: bool = False,
     ):
         super(LitData, self).__init__()
         for name, value in vars().items():
@@ -83,6 +138,20 @@ class LitData(pl.LightningDataModule):
             extrinsics_idx = self.extrinsics[idx]
             intrinsics_idx = self.intrinsics[idx]
             image_sizes_idx = self.image_sizes[idx]
+        elif self.manipulate_intrinsics:
+            N_render = 200
+
+            extrinsics_idx = np.stack(
+                [render_poses[0] for _ in range(N_render)]
+            )
+            image_sizes_idx = np.stack(
+                [self.image_sizes[0] for _ in range(N_render)]
+            )
+            self.render_poses = extrinsics_idx
+            intrinsics_idx = manipulating_intrinsic(self.intrinsics[0], N_render)
+            self.image_sizes = image_sizes_idx
+            idx = np.arange(N_render)
+
         else:
             extrinsics_idx = render_poses
             N_render = len(render_poses)
