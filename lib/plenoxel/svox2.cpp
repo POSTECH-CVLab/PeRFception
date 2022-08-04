@@ -19,8 +19,10 @@ Tensor volume_render_cuvol(SparseGridSpec &, RaysSpec &, RenderOptions &);
                                 //  RenderOptions &);
 void volume_render_cuvol_backward(SparseGridSpec &, RaysSpec &, RenderOptions &,
                                   Tensor, Tensor, GridOutputGrads &);
-void volume_render_cuvol_fused(SparseGridSpec &, RaysSpec &, RenderOptions &,
-                               Tensor, float, float, Tensor, GridOutputGrads &);
+void volume_render_cuvol_fused(
+  SparseGridSpec &, RaysSpec &, RenderOptions &,
+  Tensor, float, float, bool, bool, Tensor, Tensor, GridOutputGrads &
+);
 // Expected termination (depth) rendering
 torch::Tensor volume_render_expected_term(SparseGridSpec &, RaysSpec &,
                                           RenderOptions &);
@@ -150,14 +152,8 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
       .def_readwrite("stop_thresh", &RenderOptions::stop_thresh)
       .def_readwrite("near_clip", &RenderOptions::near_clip)
       .def_readwrite("use_spheric_clip", &RenderOptions::use_spheric_clip)
-      .def_readwrite("last_sample_opaque", &RenderOptions::last_sample_opaque);
-  // .def_readwrite("randomize", &RenderOptions::randomize)
-  // .def_readwrite("random_sigma_std", &RenderOptions::random_sigma_std)
-  // .def_readwrite("random_sigma_std_background",
-  //                &RenderOptions::random_sigma_std_background)
-  // .def_readwrite("_m1", &RenderOptions::_m1)
-  // .def_readwrite("_m2", &RenderOptions::_m2)
-  // .def_readwrite("_m3", &RenderOptions::_m3);
+      .def_readwrite("last_sample_opaque", &RenderOptions::last_sample_opaque)
+      .def_readwrite("mask_transmit_threshold", &RenderOptions::mask_transmit_threshold);
 
   py::class_<GridOutputGrads>(m, "GridOutputGrads")
       .def(py::init<>())

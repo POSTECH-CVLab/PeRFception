@@ -5,9 +5,11 @@ import os
 
 import cv2
 import numpy as np
+import scipy as sp
 import gin
 
-from dataloader.random_pose import random_pose
+from dataloader.random_pose import random_pose, pose_interp
+from dataloader.spherical_poses import spherical_poses
 
 
 def find_files(dir, exts):
@@ -20,40 +22,6 @@ def find_files(dir, exts):
         return files_grabbed
     else:
         return []
-
-
-def pose_spherical(theta, phi, radius):
-    trans_t = lambda t: np.array(
-        [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, t], [0, 0, 0, 1]], dtype=np.float32
-    )
-    rot_phi = lambda phi: np.array(
-        [
-            [1, 0, 0, 0],
-            [0, np.cos(phi), -np.sin(phi), 0],
-            [0, np.sin(phi), np.cos(phi), 0],
-            [0, 0, 0, 1],
-        ],
-        dtype=np.float32,
-    )
-    rot_theta = lambda th: np.array(
-        [
-            [np.cos(th), 0, -np.sin(th), 0],
-            [0, 1, 0, 0],
-            [np.sin(th), 0, np.cos(th), 0],
-            [0, 0, 0, 1],
-        ],
-        dtype=np.float32,
-    )
-    c2w = trans_t(radius)
-    c2w = rot_phi(phi / 180.0 * np.pi) @ c2w
-    c2w = rot_theta(theta / 180.0 * np.pi) @ c2w
-    c2w = (
-        np.array(
-            [[-1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]], dtype=np.float32
-        )
-        @ c2w
-    )
-    return c2w
 
 
 def similarity_from_cameras(c2w):
@@ -89,7 +57,6 @@ def similarity_from_cameras(c2w):
         # rotate 180-deg about x axis
         R_align = np.array([[-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 
-    #  R_align = np.eye(3) # DEBUG
     R = R_align @ R
     fwds = np.sum(R * np.array([0, 0.0, 1.0]), axis=-1)
     t = (R_align @ t[..., None])[..., 0]
@@ -118,10 +85,17 @@ def load_co3d_data(
     scene_name: str, 
     max_image_dim: int,
     cam_scale_factor: float,
+    render_scene_interp: bool = False,
+    render_random_pose: bool = True,
+    interp_fac: int = 5,
 ):
 
+    with open("dataloader/co3d_lists/co3d_list.json") as fp:
+        co3d_lists = json.load(fp)
+
     datadir = datadir.rstrip("/")
-    basedir = os.path.join(datadir, scene_name)
+    cls_name = co3d_lists[scene_name]
+    basedir = os.path.join(datadir, cls_name, scene_name)
     cam_trans = np.diag(np.array([-1, -1, 1, 1], dtype=np.float32))
 
     scene_number = basedir.split("/")[-1]
@@ -196,26 +170,40 @@ def load_co3d_data(
     good_mask = dists < (med * 5.0)
     inlier = np.logical_and(inlier, good_mask)
 
-    intrinsics = intrinsics[inlier]
-    extrinsics = extrinsics[inlier]
-    image_sizes = image_sizes[inlier]
-    images = [images[i] for i in range(len(inlier)) if inlier[i]]
+    if inlier.sum() != 0: 
+        intrinsics = intrinsics[inlier]
+        extrinsics = extrinsics[inlier]
+        image_sizes = image_sizes[inlier]
+        images = [images[i] for i in range(len(inlier)) if inlier[i]]
 
     extrinsics = np.stack(extrinsics)
     T, sscale = similarity_from_cameras(extrinsics)
+
     extrinsics = T @ extrinsics
     extrinsics[:, :3, 3] *= sscale * cam_scale_factor
 
     i_all = np.arange(len(images))
     i_test = i_all[::10]
-    i_val = i_train
+    i_val = i_test
     i_train = np.array([i for i in i_all if not i in i_test])
     i_split = (i_train, i_val, i_test, i_all)
 
-    render_poses = random_pose(extrinsics)
+    if render_random_pose:
+        render_poses = random_pose(extrinsics[i_all], 50)
+    elif render_scene_interp:
+        render_poses = pose_interp(extrinsics[i_all], interp_fac)
+    # render_poses = spherical_poses(sscale * cam_scale_factor * np.eye(4))
     
     near, far = 0., 1.
     ndc_coeffs = (-1., -1.)
+
+    label_info = {}
+    label_info["T"] = T
+    label_info["sscale"] = sscale * cam_scale_factor
+    label_info["class_label"] = basedir.rstrip("/").split("/")[-2]
+    label_info["extrinsics"] = extrinsics
+    label_info["intrinsics"] = intrinsics
+    label_info["image_sizes"] = image_sizes
 
     return (
         images, 
@@ -227,4 +215,5 @@ def load_co3d_data(
         ndc_coeffs, 
         i_split,
         render_poses,
+        label_info
     )

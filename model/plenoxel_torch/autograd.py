@@ -67,7 +67,9 @@ class _VolumeRenderFunction(autograd.Function):
         backend: str,
     ):
         cu_fn = _C.__dict__[f"volume_render_{backend}"]
-        color = cu_fn(grid, rays, opt)
+        color, _ = cu_fn(
+            grid, rays, opt
+        )
         ctx.save_for_backward(color)
         ctx.grid = grid
         ctx.rays = rays

@@ -12,6 +12,60 @@ from dataloader.sampler import (
 from typing import *
 import gin
 
+def manipulating_intrinsic(intrinsic, num_frame):
+    
+    ret = []
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[0, 0] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[0, 0] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[1, 1] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[1, 1] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 1 + (25 - i) / 25 * 2
+        intrinsic_copy[[0, 1], [0, 1]] *= scale
+        ret.append(intrinsic_copy)
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = (i / 25) * 2 + (25 - i) / 25 * 1
+        intrinsic_copy[[0, 1], [0, 1]] *= scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = intrinsic[0][0] * (0.2 * (i / 25))
+        intrinsic_copy[0, 1] += scale
+        ret.append(intrinsic_copy)  
+
+    for i in range(25):
+        intrinsic_copy = intrinsic.copy() 
+        scale = intrinsic[0][0] * (0.2 * ((25 - i) / 25))
+        intrinsic_copy[0, 1] += scale
+        ret.append(intrinsic_copy)  
+
+    return ret
+
+
 @gin.configurable()
 class LitData(pl.LightningDataModule):
 
@@ -32,7 +86,9 @@ class LitData(pl.LightningDataModule):
         white_bkgd: bool = False,
         precrop: bool = False,
         precrop_steps: int = 0, 
+        manipulate_intrinsics: bool = False,
     ):
+        super(LitData, self).__init__()
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
                 setattr(self, name, value)
@@ -63,7 +119,7 @@ class LitData(pl.LightningDataModule):
             self.all_image_sizes = self.image_sizes[self.i_all]
         
         if stage == "predict" or stage is None:
-            render_poses = np.stack(render_poses)[..., :4]
+            render_poses = np.stack(self.render_poses)
             self.predict_dset, self.pred_dummy = self.split_each(
                 None, render_poses, np.arange(len(render_poses))
             )
@@ -82,15 +138,34 @@ class LitData(pl.LightningDataModule):
             extrinsics_idx = self.extrinsics[idx]
             intrinsics_idx = self.intrinsics[idx]
             image_sizes_idx = self.image_sizes[idx]
+        elif self.manipulate_intrinsics:
+            N_render = 200
+
+            extrinsics_idx = np.stack(
+                [render_poses[0] for _ in range(N_render)]
+            )
+            image_sizes_idx = np.stack(
+                [self.image_sizes[0] for _ in range(N_render)]
+            )
+            self.render_poses = extrinsics_idx
+            intrinsics_idx = manipulating_intrinsic(self.intrinsics[0], N_render)
+            self.image_sizes = image_sizes_idx
+            idx = np.arange(N_render)
+
         else:
             extrinsics_idx = render_poses
             N_render = len(render_poses)
-            intrinsics_idx = np.concatenate(
+            intrinsics_idx = np.stack(
                 [self.intrinsics[0] for _ in range(N_render)]
             )
-            image_sizes_idx = np.concatenate(
+            image_sizes_idx = np.stack(
                 [self.image_sizes[0] for _ in range(N_render)]
             )
+
+            # Only when image is rescaled
+            if hasattr(self, "render_scale"): 
+                intrinsics_idx[:, [0, 0, 1, 1], [0, 2, 1, 2]] *= self.render_scale
+                image_sizes_idx = (image_sizes_idx * self.render_scale).astype(image_sizes_idx.dtype)
             
         rays_o, rays_d = batchified_get_rays(
             intrinsics_idx, 

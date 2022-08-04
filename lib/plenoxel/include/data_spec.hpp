@@ -123,13 +123,5 @@ struct RenderOptions {
   bool use_spheric_clip;
 
   bool last_sample_opaque;
-
-  // bool randomize;
-  // float random_sigma_std;
-  // float random_sigma_std_background;
-  // 32-bit RNG state masks
-  // uint32_t _m1, _m2, _m3;
-
-  // int msi_start_layer = 0;
-  // int msi_end_layer = 66;
+  float mask_transmit_threshold;
 };

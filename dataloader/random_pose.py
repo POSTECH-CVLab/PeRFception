@@ -1,9 +1,7 @@
 import numpy as np
 
 
-def random_pose(poses):
-
-    num_frames = 50
+def random_pose(poses, num_frames=50):
 
     rot_diff = np.einsum("ilk, jlm -> ijkm", poses[:, :3, :3], poses[:, :3, :3])
     rot_angle = (
@@ -45,6 +43,33 @@ def random_pose(poses):
     ret[:, 3, 3] = 1.0
 
     return ret
+
+def pose_interp(poses, factor):
+
+    pose_list = []
+    for i in range(len(poses)):
+        pose_list.append(poses[i])
+        
+        if i == len(poses) - 1:
+            factor = 4 * factor
+
+        next_idx = (i+1) % len(poses)
+        axis, angle = R_to_axis_angle((poses[next_idx, :3, :3] @ poses[i, :3, :3].T)[None])
+        for j in range(factor-1):
+            ret = np.eye(4)
+            j_fact = (j + 1) / factor 
+            angle_j = angle * j_fact
+            pose_rot = R_axis_angle(angle_j, axis)
+            ret[:3, :3] = pose_rot @ poses[i, :3, :3]
+            trans_t = (
+                (1 - j_fact) * poses[i, :3, 3]
+                + (j_fact) * poses[next_idx, :3, 3]
+            )
+            ret[:3, 3] = trans_t
+            pose_list.append(ret)
+
+    return np.stack(pose_list)
+
 
 
 def R_axis_angle(angle, axis):

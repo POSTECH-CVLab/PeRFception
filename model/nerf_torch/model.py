@@ -10,7 +10,7 @@ from model.interface import LitModel
 
 import model.nerf_torch.utils as utils
 import model.nerf_torch.embedder as embedder
-import utils.store_image as store_image
+import utils.store_util as store_util
 
 import gin
 from typing import *
@@ -204,9 +204,9 @@ class LitNeRF(LitModel):
             psnr0 = utils.mse2psnr(loss0)
             loss = loss + loss0
         
-        self.log("train_psnr1", psnr, on_step=True, prog_bar=True, logger=True)
-        self.log("train_psnr0", psnr0, on_step=True, prog_bar=True, logger=True)
-        self.log("train_loss", loss, on_step=True)
+        self.log("train/psnr1", psnr, on_step=True, prog_bar=True, logger=True)
+        self.log("train/psnr0", psnr0, on_step=True, prog_bar=True, logger=True)
+        self.log("train/loss", loss, on_step=True)
 
         return loss
 
@@ -270,10 +270,15 @@ class LitNeRF(LitModel):
         lpips = self.lpips(
             rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test
         )
+        
+        self.log("test/psnr", psnr["test"], on_epoch=True, rank_zero_only=True)
+        self.log("test/ssim", ssim["test"], on_epoch=True, rank_zero_only=True)
+        self.log("test/lpips", lpips["test"], on_epoch=True, rank_zero_only=True)
+
         if self.trainer.is_global_zero:
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs)
+            store_util.store_image(image_dir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
@@ -293,8 +298,8 @@ class LitNeRF(LitModel):
             depths = depths.view(-1, self.h, self.w).detach().cpu().numpy() 
             image_dir = os.path.join(self.logdir, "render_video")
             os.makedirs(image_dir, exist_ok=True)
-            store_image.store_image(image_dir, rgbs, depths)
-            store_image.store_video(image_dir, rgbs, depths)
+            store_util.store_image(image_dir, rgbs, depths)
+            store_util.store_video(image_dir, rgbs, depths)
 
     def validation_epoch_end(self, outputs):
         val_image_sizes = self.trainer.datamodule.val_image_sizes
@@ -303,6 +308,6 @@ class LitNeRF(LitModel):
         psnr_mean = self.psnr_each(rgbs, targets).mean()
         ssim_mean = self.ssim_each(rgbs, targets).mean()
         lpips_mean = self.lpips_each(rgbs, targets).mean()
-        self.log("val_psnr", psnr_mean.item(), on_epoch=True, sync_dist=True)
-        self.log("val_ssim", ssim_mean.item(), on_epoch=True, sync_dist=True)
-        self.log("val_lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/psnr", psnr_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/ssim", ssim_mean.item(), on_epoch=True, sync_dist=True)
+        self.log("val/lpips", lpips_mean.item(), on_epoch=True, sync_dist=True)

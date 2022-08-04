@@ -333,6 +333,8 @@ class SparseGrid(nn.Module):
         randomize: bool = False,
         beta_loss: float = 0.0,
         sparsity_loss: float = 0.0,
+        render_fg: bool = True,
+        render_bg: bool = True,
     ):
         """
         Standard volume rendering with fused MSE gradient generation,
@@ -358,7 +360,8 @@ class SparseGrid(nn.Module):
         assert rays.is_cuda
         grad_density, grad_sh, grad_basis, grad_bg = self._get_data_grads()
         rgb_out = torch.zeros_like(rgb_gt, dtype=torch.float32)
-        basis_data: Optional[torch.Tensor] = None
+        mask_out = torch.ones_like(rgb_gt, dtype=torch.bool)
+        basis_data: Optional[torch.Tensor] = None 
         self.sparse_grad_indexer = torch.zeros(
             (self.density_data.size(0),),
             dtype=torch.bool,
@@ -391,7 +394,10 @@ class SparseGrid(nn.Module):
             rgb_gt,
             beta_loss,
             sparsity_loss,
+            render_fg,
+            render_bg,
             rgb_out,
+            mask_out,
             grad_holder,
         )
         if self.basis_type == BASIS_TYPE_MLP:
@@ -399,7 +405,7 @@ class SparseGrid(nn.Module):
             basis_data.backward(grad_basis)
 
         self.sparse_sh_grad_indexer = self.sparse_grad_indexer.clone()
-        return rgb_out
+        return rgb_out, mask_out
 
     def volume_render_depth(
         self,
