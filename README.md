@@ -28,14 +28,14 @@ The recent progress in implicit 3D representation, i.e., Neural Radiance Fields 
 
 ## Downloading PeRFception-Datasets
 -------
-### Co3D (1.3TB total) [[download full(1.3TB)]()] [[download toy(TBD)]()] [[download toy: Mirror1(TBD)]()]
+### CO3D (1.3TB total) [[download full(1.3TB)]()] [[download toy(TBD)]()] [[download toy: Mirror1(TBD)]()]
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |-|-|-|-|-|-|-|-|
-|Co3D| 18.6K | 1.5M | pcd | C | X | 1.44TB | $$\pm0.00\%$$
-|PeRFception-Co3D| 18.6K | $$\infty$$ | voxel | SH + D | O | 1.33TB | $$-6.94\%$$
+|CO3D| 18.6K | 1.5M | pcd | C | X | 1.44TB | $$\pm0.00\%$$
+|PeRFception-CO3D| 18.6K | $$\infty$$ | voxel | SH + D | O | 1.33TB | $$-6.94\%$$
 
-We provide a link to download PeRFception-Co3D dataset. In addition, we also provide a toy dataset of PeRFception-Co3D dataset, which has only one scene for each class. You can also view several examples of our dataset on the demo of project page [[link]()]. 
+We provide a link to download PeRFception-CO3D dataset. In addition, we also provide a toy dataset of PeRFception-CO3D dataset, which has only one scene for each class. You can also view several examples of our dataset on the demo of project page [[link]()]. 
 
 ------
 ### ScanNet (35GB total) [[download full (35GB)]()] [[download toy (TBD)]()] [[download toy: Mirror1(TBD)]()]
@@ -61,15 +61,15 @@ pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg pi
 
 
 ## Demo 
-We provide a short demo for rendering a scene on Co3D or ScanNet. After installing the requirements, you could run the demo with the codes below:
+We provide a short demo for rendering a scene on CO3D or ScanNet. After installing the requirements, you could run the demo with the codes below:
 ```
-# Co3D demo
+# CO3D demo
 python3 -m run --ginc configs/co3d.gin
 # ScanNet demo
 python3 -m run --ginc configs/scannet.gin
 ```
 
-## Rendering Co3D and ScanNet 
+## Rendering CO3D and ScanNet 
 We deliver the full code to reproduce the performance reported in the main paper. To run the code, you should first put the dataset on a proper location. 
 
 ```
@@ -85,14 +85,14 @@ data
          -- scene000_01
          ...
 ```
-ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and Co3D-v1 can be downloaded in [here](https://github.com/facebookresearch/co3d). Thanks to great functions in `wandb`, we could manage tremendous scripts. You can download the `sweep` file [here](TBD). 
+ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and CO3D-v1 can be downloaded in [here](https://github.com/facebookresearch/co3d). Thanks to great functions in `wandb`, we could manage tremendous scripts. You can download the `sweep` file [here](TBD). 
 
 
 ## Downstream Tasks
 
-### 2D object classification (PeRFception-Co3D)
+### 2D object classification (PeRFception-CO3D)
 
-We benchmark several 2D classification models on rendered PeRFception-Co3D. For faster reproducing, we also provide the rendered images from PeRFception-Co3D on the link [link](). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
+We benchmark several 2D classification models on rendered PeRFception-CO3D. For faster reproducing, we also provide the rendered images from PeRFception-CO3D on the link [link](). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
 
 The pretrained models can be reached with the links below: 
 <div style="text-align:center">
@@ -101,9 +101,9 @@ The pretrained models can be reached with the links below:
 
 For recent updates, you can refer to the leaderboard link [here]().
 
-### 3D object classification (PeRFception-Co3D)
+### 3D object classification (PeRFception-CO3D)
 
-We also benchmark several 3D classification models on PeRFception-Co3D. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
+We also benchmark several 3D classification models on PeRFception-CO3D. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
 
 <div style="text-align:center">
 <img src="assets/3D_score.png" alt="3D score"/>
@@ -115,7 +115,7 @@ In PeRFception-ScanNet, we have evaluated several 3D semantic segmentation model
 
 ## Plans for v2
 
-According to the official Co3D repository[[link](https://github.com/facebookresearch/co3d)], authors provided an improved version, v2, of Co3D, which would result in better rendering quality and more accurate geometries in our model. We are planning to extend this work to PeRFception-Co3D-v2 from the Co3D-v2. 
+According to the official CO3D repository[[link](https://github.com/facebookresearch/co3d)], authors provided an improved version, v2, of CO3D, which would result in better rendering quality and more accurate geometries in our model. We are planning to extend this work to PeRFception-CO3D-v2 from the CO3D-v2. 
 
 ## Acknowledgement
 We appreciate for the reviewers for their constructive comments and suggestions. 
