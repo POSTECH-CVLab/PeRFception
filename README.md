@@ -28,7 +28,7 @@ The recent progress in implicit 3D representation, i.e., Neural Radiance Fields 
 
 ## Downloading PeRFception-Datasets
 -------
-### Co3D (1.3TB total) [[download full(1.3TB)]()] [[download toy(TBD)]()]
+### Co3D (1.3TB total) [[download full(1.3TB)]()] [[download toy(TBD)]()] [[download toy: Mirror1(TBD)]()]
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |-|-|-|-|-|-|-|-|
@@ -38,7 +38,7 @@ The recent progress in implicit 3D representation, i.e., Neural Radiance Fields 
 We provide a link to download PeRFception-Co3D dataset. In addition, we also provide a toy dataset of PeRFception-Co3D dataset, which has only one scene for each class. You can also view several examples of our dataset on the demo of project page [[link]()]. 
 
 ------
-### ScanNet (35GB total) [[download full (35GB)]()] [[download toy (TBD)]()]
+### ScanNet (35GB total) [[download full (35GB)]()] [[download toy (TBD)]()] [[download toy: Mirror1(TBD)]()]
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |-|-|-|-|-|-|-|-|
