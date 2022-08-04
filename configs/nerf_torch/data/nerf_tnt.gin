@@ -1,6 +1,0 @@
-
-run.dataset_name = "tanks_and_temples"
-run.datadir = "data/tanks_and_temples"
-run.logbase = "logs"
-
-LitData.batch_sampler = "all_images"

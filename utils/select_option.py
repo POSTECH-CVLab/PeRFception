@@ -1,7 +1,6 @@
 from dataloader.litdata import (
     LitDataBlender, LitDataCo3D, LitDataLLFF, LitDataNSVF, LitDataTnT
 )
-from model.nerf_torch.model import LitNeRF
 from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
 from typing import *
 
@@ -32,15 +31,7 @@ def select_dataset(
     num_gpus: int,
     num_tpus: int,
 ):
-    if dataset_name == "blender":
-        data_fun = LitDataBlender
-    elif dataset_name == "llff":
-        data_fun = LitDataLLFF
-    elif dataset_name == "nsvf":
-        data_fun = LitDataNSVF
-    elif dataset_name == "tanks_and_temples":
-        data_fun = LitDataTnT
-    elif dataset_name == "co3d":
+    if dataset_name == "co3d":
         data_fun = LitDataCo3D
         co3d_list_json_path = os.path.join("dataloader/co3d_lists/co3d_list.json")
         if not os.path.exists(co3d_list_json_path):
