@@ -226,6 +226,8 @@ class LitPlenoxel(LitModel):
             lr_color_bg_decay_steps,
         )
 
+    
+
     def setup(self, stage: Optional[str] = None) -> None:
 
         dmodule = self.trainer.datamodule
@@ -336,8 +338,9 @@ class LitPlenoxel(LitModel):
 
         return super().on_train_start()
 
+
     def training_step(self, batch, batch_idx):
-        gstep = self.trainer.global_step
+        gstep = self.global_step
 
         if self.lr_fg_begin_step > 0 and gstep == self.lr_fg_begin_step:
             self.model.density_data.data[:] = self.init_sigma
@@ -373,6 +376,7 @@ class LitPlenoxel(LitModel):
             self.log("lr_sigma_bg", lr_sigma_bg, on_step=True)
             self.log("lr_color_bg", lr_color_bg, on_step=True)
             self.log("train/psnr", psnr, on_step=True, prog_bar=True, logger=True)
+
 
         if self.lambda_tv > 0.0:
             self.model.inplace_tv_grad(
@@ -421,7 +425,7 @@ class LitPlenoxel(LitModel):
 
         if gstep >= self.lr_fg_begin_step:
             self.model.optim_density_step(
-                lr_sigma, beta=self.rms_beta, optim=self.sigma_optim
+                self.lr_sigma, beta=self.rms_beta, optim=self.sigma_optim
             )
             self.model.optim_sh_step(lr_sh, beta=self.rms_beta, optim=self.sh_optim)
 
@@ -434,6 +438,7 @@ class LitPlenoxel(LitModel):
             self.model.sh_data.data *= self.weight_decay_sigma
         if self.weight_decay_sigma < 1.0 and gstep % 20 == 0:
             self.model.density_data.data *= self.weight_decay_sh
+
 
 
     def render_rays(

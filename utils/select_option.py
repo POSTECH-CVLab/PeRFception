@@ -1,6 +1,4 @@
-from dataloader.litdata import (
-    LitDataBlender, LitDataCo3D, LitDataLLFF, LitDataNSVF, LitDataTnT
-)
+from dataloader.litdata import LitDataCo3D
 from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
 from typing import *
 
@@ -11,16 +9,8 @@ url_co3d_list = "https://drive.google.com/uc?id=1jCDaA41ZddkgPl4Yw2h-XI7mt9o56kb
 
 def select_model(
     model_name: str,
-):
-
-    if model_name in ["nerf", "jaxnerf"]:
-        return LitNeRF()
-
-    elif model_name == "plenoxel":
-        return LitPlenoxel()
-
-    else:
-        raise f"Unknown model named {model_name}"
+):  
+    return LitPlenoxel()
 
 
 def select_dataset(
@@ -49,9 +39,4 @@ def select_dataset(
 
 def select_callback(model_name):
 
-    callbacks = []
-    
-    if model_name == "plenoxel":
-        callbacks += [ResampleCallBack()]
-
-    return callbacks
+    return [ResampleCallBack()]

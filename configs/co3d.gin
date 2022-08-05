@@ -1,7 +1,7 @@
 LitData.batch_sampler = "all_images"
 LitData.epoch_size = 25600
 LitData.batch_size = 5000
-LitData.chunk = 3276
+LitData.chunk = 10000
 LitData.use_pixel_centers = True
 
 LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]

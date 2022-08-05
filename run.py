@@ -44,8 +44,8 @@ def run(
     log_every_n_steps: int = 1000,
     progressbar_refresh_rate: int = 5,
     # Run Mode
-    run_train: bool = False,
-    run_eval: bool = False,
+    run_train: bool = True,
+    run_eval: bool = True,
     run_render: bool = True,
     accelerator: str = "gpu", 
     num_gpus: Optional[int] = 1,
@@ -189,16 +189,6 @@ if __name__ == "__main__":
         ginbs.extend(args.ginb)
     logging.info(f"Gin configuration files: {args.ginc}")
     logging.info(f"Gin bindings: {ginbs}")
-
-    # TODO!
-    # This part is for the wandb sweep. 
-    # We should remove this in the final version
-
-    if args.ginc is None:
-        args.ginc = [
-            "configs/plenoxel_torch/data/plenoxel_co3d.gin",
-            "configs/plenoxel_torch/model/plenoxel.gin",
-        ]
 
     gin.parse_config_files_and_bindings(args.ginc, ginbs)
     run(
