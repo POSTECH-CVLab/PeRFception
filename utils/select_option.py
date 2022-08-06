@@ -1,9 +1,10 @@
-from dataloader.litdata import LitDataCo3D
-from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
+import os
 from typing import *
 
-import os
 import gdown
+
+from dataloader.litdata import LitDataCo3D, LitDataScannet
+from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
 
 url_co3d_list = "https://drive.google.com/uc?id=1jCDaA41ZddkgPl4Yw2h-XI7mt9o56kb7"
 
@@ -27,7 +28,7 @@ def select_dataset(
         if not os.path.exists(co3d_list_json_path):
             gdown.download(url_co3d_list, co3d_list_json_path)
     elif dataset_name == "scannet":
-        data_fun = None
+        data_fun = LitDataScannet
 
     return data_fun(
         datadir=datadir, 
