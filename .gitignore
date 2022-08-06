@@ -2,7 +2,7 @@ _site
 .sass-cache
 .jekyll-cache
 .jekyll-metadata
-vendor
+# vendor
 assets/images/chris.jpg
 assets/images/junha.jpeg
 assets/images/minsu.jpg
