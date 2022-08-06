@@ -1,213 +1,318 @@
-## Unreleased version
-
-- Added `navbar-var-length` config setting that allows the navigation menu to be the same length as the longest sub-menu, so that long words in the submenu are not cut off (#765) 
-- Added `post_search` config setting that creates a Search button in the navbar (older websites need to set `post_search: true` to enable this feature) (#770)
-- Added `edit_page_button` config setting that adds a "Edit page" button to the footer (to edit the current page on GitHub) (#1004)
-- BREAKING CHANGE: More control over RSS feed sharing: previously, an RSS feed was *always* generated, and if the config setting `rss-description` was set then there was an RSS icon in the footer. Now, an RSS feed is only generated when the config setting `rss-description` exists, and an RSS footer icon is only shown if `rss: true` is set in the `social-network-links` config settings 
-- Fixed page titles, subtitles, and excerpts rendering correctly when there are special characeters in them (#856) 
-- Slightly reworked margins and position for avatar image to resolve an alignment issue on Safari.
-- Changed the width at which the navbar collapses to a higher threshold because most modern non-mobile browsers are >1000px
-- Fixed bug where navbar secondary level dropdown items didn't inherit the same colour as the primary navbar links
-- Fixed bug where the navbar "burger" collapsed button didn't always revert back to a light colour
-- Fixed bug where using an image as a navbar title did not render in GitHub Project pages that did not have a custom domain
-- Fixed issue where image thumbnails on the feed page were always forced into a square rather than maintaining a proper image aspect ratio
-- Added support for Patreon, Medium, and Itch.io in the social network links in the footer (#783, #788)
-- Fixed bug where special characters in the title led to broken share tags (#744)
-- Updated staticman from using v2 (public servers) to v3 (private servers) due to the public servers becoming obsolete (#775)
-- Added support for Cloudflare Analytics (#797)
-- Added Reddit in share options of posts (#815)
-- Added support for giscus comments (#886) and CommentBox (#960)
-- Fixed bug where staticman didn't work jQuery slim version is used (#766)
-- Fixed very long strings to wrap around the next line rather than go off-screen (#787)
-- Added `footer-hover-col` config setting to customize the hover colour of links in the footer (#848)
-- Added social network links for Discord (#907), Kaggle (#961), and Hackerrank (#978)
-- Made the home page feed more accessible for screen readers (#950) 
-
-## v5.0.0 (2020-09-15)
-
-One of the major changes in this version is that a lot of time was spent on rethinking the entire SEO and social media sharing model (how a page looks on eg. Google, Twitter, Facebok). It was redesigned to be more simple and customizable. The new documentation has a section dedicated to SEO and social media sharing of a page. Unfortunately some changes that are not backwards-compatible had to be made.
-
-#### Breaking changes
-
-- Renamed `description` YAML parameter to `share-description` to be more clear
-- Renamed `description` config setting to `rss-description` since it was only used in RSS (the FAQ explains the difference between YAML parameters and config settings if you're confused)
-- Removed YAML parameter `use-site-title` (you can now specify the exact title using `share-title`)
-- Removed undocumented YAML parameters `meta-title` and `meta-description`
-- Removed `link-tags` config setting because it wasn't necessary. If you use tags, there will now always be a tags page created; if you don't use tags there won't be a tags page.
-- The YAML parameter `show-avatar` is now true by default. This has always been the case for GitHub Pages users, but not for `remote_theme` users. For consistency, it's now the default for everyone. (#715)
-
-#### New parameters and settings
-
-- Added `full-width` YAML parameter to allow having full-width pages
-- Added `feed_show_excerpt` config setting to show/hide the post excerpts on the feed page
-- Added `feed_show_tags` config setting to show/hide the list of tags on post previews on the feed page
-- Added `share-title` YAML parameter to give control over the search engine/social media title
-- Added `last-updated` YAML parameter to show a "Last Updated on" date for blog posts
-- Added `before-content` and `after-content` YAML parameters that allow you to add some common HTML before the main content of a page (below the title) or after the main content (above the footer). Works in a similar way to `footer-extra`.
-- Added `head-extra` YAML parameter which is similar to `footer-extra` but is used to include custom HTML code in a page's `<head>` tag
-- Added `site-js` config setting to provide JavaScript files that are used on all pages in the site
-
-#### New features and improvements
-
-- Improved the `footer-extra` YAML parameter to support multiple files instead of only a single file
-- Added automatic navbar color detection (#702)
-- When `nav-short` is turned on, the avatar will also be shorter
-- Changed navbar and footer background colour to be slightly darker, for better contrast with the default white page background for accessibility reasons
-- Changed the behaviour of `site-css` to include site-wide CSS file **before** instead of after page-specific files
-- Renamed internal css/js files from "main" to "beautifuljekyll" to make it easier for users to troubleshoot
-- Added alt text to all images for better accessibility
-- Made thumbnail images square instead of circles, as users reported that circles cut off important parts of images
-
-#### Bug fixes
-
-- Fixed rendering issues with `nav-short` parameter that caused the body of the page to start too low
-- Fixed some CSS styles that broke during the bootstrap 4 migration (#716)
-
-#### Library upgrades
-
-- Upgraded kramdown to version 2.3.0 to fix security issues
-- Upgraded jQuery to version 3.5.1 to fix a couple security vulnerabilities with the previous version
+# Changelog
 
+All notable changes to this project are documented in this file.
 
-## v4.1.0 (2020-08-08)
+*Note:* the project underwent a maintenance shift in the creation of v0.4.0.
 
-- Added Open Graph `site_name` meta field to pages automatically
-- Added `text-col` config setting  for main text color (#694)
-- Added `keywords` config setting to set the meta keywords on all pages (for SEO purposes) (#691)
-- Added `mobile-theme-col` config setting to allow a mobile theme colour (#692)
-- Added `site-css` config setting in the config file to provide CSS files that are used on all pages in the site (#695)
-- Added YAML parameter `description`: creates the meta description on a page, intended to provide a brief description of the page for search engines and when the page is shared (#690)
+## Head
 
-## v4.0.1 (2020-07-13)
+Major work in progress. Please see [PR #892](https://github.com/just-the-docs/just-the-docs/pull/892) for a v0.4.0 release candidate.
 
-- Fixed staticman comments UI that was broken since the migration to bootstrap 4
+## v0.3.3
 
-## v4.0.0 (2020-07-12)
+### 🚀 Features
 
-- **BREAKING CHANGE** Replace `image` YAML parameter with `thumbnail-img` to be more clear
-- **MAJOR BEHAVIOUR CHANGE** Don't use the thumbnail as the avatar image
-- Cover image will automatically be used as thumbnail if none is provided
-- Image to share on social media will use the cover image or thumbnail if none is provided
-- All images (social media share, thumbnail, cover) can use either relative or absoluate paths.
-- Fixed issue where if a dropdown menu was the last item in the menu bar, it did not have a proper margin on the right
-- Added social network links: Mastodon (#646), Google Scholar, ORCID (#670)
-- Added support for sharing pages on new social network: VK (#657)
-- Use Open Graph type 'article' for blog posts (#669)
-- Use Twitter's large sumary card (large image) when there is a cover image, thumbnail image, or share image specified (#668)
-- Made post images in the feed page smaller on smaller devices
-- Fixed jQuery version in staticman (#671)
+- Add custom header and footer include files @CodeSandwich (#334)
 
-## v3.0.0 (2020-05-07)
+### 🐛 Bug Fixes
 
-- **BREAKING CHANGE** Upgraded from Bootstrap 3.3.2 to 4.4.1. This involved a major rewrite of most components. This shouldn't affect any users unless you have custom HTML/CSS code which the new Bootstrap could have broken.
-- **BREAKING CHANGE** Renamed `bigimg` YAML parameter to `cover-img`
-- **BREAKING CHANGE** Removed `googlefonts` YAML parameter since googlefonts are just CSS so they can be loaded via `ext-css`
-- **BREAKING CHANGE** Upgraded from jQuery 1.11.2 to 3.4.2. This should not affect most people
-- Added `navbar-border-col` setting in the config file
-- Added accessibility features where possible
-- Made the theme completely responsive by rewriting all CSS to use 'rem' instead of 'px'
-- Rewrote and simplified some JavaScript code to use CSS or Bootstrap alternatives that weren't available in 2015
-- Removed most of the sample posts so that users only have two sample posts to learn from
-- Improvements to the README instructions
+- Limit the effect of `nav_exclude` to the main navigation @pdmosses (#443)
+- Update normalize.scss @pdmosses (#444)
+- Update code.scss @pdmosses (#445)
+- Fix list alignment @pdmosses (#446)
 
-## v2.3.0 (2020-04-29)
+### 🧰 Maintenance
 
-- Added YAML parameter `footer-extra` for including custom content in the footer
-- Fixed issue: linking to a specific part of a page resulted in scrolling too far (#69)
-- Added YAML parameter `nav-short` to have navbar permanently collapsed
-- Added social network link: Calendly
-- Fixed bug where RSS link in footer was showing even when turned off
+- Bump stylelint-config-primer from 9.0.0 to 9.2.1 @dependabot-preview (#451)
+- Bump stylelint from 13.6.1 to 13.7.2 @dependabot-preview (#440)
+- Bump @primer/css from 15.1.0 to 15.2.0 @dependabot-preview (#436)
+- Bump prettier from 2.1.1 to 2.1.2 @dependabot-preview (#429)
 
-## v2.2.0 (2020-04-27)
+## v0.3.2
 
-- Added social network link: Telegram (#625) (thanks @mashed-potatoes)
-- Moved the demo site to an independent URL: https://beautifuljekyll.com
-- Major documentation overhaul and cleanup of old files
-- Fixed a few bugs from the remote_theme migration
+### Changes
 
-## v2.0.0 (2020-04-26)
+- Safe page sorting @pdmosses (#411)
+- v0.3.2 @pmarsceill (#388)
 
-- Beautiful-Jekyll v2.0.0 available as an official Ruby gem
-- Beautifull-Jekyll now supports the `remote_theme` config (#339) (thanks @gpotter2 and @skalee)
-- Consolidated the demo site, the ruby gem, and the master branch into one
-- Added a `home` layout and used it in the index page
-- Added readtime support for the post header (#622) (thanks @MutMatt and @rubyreads)
-- Removed the dependency on `_data` folder since it doesn't get copied when using `remote_theme` (#614)
-- Added support for configuring lang attribute on `html` tag (#608) (thanks @skalee)
-- Added ability to disable round logo (thanks @gpotter2)
-- Added support for Utterances comments (#596) (thanks @colynn)
-- Removed 'just-comments' as it's getting killed at the end of the year
-- Upgraded font-awesome to 5.12.1 (#587) (thanks @cketti)
+### 🚀 Features
 
-## Prior to 2020
+- make font-sizes sass variables so they can be changed @pdebruic (#361)
+- run the site locally inside docker container @fogfish (#398)
+- Feature/doc collections @SgtSilvio (#379)
+- Adjust dl layout @pdmosses (#401)
 
-**2018-12-24** Add support for Staticman comments (#440) (thanks @VincentTam)
+### 🐛 Bug Fixes
 
-**2018-10-19** Move Google Analytics to the head (#419) (thanks @jpvicari)
+- Add site.gh_edit_source to "Edit this page on GitHub" link @mrfleap (#418)
+- Inhibit text-transform for code in h4 @pdmosses (#404)
+- Fix native font stack precedence issue on Windows systems. @hvianna (#331)
+- Support for the linenos option on highlighted code @pdmosses (#375)
+- Update anchor_headings.html @pdmosses (#399)
+- Fix https @marksie1988 (#359)
 
-**2018-06-08** Add support for Facebook comments (#350) (thanks @npes87184)
+### 🧰 Maintenance
 
-**2018-02-22** Automatically generate sitemap (#323) (thanks @JosemyDuarte)
+- Bump prettier from 2.0.5 to 2.1.1 @dependabot-preview (#427)
+- Bump prettier from 2.0.5 to 2.1.1 @dependabot-preview (#419)
+- [Security] Bump lodash from 4.17.15 to 4.17.19 @dependabot-preview (#389)
+- Bump @primer/css from 14.4.0 to 15.1.0 @dependabot-preview (#402)
+- Bump lodash from 4.17.15 to 4.17.19 @dependabot (#384)
+- Bump @primer/css from 14.4.0 to 15.0.0 @dependabot-preview (#371)
 
-**2018-01-18** Add clickable tags to each post and a tags index page, works for GitHub sites (#307) (thanks @OCram85)
 
-**2018-01-14** Redo Dockerfile (#302) (thanks @jennydaman)
+## v0.3.1
 
-**2018-01-06** More color personalization options (#297 and #299) (thanks @jennydaman)
+### Changes
 
-**2018-01-05** Abstract the social networks logic (thanks @OCram85)
+### 🐛 Bug Fixes
 
-**2018-01-03** Avatar image no longer causes a ghost click (thanks @alefi87)
+- Improve accessibility by adding label to Anchor links. @mscoutermarsh (#376)
 
-**2017-10-16** Add GitHub buttons to posts (#265) (thanks @yonicd)
+### 🧰 Maintenance
 
-**2017-09-04** Ability to change colour/image of navbar/footer/body
+- Remove collapsible TOC on nav doc @pmarsceill (#368)
+- Pdmosses collapsible toc @pmarsceill (#367)
 
-**2017-08-17** Add support for notification, error, and warning boxes in markdown (#227) (thanks @OCram85)
 
-**2017-08-12** Add social buttons for twitch, yelp, and steam (#234) (thanks @TheRealBenForce)
+## v0.3.0
 
-**2017-03-30** Make the footer contact links friendly for screen readers (thanks @eugenius1)
+### Changes
 
-**2017-03-30** Started a CHANGELOG file (thanks @eugenius1)
+- v0.2.9 @pmarsceill (#306)
 
-**2017-01-28** Add Subresource Integrity (SRI) support (#164) (thanks @tony-ho)
+### 🚀 Features
 
-**2017-01-09** Add Google Tag Manager Integration (#157) (thanks @csarigoz)
+- Add print styles @pmarsceill (#362)
+- Navigation improvements and search sections @SgtSilvio (#352)
 
-**2017-01-06** Add options to configure HTML document title (#154) (thanks @tony-ho)
+### 🐛 Bug Fixes
 
-**2016-12-25** Allow dynamic images on each blog post (#143) (thanks @bbritten)
+- Remove constraint with jekyll 4.1.0 @PierrickMartos (#348)
 
-**2016-12-15** Support `title-img` config param to have image in the navbar instead of text
+### 🧰 Maintenance
 
-**2016-12-08** Add support for phone numbers in footer; fix #136
+- Bump version numbers @pmarsceill (#360)
+- Bump stylelint from 13.3.3 to 13.6.1 @dependabot-preview (#343)
+- Bump stylelint-config-prettier from 8.0.1 to 8.0.2 @dependabot-preview (#349)
 
-**2016-12-06** Update gemfile (#134) (thanks @stephentuso)
 
-**2016-10-09** Add Docker deployment (#114) (thanks @mangar)
+## v0.2.9
 
-**2016-08-06** Add social share buttons for posts (thanks @rtlee9)
+### Bug fixes
+- Horizontal Alignment #103 @pmarsceill
+- Code snippet in headers do not inherit font size #140 @pmarsceill 
+- Fix duplicated title and description tags #294 @iefserge
+- Update nav.html for handling nav_exclude #282 @blawqchain
+- Fix duplicate entries in nav.html and default.html #239 @KasparEtter
+- Don't show pages with no title (e.g. redirects in nav) https://github.com/pmarsceill/just-the-docs/pull/295/commits/672de29f2e332a9350af7237e4fb6693c848989e @SgtSilvio 
+- [SEARCH RAKE] Fix search generator #319 @RoiArthurB
+
+### Enhancements
+- Improvement/custom themes #186 @SgtSilvio 
+- feat: adds "edit this page" and "page last modified" to footer #217 @malsf21
+- feat: adds option to open aux links in new tab #229 @malsf21
+- Default nav order #236 @pdmosses 
+- Enable IP anonymization in Google Analytics (GDPR) #250 @r-brown
+
+closes #240 #308 #266 #140 #103
+
+## v0.2.8
+
+### Bugfixes
+- bugfix in search.rake #218 @tiaitsch85
+
+### Dependency and security updates:
+
+- Update jekyll requirement from ~> 3.8.5 to >= 3.8.5, < 4.1.0 #197 @dependabot-preview
+- Update rake requirement from ~> 12.3.1 to >= 12.3.1, < 13.1.0 #227 @dependabot-preview
+- Bump stylelint-config-primer from 8.0.0 to 9.0.0 #247 @dependabot-preview
+- Update bundler requirement from ~> 2.0.1 to ~> 2.1.4 #268 @dependabot-preview
+- Bump @primer/css from 12.7.0 to 14.3.0 #296 @dependabot-preview
+
+### Operations
+
+- Update CI to test multiple versions of Jekyll
+- Update CI to check the rake command that builds the search file
 
-**2016-07-29** Add CSS styling to code chunks
+fixes #291 #256 #293 #177 
+
+## v0.2.7
+
+### Bugs fixed
+- Anchor headings are now displayed on hover, not only on heading hover
+- Deduplicated anchor heading svg
+- If last page of `site.html_pages` was excluded from search, search json breaks
+- Config variable should be `blanklines` not `blank_lines` for html compression
+- `list-style-none` does not hide bullets on `ul`
+
+### Enhancements
+- Summary for child pages appears in generated TOC
+- Site logo configuration supported replacing title text with image
+- Allow custom CSS overrides (new scss partial at the end of the cascade) separate from variable overrides.
+- Configuration around search strings added to allow search for hyphenated words
+
+### Maintenance
+- Update docs to suggest using index.md as section page filename
+- Bump @primer/css from 12.6.0 to 12.7.0
+- Bump mixin-deep from 1.3.1 to 1.3.2
+- Bump stylelint-config-primer from 7.0.1 to 8.0.0 
+
+### PR included
+- #98 by @stefanoborini Introduces the possibility for a summary in the table of contents
+- #141 by @ghabs Fix trailing comma bug in search-data.json
+- #153 by @jacobherrington Change button copy on theme preview 
+- #181 by @m3nu Recommend using index.md as parent page for sections
+- #183 by @SgtSilvio Improve heading anchors 
+- #187 by @SgtSilvio Improvement/site logo
+- #200 Bump mixin-deep from 1.3.1 to 1.3.2
+- #203 by @pdmosses Search config
+- #205 by @pdmosses Fix blank_lines var to blanklines in config.yml 
+- #206 by @iamcarrico Allow for custom overrides by the user
+- #208 Bump @primer/css from 12.6.0 to 12.7.0
+- #213 Bump mixin-deep from 1.3.1 to 1.3.2
+- #214 Bump stylelint-config-primer from 7.0.1 to 8.0.0 
+- #215 Bump @primer/css from 12.6.0 to 12.7.0
+
+## v0.2.6
+
+### Bugs fixed
+- Google Analytics tag has been updated #162 
+- ~BaseURL has been modified #109~ Reverted -- seems the existing implementation worked
+- Titles can now wrap fixes #106 
+
+### Enhancements
+- Search now displays content preview #135
+- Custom footer content added #179 
+- Now using GitHub Actions for CI #170
 
-**2016-07-27** Add clickable tags that lead to a tag page (doesn't work for GitHub hosted sites) (thanks @epwalsh)
+### Maintenance
+- lunrjs upgraded #135 
+- Nav generation is optimized #159 
+- Stylelint upgrade #143 
+- Stylelint config primer upgrade #149 
+- Lodash upgrade #160 
 
-**2016-07-21** Add support for twitter cards (sharing on Twitter will be better); fixes #70
+### PR included
+~#109 by @daviddarnes - Fix baseurl link~ Reverted
+#135 by @SgtSilvio - Upgrades lunr.js, improves search UI, adds heading anchors
+#152 by @yavorg - Improves syntax highlighting for js readablity
+#159 by @julienduchesne - Optimizes nav generation
+#162 by @nergmada - Modifies the google analytics code to match the new tags used by GA
 
-**2016-03-18** Support full-width images in page headers; fixes #37
 
-**2016-03-18** Support menus in navigation bar
+## v0.2.5
 
-**2016-02-07** Avatar is now conditional (thanks @hristoyankov)
+### Bugs fixed
 
-**2016-02-02** Migrate (forced to...) to jekyll 3
+- Duplicate title tag when Jekyll SEO Plugin gem is used #125 #126 
 
-**2016-01-22** Make sure not to include JQuery twice, fixes #29
+### Enhancements
 
-**2015-11-19** Support external links in navigation bar; fixes #3
+- Favicon support added #118
 
-... Many small changes because the site was in its infancy
+### Maintenance
+- Bump stylelint-config-primer from 6.0.0 to 7.0.0  #123
+- Bump @primer/css from 12.2.3 to 12.3.1 #129 
+- Add workflow to publish to GPR
+- Fix workflow to publish to Ruby Gems
 
-**2015-03-12** Beautiful Jekyll version 0.0000001 is released!
+## v0.2.4
 
+### Bugs
+
+- #102 Remove unnecessary console.log() @JoeNyland
+- #97 Import custom Sass variable overrides before default variables are defined @montchr and @ptvandi 
+
+### Additions
+- #117 Add links to docs for setting up GH pages locally @gnarea
+- #95 Add SEO and 'lang' param for `_config` @gebeto
+
+## v0.2.3
+
+### Enhancements
+- Adds ability to use Google Analytics tracking by @pmarsceill 
+
+### Bug fixes
+- Fixes 404 error for "/assets/js//search-data.json" by @stephenedmondson
+- Fixes #80 Single quotes in the string were unescaped and ruby attempted variable substitution of amp within it (which failed) by @novelistparty
+- Fixes bug that would only show 2 or more search results (not one) by @ilivewithian 
+- Fixes a typo on the layout example by @woernfl 
+- Fixes #78 Page scroll position too far down on load by @pmarsceill 
+- Fixds ability to nest ul in ol without breaking style or counters
+
+### Dependency updates
+- Bumps stylelint dependency from 9.9.0 to 9.10.1
+
+## v0.2.2
+
+- Bumps stylelint-config-primer to 3.0.1 #44 
+- Bumps bundler req to 2.0.1 #61 
+- Adds custom 404 page
+- Excludes package-lock.json from jekyll build #47 
+- Fixes keyboard scrolling / focus #48 
+- Adds ARIA roles to navigation elements
+- Adds support for optional page description metadata (if present in yaml front matter)
+- Addresses some issues with search in #46 
+- Option to hide TOC on parent pages if turned off in page's YAML front matter #30 
+- Option to suppress an item from being indexed by search if present in page's YAML front matter #32 
+
+## v0.2.1
+
+This update fixes security vulnerablities in the lodash sub-dependency and bumps other dev dependencies to their latest version.
+
+## v0.2.0
+
+Adds:
+- Dark mode via `color_scheme` parameter
+- Ability to exclude a page from the main nav with `nav_exclude` parameter closes #21
+- Ability for create children of children pages (3 nav levels) closes #25 
+
+Changes:
+- Permalink structure for tiered navigation has been updated
+- Some colors have been updated for consistency / accessibility
+
+## v0.1.6
+
+### Added
+
+- Support for task list styles #19 
+- Configuration docs
+- Configuration option to enable / disable search
+- Normalize.scss dependency pulled into project #16 #
+
+### Fixed
+
+- Layout bug in navigation #17 
+
+## v0.1.5
+
+Major changes:
+
+- Fixed bug where the rake task would fail when the assets/js directory didn't exist
+
+## v0.1.4
+
+Major changes:
+- Adds Rake as a runtime dependency
+- Definition list styled
+- Sidebar and support cleaned up for smaller screen support
+- Updated some stale docs
+
+## v0.1.3
+
+Major changes:
+- Fix path problems, typos, and general clean-up for OSS.
+
+## v0.1.2
+
+Fix paths when deployed to gh-pages
+
+## v0.1.1
+
+Major updates:
+- Adds search to mobile nav
+- Pulls footer to bottom of the page on mobile (not hidden in nav)
+
+Minor updates:
+- Cleans up h1 typography spacing
