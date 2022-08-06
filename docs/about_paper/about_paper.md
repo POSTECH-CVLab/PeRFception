@@ -3,7 +3,7 @@ layout: default
 title: About Paper
 nav_order: 3
 has_children: true
-permalink: /docs/aboutpaper
+permalink: /aboutpaper
 ---
 
 # About Paper
