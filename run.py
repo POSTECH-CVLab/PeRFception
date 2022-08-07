@@ -108,8 +108,6 @@ def run(
         devices=num_gpus,
         max_steps=max_steps,
         replace_sampler_ddp=False,
-        strategy=DDPPlugin(find_unused_parameters=False) \
-            if num_gpus > 1 and accelerator == "gpu" else None,
         check_val_every_n_epoch=1,
         precision=precision,
         accelerator="gpu",
