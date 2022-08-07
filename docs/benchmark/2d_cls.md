@@ -41,7 +41,7 @@ The model is trained on PeRFception-Co3D dataset and tested CO3D dataset. We sor
 
 
 ## Track 3: Out-domain classification
-The model is trained on PeRFception-Co3D dataset and tested on Co3D dataset. Here, 
+The model is trained on PeRFception-Co3D dataset and tested on Co3D dataset. Here, we evaluate Acc@1 on the original Co3D dataset. In addition, we 
 
 |Model| Acc@1 | $$\mu_{perf} - \mu_{co3d}$$ | Checkpoints | Code |
 |:-:|:-:|:-:|:-:|:-:|
