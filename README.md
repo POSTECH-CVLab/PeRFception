@@ -1,5 +1,8 @@
 # PeRFception - Perception using Radiance Fields
 
+<div style="text-align:center">
+  <img src="https://user-images.githubusercontent.com/33657821/183290143-7fbf49ce-2f6f-4bfc-8496-9d24e5d8ab61.gif" alt="teaser"/>
+</div>
 
 ### Quick Access
 
