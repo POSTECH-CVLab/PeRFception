@@ -1,5 +1,8 @@
+import json
 import os
+from typing import *
 
+import gin
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -12,15 +15,10 @@ import utils.ray as ray
 import utils.store_util as store_util
 from model.interface import LitModel
 from model.plenoxel_torch.__global__ import BASIS_TYPE_SH
-import gin
 
-import gin
-from typing import *
-import json
 
 @gin.configurable()
 class ResampleCallBack(pl.Callback):
-
     def __init__(self, upsamp_every):
         self.upsamp_every = upsamp_every
 
@@ -62,15 +60,10 @@ class ResampleCallBack(pl.Callback):
             )
 
             if pl_module.model.use_background and pl_module.reso_idx <= 1:
-                pl_module.model.sparsify_background(
-                    pl_module.background_density_thresh
-                )
+                pl_module.model.sparsify_background(pl_module.background_density_thresh)
 
             if pl_module.upsample_density_add:
-                pl_module.model.density_data.data[
-                    :
-                ] += pl_module.upsample_density_add
-
+                pl_module.model.density_data.data[:] += pl_module.upsample_density_add
 
 
 @gin.configurable()
@@ -78,84 +71,84 @@ class LitPlenoxel(LitModel):
 
     # The external dataset will be called.
     def __init__(
-        self, 
+        self,
         reso: List[List[int]] = [[256, 256, 256], [512, 512, 512]],
-        upsample_step: List[int] = [38400, 76800], 
+        upsample_step: List[int] = [38400, 76800],
         init_iters: int = 0,
-        upsample_density_add: float = 0.0, 
+        upsample_density_add: float = 0.0,
         basis_type: str = "sh",
         sh_dim: int = 9,
-        mlp_posenc_size: int = 4, 
-        mlp_width: int = 32, 
+        mlp_posenc_size: int = 4,
+        mlp_width: int = 32,
         background_nlayers: int = 0,
         background_reso: int = 512,
         # Sigma Optim
-        sigma_optim: str = "rmsprop", 
+        sigma_optim: str = "rmsprop",
         lr_sigma: float = 3e1,
         lr_sigma_final: float = 5e-2,
         lr_sigma_decay_steps: int = 250000,
         lr_sigma_delay_steps: int = 15000,
-        lr_sigma_delay_mult: float = 1e-2, 
+        lr_sigma_delay_mult: float = 1e-2,
         # SH Optim
         sh_optim: str = "rmsprop",
         lr_sh: float = 1e-2,
         lr_sh_final: float = 5e-6,
-        lr_sh_decay_steps: int = 250000, 
+        lr_sh_decay_steps: int = 250000,
         lr_sh_delay_steps: int = 0,
         lr_sh_delay_mult: float = 1e-2,
         lr_fg_begin_step: int = 0,
         # BG Simga Optim
-        bg_optim: str = "rmsprop", 
+        bg_optim: str = "rmsprop",
         lr_sigma_bg: float = 3e0,
         lr_sigma_bg_final: float = 3e-3,
         lr_sigma_bg_decay_steps: int = 250000,
-        lr_sigma_bg_delay_steps: int = 0, 
-        lr_sigma_bg_delay_mult: float = 1e-2, 
+        lr_sigma_bg_delay_steps: int = 0,
+        lr_sigma_bg_delay_mult: float = 1e-2,
         # BG Colors Optim
         lr_color_bg: float = 1e-1,
         lr_color_bg_final: float = 5e-6,
         lr_color_bg_decay_steps: int = 250000,
-        lr_color_bg_delay_steps: int = 0, 
+        lr_color_bg_delay_steps: int = 0,
         lr_color_bg_delay_mult: float = 1e-2,
         # Basis Optim
-        basis_optim: str = "rmsprop", 
+        basis_optim: str = "rmsprop",
         lr_basis: float = 1e-6,
         lr_basis_final: float = 1e-6,
         lr_basis_decay_steps: int = 250000,
         lr_basis_delay_steps: int = 0,
-        lr_basis_begin_step: int = 0, 
+        lr_basis_begin_step: int = 0,
         lr_basis_delay_mult: float = 1e-2,
         # RMSProp Option
         rms_beta: float = 0.95,
         # Init Option
         init_sigma: float = 0.1,
-        init_sigma_bg: float = 0.1, 
-        thresh_type: str = "weight", 
+        init_sigma_bg: float = 0.1,
+        thresh_type: str = "weight",
         weight_thresh: float = 0.0005 * 512,
         density_thresh: float = 5.0,
         background_density_thresh: float = 1.0 + 1e-9,
         max_grid_elements: int = 44_000_000,
         tune_mode: bool = False,
-        tune_nosave: bool = False, 
+        tune_nosave: bool = False,
         # Losses
         lambda_tv: float = 1e-5,
         tv_sparsity: float = 0.01,
         tv_logalpha: bool = False,
-        lambda_tv_sh: float = 1e-3, 
-        tv_sh_sparsity: float = 0.01, 
+        lambda_tv_sh: float = 1e-3,
+        tv_sh_sparsity: float = 0.01,
         lambda_tv_lumisphere: float = 0.0,
         tv_lumisphere_sparsity: float = 0.01,
-        tv_lumisphere_dir_factor: float = 0.0, 
+        tv_lumisphere_dir_factor: float = 0.0,
         tv_decay: float = 1.0,
         lambda_l2_sh: float = 0.0,
-        tv_early_only: int = 1, 
+        tv_early_only: int = 1,
         tv_contiguous: int = 1,
         # Other Lambdas
         lambda_sparsity: float = 0.0,
         lambda_beta: float = 0.0,
         lambda_tv_background_sigma: float = 1e-2,
         lambda_tv_background_color: float = 1e-2,
-        tv_background_sparsity: float = 0.01, 
+        tv_background_sparsity: float = 0.01,
         # WD
         weight_decay_sigma: float = 1.0,
         weight_decay_sh: float = 1.0,
@@ -165,26 +158,28 @@ class LitPlenoxel(LitModel):
         # Render Options
         step_size: float = 0.5,
         sigma_thresh: float = 1e-8,
-        stop_thresh: float = 1e-7, 
-        background_brightness: float = 1.0, 
+        stop_thresh: float = 1e-7,
+        background_brightness: float = 1.0,
         renderer_backend: str = "cuvol",
-        random_sigma_std: float = 0.0, 
-        random_sigma_std_background: float = 0.0, 
+        random_sigma_std: float = 0.0,
+        random_sigma_std_background: float = 0.0,
         near_clip: float = 0.00,
         use_spheric_clip: bool = False,
         enable_random: bool = False,
         last_sample_opaque: bool = False,
         # Quantization
         filter_threshold: float = 0.0,
-        quantize: bool = False, 
+        quantize: bool = False,
         store_efficient: bool = False,
         # Render Option
-        bkgd_only: bool = False
+        bkgd_only: bool = False,
+        # Scannet specific option
+        init_grid_with_pcd: bool = True,
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
                 setattr(self, name, value)
-        
+
         super(LitPlenoxel, self).__init__()
         assert basis_type in ["sh", "3d_texture", "mlp"]
         assert sigma_optim in ["sgd", "rmsprop"]
@@ -226,12 +221,10 @@ class LitPlenoxel(LitModel):
             lr_color_bg_decay_steps,
         )
 
-    
-
     def setup(self, stage: Optional[str] = None) -> None:
 
         dmodule = self.trainer.datamodule
-        
+
         self.model = sparse_grid.SparseGrid(
             reso=self.reso_list[self.reso_idx],
             center=dmodule.scene_center,
@@ -249,13 +242,102 @@ class LitPlenoxel(LitModel):
 
         if stage is None or stage == "fit":
             self.model.sh_data.data[:] = 0.0
-            self.model.density_data.data[:] = 0. if self.lr_fg_begin_step > 0 else self.init_sigma
+            self.model.density_data.data[:] = (
+                0.0 if self.lr_fg_begin_step > 0 else self.init_sigma
+            )
             if self.model.use_background:
                 self.model.background_data.data[..., -1] = self.init_sigma_bg
 
+        if self.init_grid_with_pcd:
+            self.initialize_with_pointcloud()
+
         self.ndc_coeffs = dmodule.ndc_coeffs
 
+        with open(os.path.join(self.logdir, "config.gin"), "w") as f:
+            f.write(gin.operative_config_str())
+
         return super().setup(stage)
+
+    @torch.no_grad()
+    def initialize_with_pointcloud(self):
+        trans_info = self.trainer.datamodule.trans_info
+        pcd, pcd_orig = trans_info["pcd"], trans_info["pcd_orig"]
+        scene_scale = trans_info["scene_scale"]
+        reso = self.reso_list[self.reso_idx]
+
+        if isinstance(reso, int):
+            reso = [reso] * 3
+        reso = np.array(reso)
+
+        pcd_scaled = pcd * scene_scale
+        pcd_voxels = reso * 0.5 * (pcd_scaled + 1)
+        pcd_voxels = pcd_voxels.astype(np.int32)
+
+        np.savez(os.path.join(self.logdir, "pcd.npz"), pcd_depth=pcd, pcd_gt=pcd_orig)
+        stride = 1
+        voxel_size = 0.02
+        print(f"initialize with pointcloud, stride: {stride}, voxel_size: {voxel_size}")
+        #### Upsample and thicken
+        import MinkowskiEngine as ME
+
+        upsample = ME.MinkowskiGenerativeConvolutionTranspose(
+            1, 1, kernel_size=stride, stride=stride, dimension=3
+        )
+        # voxels = np.ascontiguousarray(pcd / voxel_size)
+        pcd_voxels = np.ascontiguousarray(pcd_voxels)
+        _, u_indices = ME.utils.sparse_quantize(pcd_voxels, return_index=True)
+        voxels = pcd_voxels[u_indices]
+        np.save(os.path.join(self.logdir, "init.npy"), voxels)
+        bcoords = ME.utils.batched_coordinates([voxels])
+        bfeats = torch.ones(bcoords.shape[0], 1).float()
+        sinput = ME.SparseTensor(
+            features=bfeats,
+            coordinates=bcoords.int(),
+            tensor_stride=stride,
+        )
+        soutput = upsample(sinput)
+        C = soutput.C[:, 1:]
+        unique_voxels = C.numpy()
+        for i in range(3):
+            np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
+        _, u_indices = ME.utils.sparse_quantize(unique_voxels, return_index=True)
+        unique_voxels = unique_voxels[u_indices]
+
+        np.save(os.path.join(self.logdir, "thick.npy"), unique_voxels)
+        ####
+
+        print(
+            f"initialize_with_pointcloud, orig pcd: {pcd.shape[0]}, uniq voxel: {unique_voxels.shape[0]}, reso: {reso}"
+        )
+
+        del self.model.density_data
+        del self.model.sh_data
+        del self.model.links
+
+        links = torch.zeros(reso.tolist(), dtype=torch.int32, device=self.device) - 1
+        links_idx = torch.from_numpy(unique_voxels.T).long()
+        links[links_idx[0], links_idx[1], links_idx[2]] = torch.arange(
+            len(links_idx[0]), dtype=torch.int32, device=self.device
+        )
+        self.model.capacity = links_idx.shape[1]
+        self.model.density_data = nn.Parameter(
+            torch.zeros(
+                self.model.capacity,
+                1,
+                dtype=torch.float32,
+                device=self.device,
+            )
+        )
+        self.model.sh_data = nn.Parameter(
+            torch.zeros(
+                self.model.capacity,
+                self.model.basis_dim * 3,
+                dtype=torch.float32,
+                device=self.device,
+            )
+        )
+        self.model.register_buffer("links", links.view(reso.tolist()))
+        self.model.density_data.data[:] = self.init_sigma
 
     def generate_camera_list(
         self, intrinsics=None, extrinsics=None, ndc_coeffs=None, image_size=None
@@ -297,7 +379,6 @@ class LitPlenoxel(LitModel):
 
         return helper
 
-
     def configure_optimizers(self):
         return None
 
@@ -324,7 +405,7 @@ class LitPlenoxel(LitModel):
     def on_train_start(self) -> None:
 
         # For Co3D information storing
-        if hasattr(self.trainer.datamodule, "label_info"): 
+        if hasattr(self.trainer.datamodule, "label_info"):
             label_info = self.trainer.datamodule.label_info
             np.savez(os.path.join(self.logdir, "label_info"), **label_info)
             with open(os.path.join(self.logdir, "class_info.txt"), "w") as fp:
@@ -334,10 +415,9 @@ class LitPlenoxel(LitModel):
             os.remove(os.path.join(self.logdir, "best.ckpt"))
 
         if os.path.exists(os.path.join(self.logdir, "last.ckpt")):
-            os.remove(os.path.join(self.logdir, "last.ckpt"))       
+            os.remove(os.path.join(self.logdir, "last.ckpt"))
 
         return super().on_train_start()
-
 
     def training_step(self, batch, batch_idx):
         gstep = self.global_step
@@ -376,7 +456,6 @@ class LitPlenoxel(LitModel):
             self.log("lr_sigma_bg", lr_sigma_bg, on_step=True)
             self.log("lr_color_bg", lr_color_bg, on_step=True)
             self.log("train/psnr", psnr, on_step=True, prog_bar=True, logger=True)
-
 
         if self.lambda_tv > 0.0:
             self.model.inplace_tv_grad(
@@ -439,8 +518,6 @@ class LitPlenoxel(LitModel):
         if self.weight_decay_sigma < 1.0 and gstep % 20 == 0:
             self.model.density_data.data *= self.weight_decay_sh
 
-
-
     def render_rays(
         self,
         batch,
@@ -467,7 +544,7 @@ class LitPlenoxel(LitModel):
             rays = torch.stack(
                 ray.convert_to_ndc(rays[:, 0], rays[:, 1], self.ndc_coeffs), dim=1
             )
-            
+
         rays = dataclass.Rays(rays[:, 0].contiguous(), rays[:, 1].contiguous())
         rgb, mask = self.model.volume_render_fused(
             rays,
@@ -510,13 +587,9 @@ class LitPlenoxel(LitModel):
 
     def predict_step(self, batch, batch_idx):
         ret = {}
-        if self.bkgd_only: 
+        if self.bkgd_only:
             bg = self.render_rays(
-                batch,
-                batch_idx,
-                cpu=True,
-                prefix="bg",
-                render_bg=True
+                batch, batch_idx, cpu=True, prefix="bg", render_bg=True
             )
             ret.update(bg)
         else:
@@ -541,13 +614,18 @@ class LitPlenoxel(LitModel):
 
     def test_epoch_end(self, outputs):
         dmodule = self.trainer.datamodule
-        all_image_sizes = dmodule.all_image_sizes if \
-            not dmodule.eval_test_only else dmodule.test_image_sizes
+        all_image_sizes = (
+            dmodule.all_image_sizes
+            if not dmodule.eval_test_only
+            else dmodule.test_image_sizes
+        )
         rgbs = self.alter_gather_cat(outputs, "rgb", all_image_sizes)
         targets = self.alter_gather_cat(outputs, "target", all_image_sizes)
         psnr = self.psnr(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
         ssim = self.ssim(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
-        lpips = self.lpips(rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test)
+        lpips = self.lpips(
+            rgbs, targets, dmodule.i_train, dmodule.i_val, dmodule.i_test
+        )
 
         self.log("test/psnr", psnr["test"], on_epoch=True, rank_zero_only=True)
         self.log("test/ssim", ssim["test"], on_epoch=True, rank_zero_only=True)
@@ -567,23 +645,23 @@ class LitPlenoxel(LitModel):
         # instead of outputs.
         render_poses = self.trainer.datamodule.render_poses
         N_img = len(render_poses)
-        
+
         image_sizes = np.stack(
             [self.trainer.datamodule.image_sizes[0] for _ in range(N_img)]
         )
         if hasattr(self.trainer.datamodule, "render_scale"):
-            image_sizes = (
-                image_sizes * self.trainer.datamodule.render_scale
-            ).astype(image_sizes.dtype)
+            image_sizes = (image_sizes * self.trainer.datamodule.render_scale).astype(
+                image_sizes.dtype
+            )
 
-        keys = ['bg/rgb'] if self.bkgd_only else ['fgbg/rgb', 'fg/rgb', 'mask']
+        keys = ["bg/rgb"] if self.bkgd_only else ["fgbg/rgb", "fg/rgb", "mask"]
 
         rets = {}
-        for key in keys: 
+        for key in keys:
             ret = self.alter_gather_cat(outputs[0], key, image_sizes)
             rets[key] = ret
 
-        if self.trainer.is_global_zero: 
+        if self.trainer.is_global_zero:
             os.makedirs("render", exist_ok=True)
             path_to_store = self.trainer.model.logdir
             scene_number = "_".join(path_to_store.split("_")[-3:])
@@ -599,13 +677,13 @@ class LitPlenoxel(LitModel):
             for opt in opt_list:
                 opt_path = os.path.join(scene_path, opt)
                 os.makedirs(opt_path, exist_ok=True)
-                store_util.store_image(opt_path, rets[f"{opt}/rgb"])  
-            
+                store_util.store_image(opt_path, rets[f"{opt}/rgb"])
+
             if "mask" in rets.keys():
                 mask_path = os.path.join(scene_path, "mask")
                 os.makedirs(mask_path, exist_ok=True)
                 store_util.store_mask(mask_path, rets["mask"])
-        
+
         if self.bkgd_only:
             np.save(f"{scene_path}/poses.npy", self.trainer.datamodule.render_poses)
             np.save(f"{scene_path}/intrinsics.npy", self.trainer.datamodule.intrinsics)
@@ -641,18 +719,18 @@ class LitPlenoxel(LitModel):
             + links_compressed[2]
         )
 
-        links = - torch.ones_like(model_links, device="cpu")
+        links = -torch.ones_like(model_links, device="cpu")
         links[
             links_compressed[0], links_compressed[1], links_compressed[2]
-        ] = torch.arange(
-            len(links_compressed[0]), dtype=torch.int32, device="cpu"
-        )
+        ] = torch.arange(len(links_compressed[0]), dtype=torch.int32, device="cpu")
 
         background_data = checkpoint["state_dict"]["model.background_data"].cpu()
 
         if self.model.use_background:
             if self.quantize:
-                background_data, bkgd_min, bkgd_scale = self.quantize_data(background_data)
+                background_data, bkgd_min, bkgd_scale = self.quantize_data(
+                    background_data
+                )
                 checkpoint["model.background_data_min"] = bkgd_min
                 checkpoint["model.background_data_scale"] = bkgd_scale
             checkpoint["state_dict"].pop("model.background_data")
@@ -672,11 +750,11 @@ class LitPlenoxel(LitModel):
             if self.model.use_background:
                 checkpoint["model.background_data_min"] = bkgd_min
                 checkpoint["model.background_data_scale"] = bkgd_scale
-                
+
         return super().on_save_checkpoint(checkpoint)
 
     def on_load_checkpoint(self, checkpoint) -> None:
-    
+
         state_dict = checkpoint["state_dict"]
 
         self.reso_idx = checkpoint["reso_idx"]
