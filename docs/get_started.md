@@ -66,7 +66,7 @@ python3 -m run --ginc configs/scannet.gin --scene_name scene0000_00
 
 We also provide a guide to manage render tremendously many frames to generate a whole dataset. Thanks to a great experiment management toolkit in [wandb](https://wandb.ai/site), called sweep, we could run whole scenes without significant efforts on distributing experiments to multiple devices. For convenience, we also provide sweep configuration files for both Co3D and ScanNet. We recommend users to read the [official documentation](https://docs.wandb.ai/guides/sweeps) of sweep function in wandb. You could download the configuration files in the link [here](). 
 
-## Downloading the Generated Dataset
+## Download the Generated Dataset
 
 You could also download the generated dataset. As suggested by one of reviewers, we have moved our data cloud to OneDrive since it is reachable from any countries. In addition, we have split our dataset into chunks(11~15GB each) to handle network disconnection issues. If you desire to download whole datasets with a single command line script, you could use the command below.
 
