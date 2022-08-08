@@ -6,6 +6,7 @@ import zlib
 import cv2
 import imageio
 import numpy as np
+import open3d as o3d
 import plyfile
 from tqdm import tqdm
 
@@ -272,16 +273,15 @@ def load_scannet_data(
 
     ply = plyfile.PlyData.read(ply_file)["vertex"]
     pcd = np.stack([ply["x"], ply["y"], ply["z"]], axis=-1)
-    pcd_mean = pcd.mean(axis=0, keepdims=True)
-    pcd -= pcd_mean
-    sscale = 1.0 / np.linalg.norm(pcd, axis=1).max()
-    scene_scale = cam_scale_factor * sscale
+    # pcd_mean = pcd.mean(axis=0, keepdims=True)
+    # pcd -= pcd_mean
+    # sscale = 1.0 / np.linalg.norm(pcd, axis=1).max()
+    # scene_scale = cam_scale_factor * sscale
 
-    poses[:, :3, 3] -= pcd_mean
-    T, _ = similarity_from_cameras(poses)
-    poses = T @ poses
-
-    pcd = (T[:3, :3] @ pcd.T).T
+    # poses[:, :3, 3] -= pcd_mean
+    # T, _ = similarity_from_cameras(poses)
+    # poses = T @ poses
+    # pcd = (T[:3, :3] @ pcd.T).T  # + T[:3, 3]
 
     pcd_depth = None
     if use_depth:
@@ -317,6 +317,31 @@ def load_scannet_data(
             _depth_pcd = depth_to_pcd(imsize[0], imsize[1], d, intrinsics, E)
             pts.append(_depth_pcd)
         pcd_depth = np.concatenate(pts, axis=0)
+
+        o3d_pcd = o3d.io.read_point_cloud(
+            "/root/code/PeRFception/tsdf_results/scene0101_04_m-1_s2_v0.025/voxel.pcd"
+        )
+        pcd_depth = np.asarray(o3d_pcd.points)
+        pcd_mean = pcd_depth.mean(axis=0, keepdims=True)
+        pcd_depth -= pcd_mean
+        sscale = 1.0 / np.linalg.norm(pcd_depth, axis=1).max()
+        scene_scale = cam_scale_factor * sscale
+
+        poses[:, :3, 3] -= pcd_mean
+        T, _ = similarity_from_cameras(poses)
+        poses = T @ poses
+
+        pcd_depth = (
+            np.concatenate(
+                (
+                    pcd_depth,
+                    np.ones((pcd_depth.shape[0], 1), dtype=pcd_depth.dtype),
+                ),
+                -1,
+            )
+            @ T.T
+        )[:, :3]
+        pcd_depth = np.ascontiguousarray(pcd_depth)
 
         ##### Connected Component Anaylsis
         import cc3d

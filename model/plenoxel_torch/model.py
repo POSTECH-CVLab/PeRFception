@@ -175,6 +175,7 @@ class LitPlenoxel(LitModel):
         bkgd_only: bool = False,
         # Scannet specific option
         init_grid_with_pcd: bool = True,
+        upsample_stride: int = 1,
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -273,10 +274,14 @@ class LitPlenoxel(LitModel):
         pcd_voxels = reso * 0.5 * (pcd_scaled + 1)
         pcd_voxels = pcd_voxels.astype(np.int32)
 
-        np.savez(os.path.join(self.logdir, "pcd.npz"), pcd_depth=pcd, pcd_gt=pcd_orig)
-        stride = 1
-        voxel_size = 0.02
-        print(f"initialize with pointcloud, stride: {stride}, voxel_size: {voxel_size}")
+        np.savez(
+            os.path.join(self.logdir, "pcd.npz"),
+            pcd_depth=pcd,
+            pcd_gt=pcd_orig,
+            T=trans_info["T"],
+        )
+        stride = self.upsample_stride
+        print(f"initialize with pointcloud, stride: {stride}")
         #### Upsample and thicken
         import MinkowskiEngine as ME
 

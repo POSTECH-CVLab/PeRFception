@@ -21,3 +21,4 @@ dataloader/co3d_lists/*
 
 playground/*
 render/*
+tsdf_results/
