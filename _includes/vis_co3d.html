@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+var classObject = {
+  "Apple": {
+    "HTML": ["Links", "Images", "Tables", "Lists"],
+    "CSS": ["Borders", "Margins", "Backgrounds", "Float"],
+    "JavaScript": ["Variables", "Operators", "Functions", "Conditions"]    
+  },
+  "Back-end": {
+    "PHP": ["Variables", "Strings", "Arrays"],
+    "SQL": ["SELECT", "UPDATE", "DELETE"]
+  }
+}
+window.onload = function() {
+  var classSel = document.getElementById("class");
+  var seqSel = document.getElementById("seq");
+  var imageSel = document.getElementById("image");
+  for (var x in classObject) {
+    classSel.options[classSel.options.length] = new Option(x, x);
+  }
+  clssSel.onchange = function() {
+    //empty Chapters- and Topics- dropdowns
+    imageSel.length = 1;
+    seqSel.length = 1;
+    //display correct values
+    for (var y in classObject[this.value]) {
+      seqSel.options[seqSel.options.length] = new Option(y, y);
+    }
+  }
+  seqSel.onchange = function() {
+    //empty Chapters dropdown
+    imageSel.length = 1;
+    //display correct values
+    var z = classObject[classSel.value][this.value];
+    for (var i = 0; i < z.length; i++) {
+      chapterSel.options[imageSel.options.length] = new Option(z[i], z[i]);
+    }
+  }
+}
+</script>
+</head>   
+<body>
+
+<h1>Cascading Dropdown Example</h1>
+
+<form name="form1" id="form1" action="/action_page.php">
+Class: <select name="class" id="class">
+    <option value="" selected="selected">Class</option>
+  </select>
+  <br><br>
+Sequence: <select name="topic" id="seq">
+    <option value="" selected="selected"></option>
+  </select>
+  <br><br>
+Image: <select name="image" id="image">
+    <option value="" selected="selected"></option>
+  </select>
+  <br><br>
+</form>
+
+</body>
+</html>
