@@ -46,7 +46,7 @@ def run(
     # Run Mode
     run_train: bool = True,
     run_eval: bool = True,
-    run_render: bool = True,
+    run_render: bool = False,
     accelerator: str = "gpu", 
     num_gpus: Optional[int] = 1,
     num_tpus: Optional[int] = None,
