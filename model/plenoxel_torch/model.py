@@ -411,23 +411,20 @@ class LitPlenoxel(LitModel):
 
         elif self.quant_bit == 4:
             if len(round_data) % 2 == 1:
-                round_data = torch.cat([round_data, torch.zeros(1, *round_data.shape[1:], device="cuda")], dim=0)
+                round_data = torch.cat([round_data, torch.zeros(1, *round_data.shape[1:], device=round_data.device)], dim=0)
             round_data = round_data[0::2] * 16 + round_data[1::2] 
             quant_data = round_data.type(torch.cuda.ByteTensor)
 
         elif self.quant_bit == 2:
             dummy = 0 if len(round_data) % 4 == 0 else 4 - len(round_data) % 4
             if dummy != 0:
-                round_data = torch.cat([round_data, torch.zeros(dummy, *round_data.shape[1:], device="cuda")], dim=0)
+                round_data = torch.cat([round_data, torch.zeros(dummy, *round_data.shape[1:], device=round_data.device)], dim=0)
             round_data = round_data[0::4] * 64 + round_data[1::4] * 16 + round_data[2::4] * 4 + round_data[3::4]
             quant_data = round_data.type(torch.cuda.ByteTensor)
 
         return quant_data, data_min, data_scale
 
     def dequantize_data(self, data, data_min, data_scale):
-
-        if self.logarithmic_quant: 
-            data.type(torch.FloatTensor) 
 
         if self.quant_bit == 8: 
             data_tensor = data.type(torch.FloatTensor) * data_scale + data_min
