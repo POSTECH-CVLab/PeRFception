@@ -429,14 +429,14 @@ class LitPlenoxel(LitModel):
         if self.quant_bit == 8: 
             data_tensor = data.type(torch.FloatTensor) * data_scale + data_min
         elif self.quant_bit == 4:
-            data_blank = torch.zeros(len(data) * 2, *data.shape[1:], device="cuda")
+            data_blank = torch.zeros(len(data) * 2, *data.shape[1:], device=data.device)
             data_blank[0::2] = data // 16
             data_blank[1::2] = data % 16
             if torch.all(data_blank[-1] == 0): 
                 data_blank = data_blank[:-1]
             data_tensor = data_blank.type(torch.FloatTensor) * data_scale + data_min
         elif self.quant_bit == 2:
-            data_blank = torch.zeros(len(data) * 4, *data.shape[1:], device="cuda")
+            data_blank = torch.zeros(len(data) * 4, *data.shape[1:], device=data.device)
             data_blank[0::4] = data // 64
             data_blank[1::4] = data % 64 // 16
             data_blank[2::4] = data % 16 // 4
