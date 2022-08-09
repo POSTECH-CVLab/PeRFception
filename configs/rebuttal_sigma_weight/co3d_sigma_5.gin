@@ -4,7 +4,7 @@ LitData.batch_size = 5000
 LitData.chunk = 10000
 LitData.use_pixel_centers = True
 
-LitPlenoxel.reso = [[64, 64, 64], [128, 128, 128]]
+LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]
 LitPlenoxel.background_nlayers = 16
 LitPlenoxel.background_reso = 512
 LitPlenoxel.lr_sigma = 3.0e+1
