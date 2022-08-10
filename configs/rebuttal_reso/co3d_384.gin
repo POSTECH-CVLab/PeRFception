@@ -4,7 +4,7 @@ LitData.batch_size = 5000
 LitData.chunk = 10000
 LitData.use_pixel_centers = True
 
-LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256], [512, 512, 512]]
+LitPlenoxel.reso = [[96, 96, 96], [192, 192, 192], [384, 384, 384]]
 LitPlenoxel.background_nlayers = 16
 LitPlenoxel.background_reso = 512
 LitPlenoxel.lr_sigma = 3.0e+1
@@ -37,4 +37,4 @@ run.log_every_n_steps = 100
 run.model_name = "plenoxel"
 run.seed = 0
 run.progressbar_refresh_rate = 100
-run.postfix = "512"
+run.postfix = "384"
