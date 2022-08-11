@@ -66,6 +66,7 @@ class LitDataScannet(LitData):
         use_depth: bool = True,
         use_scans: bool = True,
         blur_thresh: float = 10.0,
+        pcd_name: str = "tsdf_pcd.pcd",
     ):
         super(LitDataScannet, self).__init__(
             datadir=datadir,
@@ -92,10 +93,12 @@ class LitDataScannet(LitData):
             blur_thresh=blur_thresh,
             use_depth=use_depth,
             use_scans=use_scans,
+            pcd_name=pcd_name,
         )
         i_train, i_val, i_test = i_split
 
         print(f"loaded scannet, image with size: {h} * {w}")
+        self.scene_name = scene_name
         self.images = images
         self.intrinsics = intrinsics.reshape(-1, 4, 4).repeat(len(images), axis=0)
         self.extrinsics = extrinsics
@@ -107,3 +110,4 @@ class LitDataScannet(LitData):
         self.i_all = np.arange(len(images))
         self.render_poses = render_poses
         self.trans_info = trans_info
+        self.use_sphere_bound = False

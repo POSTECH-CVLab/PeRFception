@@ -262,7 +262,7 @@ class LitPlenoxel(LitModel):
     @torch.no_grad()
     def initialize_with_pointcloud(self):
         trans_info = self.trainer.datamodule.trans_info
-        pcd, pcd_orig = trans_info["pcd"], trans_info["pcd_orig"]
+        pcd = trans_info["pcd"]
         scene_scale = trans_info["scene_scale"]
         reso = self.reso_list[self.reso_idx]
 
@@ -276,9 +276,10 @@ class LitPlenoxel(LitModel):
 
         np.savez(
             os.path.join(self.logdir, "pcd.npz"),
-            pcd_depth=pcd,
-            pcd_gt=pcd_orig,
+            pcd=pcd,
             T=trans_info["T"],
+            scene_scale=scene_scale,
+            pcd_mean=trans_info["pcd_mean"]
         )
         stride = self.upsample_stride
         print(f"initialize with pointcloud, stride: {stride}")
@@ -392,7 +393,7 @@ class LitPlenoxel(LitModel):
             data.min(dim=0, keepdim=True)[0],
             data.max(dim=0, keepdim=True)[0],
         )
-        data_scale = (data_max - data_min) / (2 ** bit - 1)
+        data_scale = (data_max - data_min) / (2**bit - 1)
         quant_data = (
             ((data - data_min) / (data_scale + eps)).round().type(torch.cuda.ByteTensor)
         )
@@ -640,6 +641,7 @@ class LitPlenoxel(LitModel):
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
             store_util.store_image(image_dir, rgbs)
+            store_util.store_video(self.logdir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
@@ -670,14 +672,17 @@ class LitPlenoxel(LitModel):
             os.makedirs("render", exist_ok=True)
             path_to_store = self.trainer.model.logdir
             scene_number = "_".join(path_to_store.split("_")[-3:])
-            with open("dataloader/co3d_lists/co3d_list.json") as fp:
-                co3d_list = json.load(fp)
-            class_name = co3d_list[scene_number]
-            class_path = f"render/{class_name}"
-            scene_path = f"render/{class_name}/{scene_number}"
+            if self.trainer.datamodule.__class__.__name__ == "LitDataCo3D":
+                with open("dataloader/co3d_lists/co3d_list.json") as fp:
+                    co3d_list = json.load(fp)
+                class_name = co3d_list[scene_number]
+                class_path = f"render/{class_name}"
+                scene_path = f"render/{class_name}/{scene_number}"
+            else:
+                scene_name = self.trainer.datamodule.scene_name
+                scene_path = f"render/{scene_name}"
             opt_list = ["bg"] if self.bkgd_only else ["fg", "fgbg"]
 
-            os.makedirs(class_path, exist_ok=True)
             os.makedirs(scene_path, exist_ok=True)
             for opt in opt_list:
                 opt_path = os.path.join(scene_path, opt)

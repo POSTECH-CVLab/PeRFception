@@ -1,7 +1,10 @@
 import glob
 import os
 
+import cc3d
+import MinkowskiEngine as ME
 import numpy as np
+import torch
 
 
 def find_files(dir, exts):
@@ -69,3 +72,23 @@ def similarity_from_cameras(c2w):
     # (3) Rescale the scene using camera distances
     scale = 1.0 / np.median(np.linalg.norm(t + translate, axis=-1))
     return transform, scale
+
+
+def connected_component_filter(xyz, voxel_size):
+    svoxel, idx, idx_inverse = ME.utils.sparse_quantize(
+        xyz / voxel_size, return_index=True, return_inverse=True
+    )
+    svoxel -= svoxel.min(0, keepdim=True).values
+    svoxel = svoxel.long()
+    dvoxel = torch.zeros((svoxel + 1).max(0).values.tolist())
+    dvoxel[svoxel[:, 0], svoxel[:, 1], svoxel[:, 2]] = 1
+    labels_out = cc3d.connected_components(dvoxel.numpy(), connectivity=26)
+    labels_out = labels_out[svoxel[:, 0], svoxel[:, 1], svoxel[:, 2]]
+    counts = np.bincount(labels_out)
+    argmax = np.argmax(counts)
+    labels_inverse = labels_out[idx_inverse]
+    sel = labels_inverse == argmax
+    print(
+        f">>>> connected component filtering, from {xyz.shape[0]} to {sel.sum()} <<<<"
+    )
+    return sel

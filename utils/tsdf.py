@@ -5,12 +5,13 @@ import numpy as np
 import open3d as o3d
 import tqdm
 
+from dataloader.data_util.common import connected_component_filter
 from dataloader.data_util.scannet import SensorData
 
 
 def integrate(
-    outdir,
     scene_name,
+    outdir,
     max_frame,
     skip_frame,
     blur_thresh,
@@ -19,6 +20,16 @@ def integrate(
     max_depth=4.5,
     debug=False,
 ):
+    print(f"processing {scene_name}")
+    # setup dir
+    scenedir = os.path.join(outdir, scene_name)
+    if not os.path.exists(scenedir):
+        os.makedirs(scenedir, exist_ok=True)
+
+    if os.path.exists(os.path.join(scenedir, f"tsdf_pcd_{voxel_size}.pcd")):
+        print(f"skip exist {scene_name}")
+        return
+
     # setup exporter
     filepath = f"./data/scannet/{scene_name}/{scene_name}.sens"
     exporter = SensorData(
@@ -80,17 +91,25 @@ def integrate(
         volume.integrate(rgbd, intrinsic, np.linalg.inv(pose))
 
     # extract geometery
-    mesh = volume.extract_triangle_mesh()
     pcd = volume.extract_point_cloud()
+    xyz = np.asarray(pcd.points)
+    sel = connected_component_filter(xyz, 0.05)
 
-    o3d.io.write_triangle_mesh(os.path.join(outdir, "tsdf_mesh.ply"), mesh)
-    o3d.io.write_point_cloud(os.path.join(outdir, "tsdf_pcd.pcd"), pcd)
-    if debug:
-        voxel = volume.extract_voxel_point_cloud()
-        o3d.io.write_point_cloud(os.path.join(outdir, "voxel.pcd"), voxel)
+    points = np.asarray(pcd.points)[sel].astype(np.float32)
+    colors = np.asarray(pcd.colors)[sel].astype(np.float32)
+
+    np.savez(
+        os.path.join(scenedir, f"tsdf_pcd_{voxel_size}.npz"),
+        xyz=points,
+        color=colors,
+    )
+    print(f">> processed {scene_name}")
 
 
 if __name__ == "__main__":
+    from functools import partial
+    from multiprocessing import Pool
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--scene_name", type=str, required=True)
     parser.add_argument("--max_frame", type=int, default=1000)
@@ -101,6 +120,8 @@ if __name__ == "__main__":
     parser.add_argument("--voxel_size", type=float, default=0.025)
     parser.add_argument("--basedir", type=str, default="./tsdf_results")
     parser.add_argument("--outdir", type=str, default="/root/data/scannet/scans")
+    parser.add_argument("--num_workers", type=int, default=8)
+    parser.add_argument("--offset", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -109,18 +130,29 @@ if __name__ == "__main__":
     else:
         scene_list = [args.scene_name]
 
-    for scene in scene_list:
-        outdir = os.path.join(args.outdir, scene)
-        if not os.path.exists(outdir):
-            os.makedirs(outdir, exist_ok=True)
-
-        integrate(
-            outdir,
-            args.scene_name,
-            args.max_frame,
-            args.skip_frame,
-            args.blur_thresh,
-            args.max_image_dim,
-            args.voxel_size,
-            args.max_depth,
+    if args.scene_name == "all":
+        integrate_partial = partial(
+            integrate,
+            outdir=args.outdir,
+            max_frame=args.max_frame,
+            skip_frame=args.skip_frame,
+            blur_thresh=args.blur_thresh,
+            max_image_dim=args.max_image_dim,
+            voxel_size=args.voxel_size,
+            max_depth=args.max_depth,
         )
+        scene_list_cur = scene_list[args.offset :: args.num_workers]
+        for scene in scene_list_cur:
+            integrate_partial(scene)
+    else:
+        for scene in scene_list:
+            integrate(
+                scene,
+                args.outdir,
+                args.max_frame,
+                args.skip_frame,
+                args.blur_thresh,
+                args.max_image_dim,
+                args.voxel_size,
+                args.max_depth,
+            )
