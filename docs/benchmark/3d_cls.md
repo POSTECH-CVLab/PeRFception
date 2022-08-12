@@ -9,7 +9,7 @@ nav_order: 2
 
 ## Track 1: 3D classification (No Feat)
 
-In this track, the models are trained only using voxel coordinates on PeRFception-CO3D. In other words, using spherical harmonic coefficients and density values are prohibited. We sort the models based on Acc@1 score. Models are trained for three times. We report mean and std for each model. 
+In this track, the models are trained only using voxel coordinates on PeRFception-CO3D. In other words, using spherical harmonic coefficients and density values are prohibited. We sort the models based on the Acc@1 score. Models are trained for three times. We report mean and std for each model. 
 
 
 |Model| Acc@1 | Acc@5 | Checkpoint | Code |
@@ -22,7 +22,7 @@ In this track, the models are trained only using voxel coordinates on PeRFceptio
 
 ## Track 2: 3D classification (SH)
 
-In this track, the models are trained with spherical harmonic coefficients and voxel coordinates on PeRFception-CO3D. We sort the models based on Acc@1 score. Models are trained for three times. We report mean and std for each model. 
+In this track, the models are trained with spherical harmonic coefficients and voxel coordinates on PeRFception-CO3D. We sort the models based on the Acc@1 score. Models are trained for three times. We report mean and std for each model. 
 
 
 |Model| Acc@1 | Acc@5 | Checkpoint | Code |
@@ -36,7 +36,7 @@ In this track, the models are trained with spherical harmonic coefficients and v
 
 ## Track 3: 3D classification (D)
 
-In this track, the models are trained with density values and voxel coordinates on PeRFception-CO3D. We sort the models based on Acc@1 score. Models are trained for three times. We report mean and std for each model. 
+In this track, the models are trained with density values and voxel coordinates on PeRFception-CO3D. We sort the models based on the Acc@1 score. Models are trained for three times. We report mean and std for each model. 
 
 
 |Model| Acc@1 | Acc@5 | Checkpoint | Code |
@@ -50,7 +50,7 @@ In this track, the models are trained with density values and voxel coordinates 
 
 ## Track 4: 3D classification (SH + D)
 
-In this track, spherical harmonic coefficients, density, and voxel coordinates are available. We sort the models based on Acc@1 score. Models are trained for three times. We report mean and std for each model. 
+In this track, spherical harmonic coefficients, density, and voxel coordinates are available. We sort the models based on the Acc@1 score. Models are trained for three times. We report mean and std for each model. 
 
 
 |Model| Acc@1 | Acc@5 | Checkpoint | Code |
