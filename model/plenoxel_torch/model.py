@@ -274,13 +274,7 @@ class LitPlenoxel(LitModel):
         pcd_voxels = reso * 0.5 * (pcd_scaled + 1)
         pcd_voxels = pcd_voxels.astype(np.int32)
 
-        np.savez(
-            os.path.join(self.logdir, "pcd.npz"),
-            pcd=pcd,
-            T=trans_info["T"],
-            scene_scale=scene_scale,
-            pcd_mean=trans_info["pcd_mean"]
-        )
+        np.savez(os.path.join(self.logdir, "trans_info.npz"), **trans_info)
         stride = self.upsample_stride
         print(f"initialize with pointcloud, stride: {stride}")
         #### Upsample and thicken

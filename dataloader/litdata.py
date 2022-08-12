@@ -4,7 +4,7 @@ import gin
 import numpy as np
 
 from dataloader.data_util.co3d import load_co3d_data
-from dataloader.data_util.scannet import load_scannet_data
+from dataloader.data_util.scannet import load_scannet_data, load_scannet_data_ext
 from dataloader.interface import LitData
 
 
@@ -84,7 +84,7 @@ class LitDataScannet(LitData):
             i_split,
             depths,
             trans_info,
-        ) = load_scannet_data(
+        ) = load_scannet_data_ext(
             os.path.join(datadir, scene_name),
             cam_scale_factor=cam_scale_factor,
             frame_skip=frame_skip,
@@ -92,7 +92,6 @@ class LitDataScannet(LitData):
             max_image_dim=max_image_dim,
             blur_thresh=blur_thresh,
             use_depth=use_depth,
-            use_scans=use_scans,
             pcd_name=pcd_name,
         )
         i_train, i_val, i_test = i_split

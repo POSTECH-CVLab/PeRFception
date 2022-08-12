@@ -1,12 +1,13 @@
 import argparse
 import os
 
+import cv2
 import numpy as np
 import open3d as o3d
 import tqdm
 
-from dataloader.data_util.common import connected_component_filter
-from dataloader.data_util.scannet import SensorData
+from dataloader.data_util.common import connected_component_filter, find_files
+from dataloader.data_util.scannet import detect_blur_fft
 
 
 def integrate(
@@ -30,39 +31,75 @@ def integrate(
         print(f"skip exist {scene_name}")
         return
 
-    # setup exporter
-    filepath = f"./data/scannet/{scene_name}/{scene_name}.sens"
-    exporter = SensorData(
-        filepath, max_frame=max_frame, preview=False, blur_thresh=blur_thresh
-    )
-
-    # resize images
-    H, W = exporter.color_height, exporter.color_width
-    max_hw = max(H, W)
-    resize_scale = max_image_dim / max_hw
-    imsize = [int(round(resize_scale * H, -1)), int(round(resize_scale * W, -1))]
+    files = find_files(os.path.join(scenedir, "color"), exts=["*.jpg"])
+    assert len(files) > 0, f"{scenedir} does not contain color images."
+    frame_ids = sorted([os.path.basename(f).rstrip(".jpg") for f in files])
+    frame_ids = np.array(frame_ids)
 
     # filter invalid poses
-    poses = exporter.export_poses(skip_frame)
+    poses = np.stack(
+        [np.loadtxt(os.path.join(scenedir, "pose", f"{f}.txt")) for f in frame_ids],
+        axis=0,
+    )
+    poses = poses.astype(np.float32)
     numerics = np.all(
         (~np.isinf(poses) * ~np.isnan(poses) * ~np.isneginf(poses)).reshape(-1, 16),
         axis=1,
     )
-    images, masks, _ = exporter.export_color_images(
-        frame_skip=skip_frame, image_size=imsize, pose_mask=numerics
+
+    # load images
+    print(f"loading images - {len(frame_ids)}")
+    colors = np.stack(
+        [cv2.imread(os.path.join(scenedir, "color", f"{f}.jpg")) for f in frame_ids],
+        axis=0,
     )
-    depths = exporter.export_depth_images(frame_skip=skip_frame, image_size=imsize)
-    images = images.astype(np.float32) / 255.0
-    images, poses, depths = images[masks], poses[masks], depths[masks]
+    colors = colors.astype(np.float32) / 255.0
+
+    # load depths
+    print(f"loading depths - {len(frame_ids)}")
+    depth_shift = 1000.0
+    depths = np.stack(
+        [
+            cv2.imread(
+                os.path.join(scenedir, "depth", f"{f}.png"), cv2.IMREAD_UNCHANGED
+            )
+            for f in frame_ids
+        ],
+        axis=0,
+    )
+    depths = depths.astype(np.float32) / depth_shift
+
+    # load intrinsics
+    print(f"loading intrinsic")
+    _intrinsic = np.loadtxt(os.path.join(scenedir, "intrinsic", "intrinsic_color.txt"))
+    _intrinsic = _intrinsic.astype(np.float32)
+
+    # filter blurry images
+    print(f"filter blurry images")
+    if not os.path.exists(os.path.join(scenedir, "blur.npy")):
+        blurness = np.stack(
+            [detect_blur_fft(c, thresh=blur_thresh)[0] for c in colors], axis=0
+        ).reshape(-1)
+        np.save(os.path.join(scenedir, "blur.npy"), blurness)
+    else:
+        blurness = np.load(os.path.join(scenedir, "blur.npy"))
+    num_valid = min(150, int(0.2 * len(frame_ids)))
+    ths = np.sort(blurness)[num_valid]
+    is_valid = np.logical_and(blurness > ths, numerics)
+    print(f"filtered {is_valid.sum()} out of {len(is_valid)} images")
+
+    colors, depths, poses = (
+        colors[is_valid][::skip_frame],
+        depths[is_valid][::skip_frame],
+        poses[is_valid][::skip_frame],
+    )
+    frame_ids = frame_ids[is_valid][::skip_frame]
 
     # setup TSDF volume
-    _intrinsic, _ = exporter.export_intrinsics()
-    _intrinsic *= resize_scale
-    _intrinsic[[2, 3], [2, 3]] = 1
     intrinsic = o3d.camera.PinholeCameraIntrinsic()
     intrinsic.set_intrinsics(
-        imsize[1],
-        imsize[0],
+        colors.shape[2],
+        colors.shape[1],
         _intrinsic[0, 0],
         _intrinsic[1, 1],
         _intrinsic[0, 2],
@@ -75,7 +112,7 @@ def integrate(
     )
 
     # integration
-    for image, pose, depth in tqdm.tqdm(zip(images, poses, depths)):
+    for image, pose, depth in tqdm.tqdm(zip(colors, poses, depths)):
         image *= 255.0
         image = image.astype(np.uint8)
         image_o3d = o3d.geometry.Image(image)

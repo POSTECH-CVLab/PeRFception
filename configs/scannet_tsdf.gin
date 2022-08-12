@@ -11,7 +11,7 @@ LitDataScannet.cam_scale_factor = 1.0
 LitDataScannet.blur_thresh = 10
 LitDataScannet.use_depth = False 
 LitDataScannet.use_scans = True
-LitDataScannet.pcd_name = 'tsdf_pcd_0.015.pcd'
+LitDataScannet.pcd_name = 'tsdf_pcd_512.npy'
 
 LitPlenoxel.reso = [[256, 256, 256]]
 LitPlenoxel.background_nlayers = 0
@@ -40,7 +40,7 @@ run.max_steps = 51200
 run.save_last_only = True
 run.proj_name = "scannet"
 run.dataset_name = "scannet"
-run.datadir = "data/scannet"
+run.datadir = "data/scannet_extracted"
 run.logbase = "logs"
 run.log_every_n_steps = 100
 run.model_name = "plenoxel"
