@@ -8,7 +8,6 @@ import numpy as np
 import scipy as sp
 import gin
 import torch
-import torch_cluster as tc
 
 from dataloader.random_pose import random_pose, pose_interp
 from dataloader.spherical_poses import spherical_poses
