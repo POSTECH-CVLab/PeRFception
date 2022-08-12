@@ -106,16 +106,29 @@ def load_co3d_data(
     cam_trans = np.diag(np.array([-1, -1, 1, 1], dtype=np.float32))
 
     scene_number = basedir.split("/")[-1]
+    
+    json_path_v1 = os.path.join(basedir, "..", "frame_annotations.jgz")
+    json_path_v2 = os.path.join("data", "co3d_v2", cls_name,"frame_annotations.jgz")
+    with gzip.open(json_path_v1, "r") as fp:
+        all_frames_data1 = json.load(fp)
 
-    json_path = os.path.join(basedir, "..", "frame_annotations.jgz")
-    with gzip.open(json_path, "r") as fp:
-        all_frames_data = json.load(fp)
+    with gzip.open(json_path_v2, "r") as fp:
+        all_frames_data2 = json.load(fp)
 
-    frame_data, images, intrinsics, extrinsics, image_sizes = [], [], [], [], []
+    # frame_data, images, intrinsics, extrinsics, image_sizes = [], [], [], [], []
+    frame_data1, frame_data2, images, intrinsics, extrinsics, image_sizes = [], [], [], [], [], [], []
 
-    for temporal_data in all_frames_data:
+    # for temporal_data in all_frames_data:
+    #     if temporal_data["sequence_name"] == scene_number:
+    #         frame_data.append(temporal_data)
+
+    for temporal_data in all_frames_data1:
         if temporal_data["sequence_name"] == scene_number:
-            frame_data.append(temporal_data)
+            frame_data1.append(temporal_data)
+
+    for temporal_data in all_frames_data2:
+        if temporal_data["sequence_name"] == scene_number:
+            frame_data2.append(temporal_data)
 
     used = []
     for (i, frame) in enumerate(frame_data):
@@ -135,24 +148,17 @@ def load_co3d_data(
             W2 = W
 
         image_size = np.array([H2, W2])
+        scale = np.array([W2 / W, H2 / H], dtype=np.float32)
         fxy = np.array(frame["viewpoint"]["focal_length"])
         cxy = np.array(frame["viewpoint"]["principal_point"])
+        scale_arr = np.array([W * 0.5, H * 0.5], dtype=np.float32) if not v2_mode else \
+            np.array([W * 0.5, W * 0.5], dtype=np.float32)
+        focal = fxy * scale_arr * scale
+        prp = (
+            -1.0 * (cxy - 1.0) * scale_arr * scale
+        )
         R = np.array(frame["viewpoint"]["R"])
         T = np.array(frame["viewpoint"]["T"])
-
-        if v2_mode:
-            min_HW = min(W2, H2)
-            image_size_half = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) 
-            scale_arr = np.array([min_HW * 0.5, min_HW * 0.5], dtype=np.float32)
-            fxy_x = fxy * scale_arr
-            prp_x = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) - cxy * scale_arr
-            cxy = (image_size_half - prp_x) / image_size_half 
-            fxy = fxy_x / image_size_half
-
-        scale_arr = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) 
-        focal = fxy * scale_arr
-        prp = -1.0 * (cxy - 1.0) * scale_arr
-
         pose = np.eye(4)
         pose[:3, :3] = R
         pose[:3, 3:] = -R @ T[..., None]
@@ -206,7 +212,10 @@ def load_co3d_data(
     extrinsics[:, :3, 3] *= sscale * cam_scale_factor
 
     num_frames = len(extrinsics)
-
+    # if v2_mode:
+    #     i_all = tc.fps(torch.from_numpy(extrinsics[:, :3, 3]), ratio=0.5)
+    #     i_all = np.sort(i_all)
+    # else:
     i_all = np.arange(num_frames)
     i_test = i_all[::10]
     i_val = i_test
@@ -217,7 +226,6 @@ def load_co3d_data(
         render_poses = random_pose(extrinsics[i_all], 50)
     elif render_scene_interp:
         render_poses = pose_interp(extrinsics[i_all], interp_fac)
-    # render_poses = spherical_poses(sscale * cam_scale_factor * np.eye(4))
     
     near, far = 0., 1.
     ndc_coeffs = (-1., -1.)

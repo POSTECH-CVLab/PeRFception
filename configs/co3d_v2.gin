@@ -38,4 +38,5 @@ run.model_name = "plenoxel"
 run.seed = 0
 run.progressbar_refresh_rate = 100
 
-LitDataCo3D.max_image_dim = 1000000
+load_co3d_data.v2_mode = True
+run.postfix = "v2"
