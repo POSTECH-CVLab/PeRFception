@@ -42,7 +42,7 @@ I am a first-year PhD student in computer science and engineering department at 
 
 [Author Page](https://chrischoy.github.io/){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } [Google Scholar](https://scholar.google.com/citations?user=2u8G5ksAAAAJ&hl=en&oi=ao){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } 
 
-I’m a research scientist at the Nvidia Research AI/ML team. Before joining Nvidia, I received a Ph.D. from Stanford University. I had a great pleasure working with great minds at Stanford on **navigation**, **2D feature learning**, **2D scene graph**, **3D perception**,** 3D reconstruction**, **building 3D datasets**, and **4D perception**. Also, I am interested in **unsupervised learning**, **ML algorithms**, **robotics**, and **reinforcement learning**.
+I’m a research scientist at the Nvidia Research AI/ML team. Before joining Nvidia, I received a Ph.D. from Stanford University. I had a great pleasure working with great minds at Stanford on **navigation**, **2D feature learning**, **2D scene graph**, **3D perception**, **3D reconstruction**, **building 3D datasets**, and **4D perception**. Also, I am interested in **unsupervised learning**, **ML algorithms**, **robotics**, and **reinforcement learning**.
 
 ## Animashree Anandkumar (NVIDIA, Caltech)
 
@@ -50,7 +50,7 @@ I’m a research scientist at the Nvidia Research AI/ML team. Before joining Nvi
 
 [Author Page](){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } [Google Scholar](){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } 
 
-Anima Anandkumar holds dual positions in academia and industry. She is a Bren professor at Caltech CMS department and a director of machine learning research at NVIDIA. At NVIDIA, she is leading the research group that develops next-generation AI algorithms. At Caltech, she is the co-director of Dolcit and co-leads the AI4science initiative, along with Yisong Yue. She has spearheaded the development of tensor algorithms, first proposed in her seminal paper. They are central to effectively processing multidimensional and multimodal data, and for achieving massive parallelism in large-scale AI applications.
+I hold dual positions in academia and industry. I am a Bren professor at Caltech CMS department and a director of machine learning research at NVIDIA. At NVIDIA, I am leading the research group that develops next-generation AI algorithms. At Caltech, I am the co-director of Dolcit and co-leads the AI4science initiative, along with Yisong Yue. 
 
 ## Minsu Cho (POSTECH)
 

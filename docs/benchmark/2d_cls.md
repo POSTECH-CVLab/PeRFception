@@ -38,23 +38,3 @@ The model is trained on PeRFception-Co3D dataset and tested CO3D dataset. We sor
 | [ResNet50](https://arxiv.org/pdf/1512.03385) | [ImageNet](https://www.image-net.org/)  | 87.30 $$\pm$$ 0.08 | 96.69 $$\pm$$ 0.08 | [link]() | [link]()
 | [ResNet34](https://arxiv.org/pdf/1512.03385) | [ImageNet](https://www.image-net.org/)  | 86.25 $$\pm$$ 0.19 | 96.50 $$\pm$$ 0.09 | [link]() | [link]()
 | [ResNet18](https://arxiv.org/pdf/1512.03385) | [ImageNet](https://www.image-net.org/)  | 84.97 $$\pm$$ 0.13 | 96.24 $$\pm$$ 0.09 | [link]() | [link]()
-
-
-## Track 3: Out-domain classification
-The model is trained on PeRFception-Co3D dataset and tested on Co3D dataset. Here, we evaluate Acc@1 on the original Co3D dataset. In addition, we 
-
-|Model| Acc@1 | $$\mu_{perf} - \mu_{co3d}$$ | Checkpoints | Code |
-|:-:|:-:|:-:|:-:|:-:|
-| [ResNet152](https://arxiv.org/pdf/1512.03385) | 88.73 $$\pm$$ 0.15 | 97.24 $$\pm$$ 0.08 | [link]() | [link]() |
-| [WideResNet101](https://arxiv.org/pdf/1605.07146) | 88.39 $$\pm$$ 0.07 | 96.31 $$\pm$$ 0.10 | [link]() | [link]() |
-| [ResNext101](https://openaccess.thecvf.com/content_cvpr_2017/papers/Xie_Aggregated_Residual_Transformations_CVPR_2017_paper.pdf) | 88.51 $$\pm$$ 0.16 | 96.93 $$\pm$$ 0.07 | [link]() | [link]()
-| [ResNet101](https://arxiv.org/pdf/1512.03385) | 88.32 $$\pm$$ 0.13 | 97.13 $$\pm$$ 0.05 | [link]() | [link]() |
-| [WideResNet50](https://arxiv.org/pdf/1605.07146) | 87.75 $$\pm$$ 0.25 | 96.84 $$\pm$$ 0.09 | [link]() | [link]() |
-| [ResNext50](https://openaccess.thecvf.com/content_cvpr_2017/papers/Xie_Aggregated_Residual_Transformations_CVPR_2017_paper.pdf) | 87.30 $$\pm$$ 0.16 | 96.66 $$\pm$$ 0.07 | [link]() | [link]() |
-| [ResNet50](https://arxiv.org/pdf/1512.03385) | 87.30 $$\pm$$ 0.08 | 96.69 $$\pm$$ 0.08 | [link]() | [link]()
-| [ResNet34](https://arxiv.org/pdf/1512.03385) | 86.25 $$\pm$$ 0.19 | 96.50 $$\pm$$ 0.09 | [link]() | [link]()
-| [ResNet18](https://arxiv.org/pdf/1512.03385) | 84.97 $$\pm$$ 0.13 | 96.24 $$\pm$$ 0.09 | [link]() | [link]()
-
-
-
-## Future Extension
