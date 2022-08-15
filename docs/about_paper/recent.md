@@ -5,11 +5,6 @@ parent: About Paper
 nav_order: 3
 ---
 
-### Acknowledgement
-
-Reviewer FBBw, 5TB9 suggested more descriptions about the reason why we have selected Plenoxels as our data format. Thanks!
-
-
 # Why Plenoxels?
 
 There are several projects that reduce training time of optimizing neural fields, such as [DVGO-v1](https://arxiv.org/abs/2111.11215), [DVGO-v2](https://arxiv.org/abs/2206.05085), [Plenoxels](https://arxiv.org/abs/2112.05131), [Instant Neural Graphics Primitives](https://nvlabs.github.io/instant-ngp/assets/mueller2022instant.pdf), [TensoRF](https://arxiv.org/abs/2203.09517), and [PointNeRF](https://arxiv.org/abs/2201.08845). Here, we compare recent fast-training NeRF models and describe why Plenoxels is a suitable representation for perception datasets.
