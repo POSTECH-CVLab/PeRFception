@@ -9,7 +9,8 @@ nav_order: 1
 
 ## Novel View Synthesis
 
-We visualize some example scenes of our PeRFception-CO3D dataset. All images are rendered images on unseen views. For full datasets, we recommend to refer to the link [here]() and [here]()
+We visualize some example scenes of our PeRFception-CO3D dataset. All images are rendered images on unseen views. For full datasets, we recommend to refer to the link [here](https://1drv.ms/u/s!As9A9EbDsoWcbqNA9JuICegU6Tg?e=cj71A9) and [here](https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=DqGgl6)
+
 ### Apple
 
 <iframe src="https://onedrive.live.com/embed?cid=9C85B2C346F440CF&resid=9C85B2C346F440CF%2136341&authkey=AAevvW0eH9BrB20" width="165" height="128" frameborder="0" scrolling="no" id="apple1"></iframe>

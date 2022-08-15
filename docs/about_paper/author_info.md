@@ -24,8 +24,7 @@ I’m a member of Computer Vision Lab at POSTECH. I am doing my integrated M.S/P
 
 [Author Page](https://seungjooshin.github.io){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } [POSTECH-CVLab](https://cvlab.postech.ac.kr/lab/){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 }
 
-
-I am Seungjoo Shin, a graduate student in the Graduate School of Artificial Intelligence at POSTECH under the supervision of Prof. Jaesik Park. I am interested in **computer vision,** especially **3D reconstruction** and **neural rendering**.
+I am Seungjoo Shin, a graduate student in the Graduate School of Artificial Intelligence at POSTECH under the supervision of Prof. [Jaesik Park](https://jaesik.info/). I am interested in **computer vision,** especially **3D reconstruction** and **neural rendering**.
 
 
 ## Junha Lee (POSTECH)
