@@ -68,8 +68,10 @@ aux_links:
     - "https://github.com/POSTECH-CVLab/PeRFception"
   "Paper":
     - "https://openreview.net/pdf?id=MzaPEKHv-0J"
-  "Data":
-    - "https://openreview.net/pdf?id=MzaPEKHv-0J"
+  "Data-1":
+    - "https://1drv.ms/u/s!As9A9EbDsoWcbnHoOoqWmIB6RLs?e=SYGC03"
+  "Data-2":
+    - "https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=ReG5Yp"
 
 # Makes Aux links open in a new tab. Default is false
 aux_links_new_tab: false

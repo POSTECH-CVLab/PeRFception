@@ -39,12 +39,12 @@ pip3 install .
 ## Preparing Datasets
 There are two multi-view datasets that our code supports: CO3D and ScanNet. We provide a script to automatically download CO3D-v1. We are currently planning to extend our PeRFception-Co3D dataset to the second version, which will be generated from Co3D-v2. Users can download CO3D-v1 by the script below:
 ```bash
-python3 -m scripts.download_co3d_v1.py
+python3 -m utils.download_co3d_v1.py
 ```
 
 To select specific classes, please add the argument as the following:
 ```bash
-python3 -m scripts.download_co3d_v1.py --class_name "apple, banana"
+python3 -m utils.download_co3d_v1.py --class_name "apple, banana"
 ```
 
 Due to the limited access on ScanNet, we could not provide an automatic script for ScanNet. We recommend to follow the official instruction of [ScanNet](http://www.scan-net.org/) to get multi-view images of ScanNet. 
@@ -64,30 +64,24 @@ python3 -m run --ginc configs/scannet.gin --scene_name scene0000_00
 
 ## Data Generation - Rendering whole Scenes
 
-We also provide a guide to manage render tremendously many frames to generate a whole dataset. Thanks to a great experiment management toolkit in [wandb](https://wandb.ai/site), called sweep, we could run whole scenes without significant efforts on distributing experiments to multiple devices. For convenience, we also provide sweep configuration files for both Co3D and ScanNet. We recommend users to read the [official documentation](https://docs.wandb.ai/guides/sweeps) of sweep function in wandb. You could download the configuration files in the link [here](). 
+We also provide a guide to manage render tremendously many frames to generate a whole dataset. Thanks to a great experiment management toolkit in [wandb](https://wandb.ai/site), called sweep, we could run whole scenes without significant efforts on distributing experiments to multiple devices. For convenience, we also provide sweep configuration files for both Co3D and ScanNet. We recommend users to read the [official documentation](https://docs.wandb.ai/guides/sweeps) of sweep function in wandb. You could download the configuration files in the link [here](https://1drv.ms/u/s!As9A9EbDsoWcj6toSOfdeWMaHhqF3Q?e=1INfNg). 
 
 ## Download the Generated Dataset
 
 You could also download the generated dataset. As suggested by one of reviewers, we have moved our data cloud to OneDrive since it is reachable from any countries. In addition, we have split our dataset into chunks(11~15GB each) to handle network disconnection issues. If you desire to download whole datasets with a single command line script, you could use the command below.
 
-```bash
-python3 -m scripts.download_perf_co3d.py --outdir [directory]
-python3 -m scripts.download_perf_scannet.py --outdir [directory]
+### CO3D
 ```
+### Full download
+python3 utils/download_perf.py --dataset co3d --outdir [outdir]
+python3 utils/download_perf.py --dataset scannet --outdir [outdir]
 
-If you desire to download a specific chunk, then you can use the script below:
+### Specific Chunk
+python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks 77
+python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks [11, 22, 33]
 
-```bash
-python3 -m scripts.download_perf_co3d.py --outdir [directory] --chunk_number 00
-python3 -m scripts.download_perf_scannet.py --outdir [directory] --chunk_number 00
-```
-
-Of course, you can download a specific scene with the script below:
-```bash
-python3 -m scripts.download_perf_co3d.py --outdir [directory] --scene_name 14_158_900
-python3 -m scripts.download_perf_scannet.py --outdir [directory] --scene_name scene0000_00
 ```
 
 ## Benchmarking on Dataset
 
-We share the code for reproducing performance on perception tasks on the main paper in the link [here](TBD). We are also planning to make a benchmark on several tasks. We'll soon be back with announcements.
+We share the code for reproducing performance on perception tasks on the main paper in the link [here](https://github.com/POSTECH-CVLab/NeRF-Downstream). We'll soon be back with announcements.
