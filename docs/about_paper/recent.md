@@ -28,11 +28,13 @@ According to the second version of DVGO paper, [Improved Direct Voxel Grid Optim
 
 Plenoxels shows great ability for reconstructing scenes compared to the others in both indoor and outdoor scenarios. We randomly pick 5 sequences each from CO3D and ScanNet. We report the rendering quality and training time for each method. We compare Plenoxels with DVGO-v2 since it has shown comparable performance on outdoor scenes. For the other methods, we could not use them as our data format since 1) INGP implicitly encodes geometries and does not cover unbound scenarios, 2) TensoRF and DVGO-v1 do not have representation for backgrounds, and 3) PointNeRF takes a long time for optimization. For DVGO-v2, we follow the Tanks and Temples setup.
 
-| Method | PSNR | SSIM | LPIPS |
+We will soon add experiments about reconstruction abilities of recent methods.
+
+<!-- | Method | PSNR | SSIM | LPIPS |
 |:-:|:-:|:-:|:-:|
 | [DVGO-v2](https://arxiv.org/abs/2206.05085) | 18.11 | 0.6368 | 0.5957 |
 | [Plenoxels](https://arxiv.org/abs/2112.05131) | 30.81 | 0.8551 | 0.3353 |
 
 Compared to DVGO-v2, Plenoxels was less senstive to the domain of scenes. We also attach qualitative results in the figure below. 
 
-<img src="../../../assets/images/dvgo.jpg">
+<img src="../../../assets/images/dvgo.jpg"> -->
