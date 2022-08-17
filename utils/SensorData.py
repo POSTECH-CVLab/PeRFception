@@ -107,9 +107,6 @@ class SensorData:
             depth = np.fromstring(depth_data, dtype=np.uint16).reshape(
                 self.depth_height, self.depth_width
             )
-            import pdb
-
-            pdb.set_trace()
             if image_size is not None:
                 depth = cv2.resize(
                     depth,

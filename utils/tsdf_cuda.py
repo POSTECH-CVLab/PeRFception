@@ -36,7 +36,12 @@ def integrate(scene_name, outdir, reso=512, max_depth=4.5):
     )
     poses = poses.astype(np.float32)
     numerics = np.all(
-        (~np.isinf(poses) * ~np.isnan(poses) * ~np.isneginf(poses)).reshape(-1, 16),
+        (
+            ~np.isinf(poses)
+            * ~np.isnan(poses)
+            * ~np.isneginf(poses)
+            * (np.abs(poses) < 30)
+        ).reshape(-1, 16),
         axis=1,
     )
     poses = poses[numerics]

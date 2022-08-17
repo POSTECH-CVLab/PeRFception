@@ -276,36 +276,37 @@ class LitPlenoxel(LitModel):
 
         np.savez(os.path.join(self.logdir, "trans_info.npz"), **trans_info)
         stride = self.upsample_stride
-        print(f"initialize with pointcloud, stride: {stride}")
+
         #### Upsample and thicken
         import MinkowskiEngine as ME
-
-        upsample = ME.MinkowskiGenerativeConvolutionTranspose(
-            1, 1, kernel_size=stride, stride=stride, dimension=3
-        )
-        # voxels = np.ascontiguousarray(pcd / voxel_size)
-        pcd_voxels = np.ascontiguousarray(pcd_voxels)
-        _, u_indices = ME.utils.sparse_quantize(pcd_voxels, return_index=True)
-        voxels = pcd_voxels[u_indices]
-        np.save(os.path.join(self.logdir, "init.npy"), voxels)
-        bcoords = ME.utils.batched_coordinates([voxels])
-        bfeats = torch.ones(bcoords.shape[0], 1).float()
-        sinput = ME.SparseTensor(
-            features=bfeats,
-            coordinates=bcoords.int(),
-            tensor_stride=stride,
-        )
-        soutput = upsample(sinput)
-        C = soutput.C[:, 1:]
-        unique_voxels = C.numpy()
-        for i in range(3):
-            np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
+        if stride > 1:
+            print(f"upsample pointcloud with pad {stride}")
+            upsample = ME.MinkowskiGenerativeConvolutionTranspose(
+                1, 1, kernel_size=stride, stride=stride, dimension=3
+            )
+            pcd_voxels = np.ascontiguousarray(pcd_voxels)
+            _, u_indices = ME.utils.sparse_quantize(pcd_voxels, return_index=True)
+            voxels = pcd_voxels[u_indices]
+            np.save(os.path.join(self.logdir, "init.npy"), voxels)
+            bcoords = ME.utils.batched_coordinates([voxels])
+            bfeats = torch.ones(bcoords.shape[0], 1).float()
+            sinput = ME.SparseTensor(
+                features=bfeats,
+                coordinates=bcoords.int(),
+                tensor_stride=stride,
+            )
+            soutput = upsample(sinput)
+            C = soutput.C[:, 1:]
+            unique_voxels = C.numpy()
+            for i in range(3):
+                np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
+        else:
+            unique_voxels = pcd_voxels 
         _, u_indices = ME.utils.sparse_quantize(unique_voxels, return_index=True)
         unique_voxels = unique_voxels[u_indices]
 
         np.save(os.path.join(self.logdir, "thick.npy"), unique_voxels)
         ####
-
         print(
             f"initialize_with_pointcloud, orig pcd: {pcd.shape[0]}, uniq voxel: {unique_voxels.shape[0]}, reso: {reso}"
         )
@@ -338,6 +339,7 @@ class LitPlenoxel(LitModel):
         )
         self.model.register_buffer("links", links.view(reso.tolist()))
         self.model.density_data.data[:] = self.init_sigma
+        print(f"init sigma: {self.init_sigma}")
 
     def generate_camera_list(
         self, intrinsics=None, extrinsics=None, ndc_coeffs=None, image_size=None

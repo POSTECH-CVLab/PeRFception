@@ -484,12 +484,9 @@ def load_scannet_data_ext(
     # filter blurry images
     print(f"filter blurry images")
     blurness, _ = detect_blur_fft_batch(colors, thresh=blur_thresh)
-    # blurness = np.stack(
-    #     [detect_blur_fft(c, thresh=blur_thresh)[0] for c in colors], axis=0
-    # ).reshape(-1)
     num_valid = min(150, int(0.2 * len(frame_ids)))
     ths = np.sort(blurness)[num_valid]
-    ths = max(blur_thresh, ths)
+    ths = min(blur_thresh, ths)
     is_valid = blurness > ths
     print(
         f"filtered {is_valid.sum()} out of {len(is_valid)} images (threshold = {ths})"
@@ -575,9 +572,9 @@ def load_scannet_data_ext(
 
     H, W = colors[0].shape[:2]
     i_split = np.arange(len(colors))
-    i_train = i_split[::5]
-    i_test = np.array([i for i in i_split if i not in i_train])[::2]
-
+    i_test = np.unique(np.array([int(i * (len(colors) / 20)) for i in range(20)]))
+    i_train = np.array([i for i in i_split if not i in i_test])
+    print(f">> train: {len(i_train)}, test: {len(i_test)}, total: {len(i_split)}")
     render_poses = poses
 
     store_dict = {
