@@ -274,11 +274,18 @@ class LitPlenoxel(LitModel):
         pcd_voxels = reso * 0.5 * (pcd_scaled + 1)
         pcd_voxels = pcd_voxels.astype(np.int32)
 
-        np.savez(os.path.join(self.logdir, "trans_info.npz"), **trans_info)
+        np.savez(
+            os.path.join(self.logdir, "trans_info.npz"),
+            pcd_mean=trans_info["pcd_mean"],
+            scene_scale=scene_scale,
+            T=trans_info["T"],
+            frame_ids=trans_info["frame_ids"],
+        )
         stride = self.upsample_stride
 
         #### Upsample and thicken
         import MinkowskiEngine as ME
+
         if stride > 1:
             print(f"upsample pointcloud with pad {stride}")
             upsample = ME.MinkowskiGenerativeConvolutionTranspose(
@@ -301,7 +308,7 @@ class LitPlenoxel(LitModel):
             for i in range(3):
                 np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
         else:
-            unique_voxels = pcd_voxels 
+            unique_voxels = pcd_voxels
         _, u_indices = ME.utils.sparse_quantize(unique_voxels, return_index=True)
         unique_voxels = unique_voxels[u_indices]
 
