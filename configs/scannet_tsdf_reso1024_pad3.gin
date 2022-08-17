@@ -1,51 +1,6 @@
-LitData.batch_sampler = "all_images"
-LitData.epoch_size = 25600 
-LitData.batch_size = 5000
-LitData.chunk = 10000
-LitData.use_pixel_centers = True
-
-LitDataScannet.frame_skip = 1
-LitDataScannet.max_frame = 1500
-LitDataScannet.max_image_dim = 640
-LitDataScannet.cam_scale_factor = 1.0
-LitDataScannet.blur_thresh = 10
-LitDataScannet.use_depth = False 
-LitDataScannet.use_scans = True
-LitDataScannet.pcd_name = 'tsdf_pcd_512.npy'
+include "./configs/scannet_tsdf.gin"
 
 LitPlenoxel.reso = [[1024, 1024, 1024]]
-LitPlenoxel.background_nlayers = 0
-LitPlenoxel.background_reso = 512
-LitPlenoxel.lr_sigma = 3.0e+1
-LitPlenoxel.lr_sh = 1.0e-2
-LitPlenoxel.lr_sigma_delay_steps = 0
-LitPlenoxel.lr_fg_begin_step = 1000
-LitPlenoxel.density_thresh = 5.0
-LitPlenoxel.thresh_type = "sigma"
-LitPlenoxel.near_clip = 0.35
-LitPlenoxel.lambda_tv = 5.0e-5
-LitPlenoxel.lambda_tv_sh = 5.0e-3
-LitPlenoxel.lambda_tv_background_color = 1.0e-3
-LitPlenoxel.lambda_tv_background_color = 1.0e-3
-LitPlenoxel.lambda_beta = 1.0e-5
-LitPlenoxel.lambda_sparsity = 1.0e-10
-LitPlenoxel.background_brightness = 0.5
-LitPlenoxel.tv_early_only = 0
-LitPlenoxel.tv_decay = 0.5
-LitPlenoxel.quantize = True
 LitPlenoxel.upsample_stride = 3
 
-ResampleCallBack.upsamp_every = 25600
-
-run.max_steps = 51200
-run.save_last_only = True
-run.proj_name = "scannet"
-run.dataset_name = "scannet"
-run.datadir = "data/scannet_extracted"
 run.logbase = "logs/tsdf_reso1024_pad3"
-run.log_every_n_steps = 100
-run.model_name = "plenoxel"
-run.seed = 0
-run.progressbar_refresh_rate = 100
-run.check_val_every_n_epoch = 999 # no validation 
-run.run_render = False
