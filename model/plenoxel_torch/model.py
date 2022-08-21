@@ -394,6 +394,10 @@ class LitPlenoxel(LitModel):
 
     def quantize_data(self, data, eps=1e-12, clip_min=-0.1, clip_max=0.1):
 
+        if self.quant_bit == 16:
+            quant_data = data.type(torch.cuda.HalfTensor)
+            return quant_data, 0., 1.
+
         if self.clip_quant:
             data = torch.clip(data, clip_min, clip_max)
             data_min, data_max = clip_min, clip_max
@@ -426,7 +430,7 @@ class LitPlenoxel(LitModel):
 
     def dequantize_data(self, data, data_min, data_scale):
 
-        if self.quant_bit == 8: 
+        if self.quant_bit == 8 or self.quant_bit == 16: 
             data_tensor = data.type(torch.FloatTensor) * data_scale + data_min
         elif self.quant_bit == 4:
             data_blank = torch.zeros(len(data) * 2, *data.shape[1:], device=data.device)

@@ -62,7 +62,7 @@ Our code is verified on Ubuntu 20.04 with a CUDA version 11.1.
 conda create -n perfception -c anaconda python=3.8 -y
 conda activate perfception
 conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cudatoolkit=11.1 -c pytorch -c conda-forge -y
-pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg piqa wandb pytorch_lightning==1.5.5 opencv-python gin-config gdown
+pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg piqa wandb pytorch_lightning==1.5.5 opencv-python gin-config gdown plyfile
 pip3 install .
 ```
 

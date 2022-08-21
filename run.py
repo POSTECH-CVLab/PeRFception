@@ -59,6 +59,12 @@ def run(
     logging.getLogger("lightning").setLevel(logging.ERROR)
     datadir = datadir.rstrip("/")
 
+    if scene_name is None and dataset_name == "co3d":
+        scene_name = "349_36520_66801"
+    
+    if scene_name is None and dataset_name == "scannet":
+        scene_name = "scene0000_00"
+
     exp_name = (
         model_name + "_" + dataset_name + "_"  + scene_name
     )
