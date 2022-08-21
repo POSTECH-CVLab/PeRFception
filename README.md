@@ -6,8 +6,7 @@
 
 ### Quick Access
 
-[Project Page]() | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material) | [Dataset]()
-
+[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
 ### Author Info
 
 - [Yoonwoo Jeong](https://yoonwooinfo.notion.site) [[Google Scholar](https://scholar.google.com/citations?user=HQ1PMggAAAAJ&hl=en)]
@@ -47,7 +46,7 @@ python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks 77
 python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks [11, 22, 33]
 ```
 
-### ScanNet (35GB total) [[download full (35GB)]]
+### ScanNet (35GB total) [[link](https://1drv.ms/u/s!AgY2evoYo6FghYVw3MLYwq743fsoUw?e=ylF8KX)]
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
@@ -119,8 +118,6 @@ We also benchmark several 3D classification models on PeRFception-CO3D. We provi
 
 ### 3D semantic segmentation (PeRFception-ScanNet)
 In PeRFception-ScanNet, we have evaluated several 3D semantic segmentation models with depth-supervised labels. 
-
-
 
 ## Plans for v2
 
