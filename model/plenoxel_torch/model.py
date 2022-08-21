@@ -184,7 +184,8 @@ class LitPlenoxel(LitModel):
         # Render Option
         bkgd_only: bool = False,
         # Scannet specific option
-        init_grid_with_pcd: bool = False,
+        init_grid_with_pcd: bool = True,
+        upsample_stride: int = 1,
     ):
         for name, value in vars().items():
             if name not in ["self", "__class__"]:
@@ -271,7 +272,7 @@ class LitPlenoxel(LitModel):
     @torch.no_grad()
     def initialize_with_pointcloud(self):
         trans_info = self.trainer.datamodule.trans_info
-        pcd, pcd_orig = trans_info["pcd"], trans_info["pcd_orig"]
+        pcd = trans_info["pcd"]
         scene_scale = trans_info["scene_scale"]
         reso = self.reso_list[self.reso_idx]
 
@@ -283,39 +284,46 @@ class LitPlenoxel(LitModel):
         pcd_voxels = reso * 0.5 * (pcd_scaled + 1)
         pcd_voxels = pcd_voxels.astype(np.int32)
 
-        np.savez(os.path.join(self.logdir, "pcd.npz"), pcd_depth=pcd, pcd_gt=pcd_orig)
-        stride = 1
-        voxel_size = 0.02
-        print(f"initialize with pointcloud, stride: {stride}, voxel_size: {voxel_size}")
+        np.savez(
+            os.path.join(self.logdir, "trans_info.npz"),
+            pcd_mean=trans_info["pcd_mean"],
+            scene_scale=scene_scale,
+            T=trans_info["T"],
+            frame_ids=trans_info["frame_ids"],
+        )
+        stride = self.upsample_stride
+
         #### Upsample and thicken
         import MinkowskiEngine as ME
 
-        upsample = ME.MinkowskiGenerativeConvolutionTranspose(
-            1, 1, kernel_size=stride, stride=stride, dimension=3
-        )
-        # voxels = np.ascontiguousarray(pcd / voxel_size)
-        pcd_voxels = np.ascontiguousarray(pcd_voxels)
-        _, u_indices = ME.utils.sparse_quantize(pcd_voxels, return_index=True)
-        voxels = pcd_voxels[u_indices]
-        np.save(os.path.join(self.logdir, "init.npy"), voxels)
-        bcoords = ME.utils.batched_coordinates([voxels])
-        bfeats = torch.ones(bcoords.shape[0], 1).float()
-        sinput = ME.SparseTensor(
-            features=bfeats,
-            coordinates=bcoords.int(),
-            tensor_stride=stride,
-        )
-        soutput = upsample(sinput)
-        C = soutput.C[:, 1:]
-        unique_voxels = C.numpy()
-        for i in range(3):
-            np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
+        if stride > 1:
+            print(f"upsample pointcloud with pad {stride}")
+            upsample = ME.MinkowskiGenerativeConvolutionTranspose(
+                1, 1, kernel_size=stride, stride=stride, dimension=3
+            )
+            pcd_voxels = np.ascontiguousarray(pcd_voxels)
+            _, u_indices = ME.utils.sparse_quantize(pcd_voxels, return_index=True)
+            voxels = pcd_voxels[u_indices]
+            np.save(os.path.join(self.logdir, "init.npy"), voxels)
+            bcoords = ME.utils.batched_coordinates([voxels])
+            bfeats = torch.ones(bcoords.shape[0], 1).float()
+            sinput = ME.SparseTensor(
+                features=bfeats,
+                coordinates=bcoords.int(),
+                tensor_stride=stride,
+            )
+            soutput = upsample(sinput)
+            C = soutput.C[:, 1:]
+            unique_voxels = C.numpy()
+            for i in range(3):
+                np.clip(unique_voxels[:, i], 0, reso[i] - 1, out=unique_voxels[:, i])
+        else:
+            unique_voxels = pcd_voxels
         _, u_indices = ME.utils.sparse_quantize(unique_voxels, return_index=True)
         unique_voxels = unique_voxels[u_indices]
 
         np.save(os.path.join(self.logdir, "thick.npy"), unique_voxels)
         ####
-
         print(
             f"initialize_with_pointcloud, orig pcd: {pcd.shape[0]}, uniq voxel: {unique_voxels.shape[0]}, reso: {reso}"
         )
@@ -348,6 +356,7 @@ class LitPlenoxel(LitModel):
         )
         self.model.register_buffer("links", links.view(reso.tolist()))
         self.model.density_data.data[:] = self.init_sigma
+        print(f"init sigma: {self.init_sigma}")
 
     def generate_camera_list(
         self, intrinsics=None, extrinsics=None, ndc_coeffs=None, image_size=None
@@ -693,6 +702,7 @@ class LitPlenoxel(LitModel):
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
             store_util.store_image(image_dir, rgbs)
+            store_util.store_video(self.logdir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips
@@ -723,14 +733,17 @@ class LitPlenoxel(LitModel):
             os.makedirs("render", exist_ok=True)
             path_to_store = self.trainer.model.logdir
             scene_number = "_".join(path_to_store.split("_")[-3:])
-            with open("dataloader/co3d_lists/co3d_list.json") as fp:
-                co3d_list = json.load(fp)
-            class_name = co3d_list[scene_number]
-            class_path = f"render/{class_name}"
-            scene_path = f"render/{class_name}/{scene_number}"
+            if self.trainer.datamodule.__class__.__name__ == "LitDataCo3D":
+                with open("dataloader/co3d_lists/co3d_list.json") as fp:
+                    co3d_list = json.load(fp)
+                class_name = co3d_list[scene_number]
+                class_path = f"render/{class_name}"
+                scene_path = f"render/{class_name}/{scene_number}"
+            else:
+                scene_name = self.trainer.datamodule.scene_name
+                scene_path = f"render/{scene_name}"
             opt_list = ["bg"] if self.bkgd_only else ["fg", "fgbg"]
 
-            os.makedirs(class_path, exist_ok=True)
             os.makedirs(scene_path, exist_ok=True)
             for opt in opt_list:
                 opt_path = os.path.join(scene_path, opt)
