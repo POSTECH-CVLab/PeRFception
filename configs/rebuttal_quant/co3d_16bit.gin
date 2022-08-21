@@ -1,0 +1,41 @@
+LitData.batch_sampler = "all_images"
+LitData.epoch_size = 25600
+LitData.batch_size = 5000
+LitData.chunk = 10000
+LitData.use_pixel_centers = True
+
+LitPlenoxel.reso = [[128, 128, 128], [256, 256, 256]]
+LitPlenoxel.background_nlayers = 16
+LitPlenoxel.background_reso = 512
+LitPlenoxel.lr_sigma = 3.0e+1
+LitPlenoxel.lr_sh = 1.0e-2
+LitPlenoxel.lr_sigma_delay_steps = 0
+LitPlenoxel.lr_fg_begin_step = 1000
+LitPlenoxel.density_thresh = 20.0
+LitPlenoxel.thresh_type = "sigma"
+LitPlenoxel.near_clip = 0.35
+LitPlenoxel.lambda_tv = 5.0e-5
+LitPlenoxel.lambda_tv_sh = 5.0e-3
+LitPlenoxel.lambda_tv_background_color = 1.0e-3
+LitPlenoxel.lambda_tv_background_color = 1.0e-3
+LitPlenoxel.lambda_beta = 1.0e-5
+LitPlenoxel.lambda_sparsity = 1.0e-10
+LitPlenoxel.background_brightness = 0.5
+LitPlenoxel.tv_early_only = 0
+LitPlenoxel.tv_decay = 0.5
+LitPlenoxel.quantize = True
+LitPlenoxel.quant_bit = 16
+
+ResampleCallBack.upsamp_every = 25600
+
+run.max_steps = 76800
+run.save_last_only = True
+run.proj_name = "co3d"
+run.dataset_name = "co3d"
+run.datadir = "data/co3d"
+run.logbase = "logs"
+run.log_every_n_steps = 100
+run.model_name = "plenoxel"
+run.seed = 0
+run.progressbar_refresh_rate = 100
+run.postfix = "16bit"
