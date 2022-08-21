@@ -1,17 +1,19 @@
 # PeRFception - Perception using Radiance Fields
 
+<div style="text-align:center">
+  <img src="https://user-images.githubusercontent.com/33657821/183290143-7fbf49ce-2f6f-4bfc-8496-9d24e5d8ab61.gif" alt="teaser"/>
+</div>
 
 ### Quick Access
 
-[Project Page]() | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material) | [Quick Video]() | [Description Video](teaser) | [Dataset]()
-
+[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
 ### Author Info
 
 - [Yoonwoo Jeong](https://yoonwooinfo.notion.site) [[Google Scholar](https://scholar.google.com/citations?user=HQ1PMggAAAAJ&hl=en)]
 - [Seungjoo Shin](https://seungjooshin.github.io/) [[Google Scholar]()]
 - [Junha Lee](https://junha-l.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=RB7qMm4AAAAJ&hl=ko)]
 - [Chris Choy](https://chrischoy.org) [[Google Scholar](https://scholar.google.com/citations?user=2u8G5ksAAAAJ&hl=en&oi=ao)]
-- [Anima Anandkumar](http://tensorlab.cms.caltech.edu/users/anima/) [[Google Scholar](https://scholar.google.com/citations?user=bEcLezcAAAAJ&hl=en&oi=ao)]
+- [Animashree Anandkumar](http://tensorlab.cms.caltech.edu/users/anima/) [[Google Scholar](https://scholar.google.com/citations?user=bEcLezcAAAAJ&hl=en&oi=ao)]
 - [Minsu Cho](http://cvlab.postech.ac.kr/~mcho/) [[Google Scholar](https://scholar.google.com/citations?user=5TyoF5QAAAAJ&hl=en&oi=ao)]
 - [Jaesik Park](http://jaesik.info/) [[Google Scholar](https://scholar.google.com/citations?user=_3q6KBIAAAAJ&hl=en&oi=ao)]
 
@@ -28,24 +30,28 @@ The recent progress in implicit 3D representation, i.e., Neural Radiance Fields 
 
 ## Downloading PeRFception-Datasets
 -------
-### CO3D (1.3TB total) [[download full(1.3TB)]()] [[download toy(TBD)]()] [[download toy: Mirror1(TBD)]()]
+### CO3D (1.3TB total) [[link1](https://1drv.ms/u/s!As9A9EbDsoWcbnHoOoqWmIB6RLs?e=SYGC03)], [[link2](https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=ReG5Yp)] 
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
-|-|-|-|-|-|-|-|-|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 |CO3D| 18.6K | 1.5M | pcd | C | X | 1.44TB | $$\pm0.00\%$$
 |PeRFception-CO3D| 18.6K | $$\infty$$ | voxel | SH + D | O | 1.33TB | $$-6.94\%$$
 
-We provide a link to download PeRFception-CO3D dataset. In addition, we also provide a toy dataset of PeRFception-CO3D dataset, which has only one scene for each class. You can also view several examples of our dataset on the demo of project page [[link]()]. 
+We provide a script to automatically download PeRFception-CO3D dataset. 
+```
+### Full download
+python3 utils/download_perf.py --dataset co3d --outdir [outdir]
+### Specific Chunk
+python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks 77
+python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks [11, 22, 33]
+```
 
-------
-### ScanNet (35GB total) [[download full (35GB)]()] [[download toy (TBD)]()] [[download toy: Mirror1(TBD)]()]
+### ScanNet (35GB total) [[link](https://1drv.ms/u/s!AgY2evoYo6FghYVw3MLYwq743fsoUw?e=ylF8KX)]
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
-|-|-|-|-|-|-|-|-|
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
 |ScanNet| 1.5K | 2.5M | pcd | C | X | 966GB | $$\pm0.00\%$$
 |PeRFception-ScanNet| 1.5K | $$\infty$$ | voxel | SH + D | O | 35GB | $$-96.4\%$$
-
-We provide a link to download PeRFception-ScanNet dataset.  In addition, we also provide a toy dataset of PeRFception-ScanNet dataset, which has 20 scenes total. You can also view several examples of our dataset on the project page [[link]()]. 
 
 
 ## Get Ready (Installation)
@@ -56,7 +62,7 @@ Our code is verified on Ubuntu 20.04 with a CUDA version 11.1.
 conda create -n perfception -c anaconda python=3.8 -y
 conda activate perfception
 conda install pytorch==1.8.0 torchvision==0.9.0 torchaudio==0.8.0 cudatoolkit=11.1 -c pytorch -c conda-forge -y
-pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg piqa wandb pytorch_lightning==1.5.5 opencv-python gin-config gdown
+pip3 install imageio tqdm requests configargparse scikit-image imageio-ffmpeg piqa wandb pytorch_lightning==1.5.5 opencv-python gin-config gdown plyfile
 pip3 install .
 ```
 
@@ -72,7 +78,6 @@ python3 -m run --ginc configs/scannet.gin
 
 ## Rendering CO3D and ScanNet 
 We deliver the full code to reproduce the performance reported in the main paper. To run the code, you should first put the dataset on a proper location. 
-`
 ```
 data
   |
@@ -86,14 +91,14 @@ data
          -- scene000_01
          ...
 ```
-ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and CO3D-v1 can be downloaded in [here](https://github.com/facebookresearch/co3d). Thanks to great functions in `wandb`, we could manage tremendous scripts. You can download the `sweep` file [here](TBD). 
+ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and CO3D-v1 can be downloaded in [here](https://github.com/facebookresearch/co3d). Thanks to great functions in `wandb`, we could manage tremendous scripts. You can download the `sweep` file [here](https://1drv.ms/u/s!As9A9EbDsoWcj6toSOfdeWMaHhqF3Q?e=1INfNg). 
 
 
 ## Downstream Tasks
 
 ### 2D object classification (PeRFception-CO3D)
 
-We benchmark several 2D classification models on rendered PeRFception-CO3D. For faster reproducing, we also provide the rendered images from PeRFception-CO3D on the link [link](). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
+We benchmark several 2D classification models on rendered PeRFception-CO3D. For faster reproducing, we also provide the rendered images from PeRFception-CO3D on the link [link](https://1drv.ms/u/s!AgY2evoYo6FggthVfVngtHinq3czqQ?e=crnTlu). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
 
 The pretrained models can be reached with the links below: 
 <div style="text-align:center">
@@ -104,10 +109,10 @@ For recent updates, you can refer to the leaderboard link [here]().
 
 ### 3D object classification (PeRFception-CO3D)
 
-We also benchmark several 3D classification models on PeRFception-CO3D. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
+We also benchmark several 3D classification models on PeRFception-CO3D. We provide the full code on the link [](). You can downloa
 
 <div style="text-align:center">
-<img src="assets/3D_score.png" alt="3D score"/>
+<img src="assets/3D_score.png" alt="3D score" height=300/>
 </div>
 
 

@@ -1,0 +1,5 @@
+python3 -m run --ginc configs/co3d.gin --scene_name 131_15149_29891 --ginb run.postfix=\"v1\"
+python3 -m run --ginc configs/co3d.gin --scene_name 113_13363_23419 --ginb run.postfix=\"v1\"
+python3 -m run --ginc configs/co3d.gin --scene_name 255_27516_55384 --ginb run.postfix=\"v1\"
+python3 -m run --ginc configs/co3d.gin --scene_name 28_991_2996 --ginb run.postfix=\"v1\"
+python3 -m run --ginc configs/co3d.gin --scene_name 349_36520_66801 --ginb run.postfix=\"v1\"

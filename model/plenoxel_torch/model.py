@@ -170,7 +170,17 @@ class LitPlenoxel(LitModel):
         # Quantization
         filter_threshold: float = 0.0,
         quantize: bool = False,
+        quantize_density: bool = False,
         store_efficient: bool = False,
+        quant_bit: int = 8,
+        logarithmic_quant: bool = False,
+        clip_quant: bool = False,
+        sh_clip_min: float = -0.1,
+        sh_clip_max: float = 0.1,
+        bkgd_clip_min: float = -4.0,
+        bkgd_clip_max: float = 4.0,
+        density_clip_min: float = 0,
+        density_clip_max: float = 100,
         # Render Option
         bkgd_only: bool = False,
         # Scannet specific option
@@ -391,20 +401,68 @@ class LitPlenoxel(LitModel):
     def configure_optimizers(self):
         return None
 
-    def quantize_data(self, data, bit=8, eps=1e-12):
-        data_min, data_max = (
-            data.min(dim=0, keepdim=True)[0],
-            data.max(dim=0, keepdim=True)[0],
-        )
-        data_scale = (data_max - data_min) / (2**bit - 1)
-        quant_data = (
-            ((data - data_min) / (data_scale + eps)).round().type(torch.cuda.ByteTensor)
-        )
+    def quantize_data(self, data, eps=1e-12, clip_min=-0.1, clip_max=0.1):
+
+        if self.quant_bit == 16:
+            quant_data = data.type(torch.cuda.HalfTensor)
+            return quant_data, 0., 1.
+
+        if self.clip_quant:
+            data = torch.clip(data, clip_min, clip_max)
+            data_min, data_max = clip_min, clip_max
+        else:
+            data_min, data_max = (
+                data.min(dim=0, keepdim=True)[0],
+                data.max(dim=0, keepdim=True)[0],
+            )
+
+        data_scale = (data_max - data_min) / (2 ** self.quant_bit - 1)
+        round_data = ((data - data_min) / (data_scale + eps)).round()
+
+        if self.quant_bit == 8: 
+            quant_data = round_data.type(torch.cuda.ByteTensor)
+
+        elif self.quant_bit == 4:
+            if len(round_data) % 2 == 1:
+                round_data = torch.cat([round_data, torch.zeros(1, *round_data.shape[1:], device=round_data.device)], dim=0)
+            round_data = round_data[0::2] * 16 + round_data[1::2] 
+            quant_data = round_data.type(torch.cuda.ByteTensor)
+
+        elif self.quant_bit == 2:
+            dummy = 0 if len(round_data) % 4 == 0 else 4 - len(round_data) % 4
+            if dummy != 0:
+                round_data = torch.cat([round_data, torch.zeros(dummy, *round_data.shape[1:], device=round_data.device)], dim=0)
+            round_data = round_data[0::4] * 64 + round_data[1::4] * 16 + round_data[2::4] * 4 + round_data[3::4]
+            quant_data = round_data.type(torch.cuda.ByteTensor)
 
         return quant_data, data_min, data_scale
 
     def dequantize_data(self, data, data_min, data_scale):
-        return data.type(torch.FloatTensor) * data_scale + data_min
+
+        if self.quant_bit == 8 or self.quant_bit == 16: 
+            data_tensor = data.type(torch.FloatTensor) * data_scale + data_min
+        elif self.quant_bit == 4:
+            data_blank = torch.zeros(len(data) * 2, *data.shape[1:], device=data.device)
+            data_blank[0::2] = data // 16
+            data_blank[1::2] = data % 16
+            if torch.all(data_blank[-1] == 0): 
+                data_blank = data_blank[:-1]
+            data_tensor = data_blank.type(torch.FloatTensor) * data_scale + data_min
+        elif self.quant_bit == 2:
+            data_blank = torch.zeros(len(data) * 4, *data.shape[1:], device=data.device)
+            data_blank[0::4] = data // 64
+            data_blank[1::4] = data % 64 // 16
+            data_blank[2::4] = data % 16 // 4
+            data_blank[3::4] = data % 4
+            for _ in range(4):
+                if torch.all(data_blank[-1]) == 0:
+                    data_blank = data_blank[:-1]
+            data_tensor = data_blank.type(torch.FloatTensor) * data_scale + data_min
+
+        if self.logarithmic_quant:
+            data_tensor = torch.exp(-data_tensor)
+
+        return data_tensor
 
     def on_predict_start(self) -> None:
         if self.bkgd_only:
@@ -716,10 +774,14 @@ class LitPlenoxel(LitModel):
 
         checkpoint["reso_idx"] = self.reso_idx
         density_data = checkpoint["state_dict"]["model.density_data"].cpu()
+        if self.quantize_density: 
+            density_data, density_min, density_scale = self.quantize_data(
+                density_data, clip_min=self.density_clip_min, clip_max=self.density_clip_max
+            )
 
         sh = checkpoint["state_dict"]["model.sh_data"]
         if self.quantize:
-            sh, sh_min, sh_scale = self.quantize_data(sh)
+            sh, sh_min, sh_scale = self.quantize_data(sh, clip_min=self.sh_clip_min, clip_max=self.sh_clip_max)
 
         model_links = checkpoint["state_dict"]["model.links"].cpu()
         reso_list = self.reso_list[self.reso_idx]
@@ -742,7 +804,7 @@ class LitPlenoxel(LitModel):
         if self.model.use_background:
             if self.quantize:
                 background_data, bkgd_min, bkgd_scale = self.quantize_data(
-                    background_data
+                    background_data, clip_min=self.bkgd_clip_min, clip_max=self.bkgd_clip_max
                 )
                 checkpoint["model.background_data_min"] = bkgd_min
                 checkpoint["model.background_data_scale"] = bkgd_scale
@@ -754,7 +816,12 @@ class LitPlenoxel(LitModel):
         checkpoint["state_dict"].pop("model.sh_data")
         checkpoint["state_dict"].pop("model.links")
 
-        checkpoint["state_dict"]["model.density_data"] = density_data
+        checkpoint["state_dict"]["model.density_data"] = density_data   
+
+        if self.quantize_density: 
+            checkpoint["model.density_data_min"] = density_min
+            checkpoint["model.density_data_scale"] = density_scale
+
         checkpoint["state_dict"]["model.links_idx"] = links_idx
         checkpoint["state_dict"]["model.sh_data"] = sh
         if self.quantize:
@@ -793,6 +860,10 @@ class LitPlenoxel(LitModel):
             checkpoint["state_dict"]["model.background_data"] = bgd_data
 
         density_data = state_dict["model.density_data"]
+        if self.quantize_density:
+            density_min = checkpoint["model.density_data_min"]
+            density_scale = checkpoint["model.density_data_scale"]
+            density_data = self.dequantize_data(density_data, density_min, density_scale)
 
         self.model.register_parameter("density_data", nn.Parameter(density_data))
         checkpoint["state_dict"]["model.density_data"] = density_data

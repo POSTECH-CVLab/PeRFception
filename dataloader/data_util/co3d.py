@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import scipy as sp
 import gin
+import torch
 
 from dataloader.random_pose import random_pose, pose_interp
 from dataloader.spherical_poses import spherical_poses
@@ -24,7 +25,7 @@ def find_files(dir, exts):
         return []
 
 
-def similarity_from_cameras(c2w):
+def similarity_from_cameras(c2w, fix_rot=False):
     """
     Get a similarity transform to normalize dataset
     from c2w (OpenCV convention) cameras
@@ -57,7 +58,11 @@ def similarity_from_cameras(c2w):
         # rotate 180-deg about x axis
         R_align = np.array([[-1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 
-    R = R_align @ R
+    if fix_rot:
+        R_align = np.eye(3)
+        R = np.eye(3)
+    else:
+        R = R_align @ R
     fwds = np.sum(R * np.array([0, 0.0, 1.0]), axis=-1)
     t = (R_align @ t[..., None])[..., 0]
 
@@ -88,6 +93,7 @@ def load_co3d_data(
     render_scene_interp: bool = False,
     render_random_pose: bool = True,
     interp_fac: int = 5,
+    v2_mode: bool = False
 ):
 
     with open("dataloader/co3d_lists/co3d_list.json") as fp:
@@ -110,9 +116,11 @@ def load_co3d_data(
         if temporal_data["sequence_name"] == scene_number:
             frame_data.append(temporal_data)
 
-    for frame in frame_data:
-        img = cv2.imread(os.path.join("data/co3d", frame["image"]["path"]))
+    used = []
+    for (i, frame) in enumerate(frame_data):
+        img = cv2.imread(os.path.join(datadir, frame["image"]["path"]))
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) / 255.0
+
         H, W = frame["image"]["size"]
         max_hw = max(H, W)
         approx_scale = max_image_dim / max_hw
@@ -126,15 +134,24 @@ def load_co3d_data(
             W2 = W
 
         image_size = np.array([H2, W2])
-        scale = np.array([W2 / W, H2 / H], dtype=np.float32)
         fxy = np.array(frame["viewpoint"]["focal_length"])
         cxy = np.array(frame["viewpoint"]["principal_point"])
-        focal = fxy * np.array([W * 0.5, H * 0.5], dtype=np.float32) * scale
-        prp = (
-            -1.0 * (cxy - 1.0) * np.array([W * 0.5, H * 0.5], dtype=np.float32) * scale
-        )
         R = np.array(frame["viewpoint"]["R"])
         T = np.array(frame["viewpoint"]["T"])
+
+        if v2_mode:
+            min_HW = min(W2, H2)
+            image_size_half = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) 
+            scale_arr = np.array([min_HW * 0.5, min_HW * 0.5], dtype=np.float32)
+            fxy_x = fxy * scale_arr
+            prp_x = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) - cxy * scale_arr
+            cxy = (image_size_half - prp_x) / image_size_half 
+            fxy = fxy_x / image_size_half
+
+        scale_arr = np.array([W2 * 0.5, H2 * 0.5], dtype=np.float32) 
+        focal = fxy * scale_arr
+        prp = -1.0 * (cxy - 1.0) * scale_arr
+
         pose = np.eye(4)
         pose[:3, :3] = R
         pose[:3, 3:] = -R @ T[..., None]
@@ -147,6 +164,11 @@ def load_co3d_data(
                 [0.0, 0.0, 0.0, 1.0],
             ]
         )
+
+        if any([np.all(pose == _pose) for _pose in extrinsics]):
+            continue
+
+        used.append(i)
         image_sizes.append(image_size)
         intrinsics.append(intrinsic)
         extrinsics.append(pose)
@@ -178,11 +200,13 @@ def load_co3d_data(
 
     extrinsics = np.stack(extrinsics)
     T, sscale = similarity_from_cameras(extrinsics)
-
     extrinsics = T @ extrinsics
+    
     extrinsics[:, :3, 3] *= sscale * cam_scale_factor
 
-    i_all = np.arange(len(images))
+    num_frames = len(extrinsics)
+
+    i_all = np.arange(num_frames)
     i_test = i_all[::10]
     i_val = i_test
     i_train = np.array([i for i in i_all if not i in i_test])

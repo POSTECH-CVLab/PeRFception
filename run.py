@@ -51,7 +51,7 @@ def run(
     # Run Mode
     run_train: bool = True,
     run_eval: bool = True,
-    run_render: bool = True,
+    run_render: bool = False,
     accelerator: str = "gpu",
     num_gpus: Optional[int] = 1,
     num_tpus: Optional[int] = None,
@@ -64,6 +64,12 @@ def run(
 
     logging.getLogger("lightning").setLevel(logging.ERROR)
     datadir = datadir.rstrip("/")
+
+    if scene_name is None and dataset_name == "co3d":
+        scene_name = "349_36520_66801"
+
+    if scene_name is None and dataset_name == "scannet":
+        scene_name = "scene0000_00"
 
     exp_name = model_name + "_" + dataset_name + "_" + scene_name
     if postfix is not None:
@@ -112,9 +118,6 @@ def run(
         devices=num_gpus,
         max_steps=max_steps,
         replace_sampler_ddp=False,
-        strategy=DDPPlugin(find_unused_parameters=False)
-        if num_gpus > 1 and accelerator == "gpu"
-        else None,
         check_val_every_n_epoch=check_val_every_n_epoch,
         precision=precision,
         accelerator="gpu",
