@@ -37,17 +37,7 @@ pip3 install .
 ```
 
 ## Preparing Datasets
-There are two multi-view datasets that our code supports: CO3D and ScanNet. We provide a script to automatically download CO3D-v1. We are currently planning to extend our PeRFception-Co3D dataset to the second version, which will be generated from Co3D-v2. Users can download CO3D-v1 by the script below:
-```bash
-python3 -m utils.download_co3d_v1.py
-```
-
-To select specific classes, please add the argument as the following:
-```bash
-python3 -m utils.download_co3d_v1.py --class_name "apple, banana"
-```
-
-Due to the limited access on ScanNet, we could not provide an automatic script for ScanNet. We recommend to follow the official instruction of [ScanNet](http://www.scan-net.org/) to get multi-view images of ScanNet. 
+There are two multi-view datasets that our code supports: CO3D and ScanNet. We are currently planning to extend our PeRFception-Co3D dataset to the second version, which will be generated from Co3D-v2. Users can download CO3D-v1 in the link [here](https://github.com/facebookresearch/co3d/tree/v1). To download ScanNet, we recommend to follow the official instruction of [ScanNet](http://www.scan-net.org/) to get multi-view images of ScanNet. 
 
 ## Data Generation - Rendering a Specific Scene
 
@@ -59,7 +49,6 @@ python3 -m run --ginc configs/[dataset].gin --scene_name [scene_name]
 ## Examples
 python3 -m run --ginc configs/co3d.gin --scene_name 14_158_900
 python3 -m run --ginc configs/scannet.gin --scene_name scene0000_00
-
 ```
 
 ## Data Generation - Rendering whole Scenes
@@ -70,7 +59,6 @@ We also provide a guide to manage render tremendously many frames to generate a 
 
 You could also download the generated dataset. As suggested by one of reviewers, we have moved our data cloud to OneDrive since it is reachable from any countries. In addition, we have split our dataset into chunks(11~15GB each) to handle network disconnection issues. If you desire to download whole datasets with a single command line script, you could use the command below.
 
-### CO3D
 ```
 ### Full download
 python3 utils/download_perf.py --dataset co3d --outdir [outdir]
@@ -79,7 +67,6 @@ python3 utils/download_perf.py --dataset scannet --outdir [outdir]
 ### Specific Chunk
 python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks 77
 python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks [11, 22, 33]
-
 ```
 
 ## Benchmarking on Dataset
