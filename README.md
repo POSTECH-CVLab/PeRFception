@@ -123,5 +123,14 @@ In PeRFception-ScanNet, we have evaluated several 3D semantic segmentation model
 
 According to the official CO3D repository[[link](https://github.com/facebookresearch/co3d)], authors provided an improved version, v2, of CO3D, which would result in better rendering quality and more accurate geometries in our model. We are planning to extend this work to PeRFception-CO3D-v2 from the CO3D-v2. 
 
+## Citation
+```bib
+@article{jeong2022perfception,
+  title   = {PeRFception: Perception using Radiance Fields},
+  author  = {Jeong, Yoonwoo and Shin, Seungjoo and Lee, Junha and Choy, Chris and Anandkumar, Anima and Cho, Minsu and Park, Jaesik}
+  year    = {2022}
+}
+```
+
 ## Acknowledgement
 We appreciate for the reviewers for their constructive comments and suggestions. 
