@@ -10,8 +10,8 @@
 ### Author Info
 
 - [Yoonwoo Jeong](https://yoonwooinfo.notion.site) [[Google Scholar](https://scholar.google.com/citations?user=HQ1PMggAAAAJ&hl=en)]
-- [Seungjoo Shin](https://seungjooshin.github.io/) [[Google Scholar]()]
-- [Junha Lee](https://junha-l.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=RB7qMm4AAAAJ&hl=ko)]
+- [Seungjoo Shin](https://seungjooshin.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=io7PSDIAAAAJ&hl=en)]
+- [Junha Lee](https://junha-l.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=RB7qMm4AAAAJ&hl=en)]
 - [Chris Choy](https://chrischoy.org) [[Google Scholar](https://scholar.google.com/citations?user=2u8G5ksAAAAJ&hl=en&oi=ao)]
 - [Animashree Anandkumar](http://tensorlab.cms.caltech.edu/users/anima/) [[Google Scholar](https://scholar.google.com/citations?user=bEcLezcAAAAJ&hl=en&oi=ao)]
 - [Minsu Cho](http://cvlab.postech.ac.kr/~mcho/) [[Google Scholar](https://scholar.google.com/citations?user=5TyoF5QAAAAJ&hl=en&oi=ao)]
