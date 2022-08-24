@@ -45,7 +45,7 @@ I’m a research scientist at the Nvidia Research AI/ML team. Before joining Nvi
 
 ## Animashree Anandkumar (NVIDIA, Caltech)
 
-<img src="../../../assets/images/anima.png"  width="200" height="200" id="hp"  style="border-radius:50%"/>
+<!-- <img src="../../../assets/images/anima.png"  width="200" height="200" id="hp"  style="border-radius:50%"/> -->
 
 [Author Page](){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } [Google Scholar](){: .btn .btn-primary .fs-2.5 .mb-4 .mb-md-0 .mr-2 } 
 
