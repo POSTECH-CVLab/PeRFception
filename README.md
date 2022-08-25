@@ -6,12 +6,12 @@
 
 ### Quick Access
 
-[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
+[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://arxiv.org/abs/2208.11537) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
 ### Author Info
 
 - [Yoonwoo Jeong](https://yoonwooinfo.notion.site) [[Google Scholar](https://scholar.google.com/citations?user=HQ1PMggAAAAJ&hl=en)]
-- [Seungjoo Shin](https://seungjooshin.github.io/) [[Google Scholar]()]
-- [Junha Lee](https://junha-l.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=RB7qMm4AAAAJ&hl=ko)]
+- [Seungjoo Shin](https://seungjooshin.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=io7PSDIAAAAJ&hl=en)]
+- [Junha Lee](https://junha-l.github.io/) [[Google Scholar](https://scholar.google.com/citations?user=RB7qMm4AAAAJ&hl=en)]
 - [Chris Choy](https://chrischoy.org) [[Google Scholar](https://scholar.google.com/citations?user=2u8G5ksAAAAJ&hl=en&oi=ao)]
 - [Animashree Anandkumar](http://tensorlab.cms.caltech.edu/users/anima/) [[Google Scholar](https://scholar.google.com/citations?user=bEcLezcAAAAJ&hl=en&oi=ao)]
 - [Minsu Cho](http://cvlab.postech.ac.kr/~mcho/) [[Google Scholar](https://scholar.google.com/citations?user=5TyoF5QAAAAJ&hl=en&oi=ao)]
@@ -122,6 +122,15 @@ In PeRFception-ScanNet, we have evaluated several 3D semantic segmentation model
 ## Plans for v2
 
 According to the official CO3D repository[[link](https://github.com/facebookresearch/co3d)], authors provided an improved version, v2, of CO3D, which would result in better rendering quality and more accurate geometries in our model. We are planning to extend this work to PeRFception-CO3D-v2 from the CO3D-v2. 
+
+## Citation
+```bib
+@article{jeong2022perfception,
+  title   = {PeRFception: Perception using Radiance Fields},
+  author  = {Jeong, Yoonwoo and Shin, Seungjoo and Lee, Junha and Choy, Chris and Anandkumar, Anima and Cho, Minsu and Park, Jaesik}
+  year    = {2022}
+}
+```
 
 ## Acknowledgement
 We appreciate for the reviewers for their constructive comments and suggestions. 

@@ -1,0 +1,6 @@
+include "./configs/scannet_tsdf.gin"
+
+LitPlenoxel.reso = [[1024, 1024, 1024]]
+LitPlenoxel.upsample_stride = 3
+
+run.logbase = "logs/tsdf_reso1024_pad3"
