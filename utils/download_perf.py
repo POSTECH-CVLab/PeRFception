@@ -20,20 +20,20 @@ def download(args):
         else:
             chunks = args.chunks.lstrip("[").rstrip("]").split(",")
 
-            for chunk in chunks: 
-                chunk = chunk.zfill(2)
-                chunk_int = int(chunk)
-                outpath = os.path.join(args.outdir, chunk + ".zip")
-                if chunk_int > 75:
-                    data_raw = data_raw_format_v2.format(str(211419 - 76 + chunk_int))
-                    curl = curl_v2
-                else:
-                    data_raw = data_raw_format_v1.format(str(21111 - 00 + chunk_int))
-                    curl = curl_v1      
+        for chunk in chunks: 
+            chunk = chunk.zfill(2)
+            chunk_int = int(chunk)
+            outpath = os.path.join(args.outdir, chunk + ".zip")
+            if chunk_int > 75:
+                data_raw = data_raw_format_v2.format(str(211419 - 76 + chunk_int))
+                curl = curl_v2
+            else:
+                data_raw = data_raw_format_v1.format(str(21111 - 00 + chunk_int))
+                curl = curl_v1      
 
-                run_str = f"curl -L \"{curl}\" --data-raw \"{data_raw}\" --compressed --output {outpath}"
-                print("Running:", run_str)
-                os.system(run_str)
+            run_str = f"curl -L \"{curl}\" --data-raw \"{data_raw}\" --compressed --output {outpath}"
+            print("Running:", run_str)
+            os.system(run_str)
 
 if __name__ == "__main__": 
 
