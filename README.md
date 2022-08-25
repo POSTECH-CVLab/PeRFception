@@ -6,7 +6,7 @@
 
 ### Quick Access
 
-[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://openreview.net/pdf?id=MzaPEKHv-0J) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
+[Project Page](https://postech-cvlab.github.io/PeRFception) | [Paper](https://arxiv.org/abs/2208.11537) | [Supplementary Materials](https://openreview.net/attachment?id=MzaPEKHv-0J&name=supplementary_material)
 ### Author Info
 
 - [Yoonwoo Jeong](https://yoonwooinfo.notion.site) [[Google Scholar](https://scholar.google.com/citations?user=HQ1PMggAAAAJ&hl=en)]
