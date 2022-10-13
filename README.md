@@ -28,7 +28,32 @@
 
 The recent progress in implicit 3D representation, i.e., Neural Radiance Fields (NeRFs), has made accurate and photorealistic 3D reconstruction possible in a differentiable manner. This new representation can effectively convey the information of hundreds of high-resolution images in one compact format and allows photorealistic synthesis of novel views. In this work, using the variant of NeRF called Plenoxels, we create the first large-scale implicit representation datasets  for perception tasks, called PeRFception, which consists of two parts that incorporate both object-centric and scene-centric scans for classification and segmentation. It shows a significant memory compression rate (96.4%) from the original dataset, while containing both 2D and 3D information in a unified form. We construct the  classification and segmentation models that directly take as input this implicit format and also propose a novel augmentation technique to avoid overfitting on backgrounds of images. The code and data will be publicly available. 
 
-## Downloading PeRFception-Datasets
+## Downloading PeRFception-Datastes (HuggingFace - recommended) [[link1](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1)] [[link2](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2)] [[link3](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3)]
+
+```
+# Link1
+git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1
+# Link2
+git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2
+# Link3 
+git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3
+```
+### Downloading specific chunks
+```
+mkdir <repo>
+cd <repo>
+git init
+git remote add -f origin [link] 
+git config core.sparseCheckout true
+echo "some/dir/" >> .git/info/sparse-checkout
+echo "another/sub/tree" >> .git/info/sparse-checkout
+git pull origin main
+
+# ex) If you want to download data only from 288_30460_58530
+echo "30/plenoxel_co3d_288_30460_58530" >> .git/info/sparse-checkout
+```
+
+## Downloading PeRFception-Datasets (OneDrive)
 -------
 ### CO3D (1.3TB total) [[link1](https://1drv.ms/u/s!As9A9EbDsoWcbnHoOoqWmIB6RLs?e=SYGC03)], [[link2](https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=ReG5Yp)] 
 
