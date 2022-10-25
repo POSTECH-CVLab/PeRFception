@@ -18,6 +18,7 @@
 - [Jaesik Park](http://jaesik.info/) [[Google Scholar](https://scholar.google.com/citations?user=_3q6KBIAAAAJ&hl=en&oi=ao)]
 
 ### News
+- 22.10.25: Moved PeRFception datasets from OneDrive to HuggingFace.
 - 22.08.04: The first version of PeRFception has been released. 
 
 <div style="text-align:center">
@@ -53,25 +54,7 @@ git pull origin main
 echo "30/plenoxel_co3d_288_30460_58530" >> .git/info/sparse-checkout
 ```
 
-## Downloading PeRFception-Datasets (OneDrive)
--------
-### CO3D (1.3TB total) [[link1](https://1drv.ms/u/s!As9A9EbDsoWcbnHoOoqWmIB6RLs?e=SYGC03)], [[link2](https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=ReG5Yp)] 
-
-|Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|CO3D| 18.6K | 1.5M | pcd | C | X | 1.44TB | $$\pm0.00\%$$
-|PeRFception-CO3D| 18.6K | $$\infty$$ | voxel | SH + D | O | 1.33TB | $$-6.94\%$$
-
-We provide a script to automatically download PeRFception-CO3D dataset. 
-```
-### Full download
-python3 utils/download_perf.py --dataset co3d --outdir [outdir]
-### Specific Chunk
-python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks 77
-python3 utils/download_perf.py --dataset co3d --outdir [outdir] --chunks [11, 22, 33]
-```
-
-### ScanNet (35GB total) [[link](https://1drv.ms/u/s!AgY2evoYo6FghYVw3MLYwq743fsoUw?e=ylF8KX)]
+### ScanNet (35GB total)
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
