@@ -18,6 +18,7 @@
 - [Jaesik Park](http://jaesik.info/) [[Google Scholar](https://scholar.google.com/citations?user=_3q6KBIAAAAJ&hl=en&oi=ao)]
 
 ### News
+- 22.10.27: Added HuggingFace repo for ScanNet.
 - 22.10.25: Moved PeRFception datasets from OneDrive to HuggingFace.
 - 22.08.04: The first version of PeRFception has been released. 
 
