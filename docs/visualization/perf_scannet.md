@@ -29,9 +29,7 @@ nav_order: 1
 
 # PeRFception-ScanNet
 
-## Novel View Synthesis
-
-We visualize some example scenes of our PeRFception-ScanNet dataset. All images are rendered images on unseen views. For full datasets, we recommend to refer to the link [here](https://huggingface.co/datasets/YWjimmy/PeRFception-ScanNet/tree/main).
+We visualize some example scenes of our PeRFception-ScanNet dataset. For full datasets, we recommend to refer to the link [here](https://huggingface.co/datasets/YWjimmy/PeRFception-ScanNet/tree/main).
 
 <div class="image-side">
     <a href="https://huggingface.co/datasets/YWjimmy/PeRFception-ScanNet/tree/main/plenoxel_scannet_scene0000_00">
