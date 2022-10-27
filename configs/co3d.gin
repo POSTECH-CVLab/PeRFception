@@ -30,7 +30,7 @@ ResampleCallBack.upsamp_every = 25600
 
 run.max_steps = 76800
 run.save_last_only = True
-run.proj_name = "co3d"
+run.proj_name = "perf-co3d-v2"
 run.dataset_name = "co3d"
 run.datadir = "data/co3d_v2"
 run.logbase = "logs"

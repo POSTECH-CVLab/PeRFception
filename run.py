@@ -38,7 +38,7 @@ def run(
     logbase: Optional[str] = None,
     scene_name: Optional[str] = None,
     model_name: Optional[str] = None,
-    proj_name: Optional[str] = None,
+    proj_name: Optional[str] = "perf-co3d-v2",
     dataset_name: Optional[str] = None,
     postfix: Optional[str] = None,
     entity: Optional[str] = None,
