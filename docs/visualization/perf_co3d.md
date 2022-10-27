@@ -31,7 +31,7 @@ nav_order: 1
 
 ## Novel View Synthesis
 
-We visualize some example scenes of our PeRFception-CO3D dataset. All images are rendered images on unseen views. For full datasets, we recommend to refer to the link [here](https://1drv.ms/u/s!As9A9EbDsoWcbqNA9JuICegU6Tg?e=cj71A9) and [here](https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=DqGgl6)
+We visualize some example scenes of our PeRFception-CO3D dataset. All images are rendered images on unseen views. For full datasets, we recommend to refer to the link [here](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1), [here](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2) and [here](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3).
 
 ### Apple
 

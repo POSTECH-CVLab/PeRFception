@@ -69,11 +69,13 @@ aux_links:
   "Paper":
     - "https://openreview.net/pdf?id=MzaPEKHv-0J"
   "Data-1":
-    - "https://1drv.ms/u/s!As9A9EbDsoWcbnHoOoqWmIB6RLs?e=SYGC03"
+    - "https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1"
   "Data-2":
-    - "https://1drv.ms/u/s!AgY2evoYo6FgiwomlG1QUiLg7wqy?e=ReG5Yp"
+    - "https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2"
   "Data-3":
-    - "https://1drv.ms/u/s!AgY2evoYo6FghYVw3MLYwq743fsoUw?e=ylF8KX"
+    - "https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3"
+  "Data-4":
+    - "https://huggingface.co/datasets/YWjimmy/PeRFception-ScanNet"
 
 # Makes Aux links open in a new tab. Default is false
 aux_links_new_tab: false
