@@ -29,15 +29,17 @@
 
 The recent progress in implicit 3D representation, i.e., Neural Radiance Fields (NeRFs), has made accurate and photorealistic 3D reconstruction possible in a differentiable manner. This new representation can effectively convey the information of hundreds of high-resolution images in one compact format and allows photorealistic synthesis of novel views. In this work, using the variant of NeRF called Plenoxels, we create the first large-scale implicit representation datasets  for perception tasks, called PeRFception, which consists of two parts that incorporate both object-centric and scene-centric scans for classification and segmentation. It shows a significant memory compression rate (96.4%) from the original dataset, while containing both 2D and 3D information in a unified form. We construct the  classification and segmentation models that directly take as input this implicit format and also propose a novel augmentation technique to avoid overfitting on backgrounds of images. The code and data will be publicly available. 
 
-## Downloading PeRFception-Datastes (HuggingFace - recommended) [[link1](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1)] [[link2](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2)] [[link3](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3)]
+## Downloading PeRFception-Datastes [[link1](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1)] [[link2](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2)] [[link3](https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3)]
 
 ```
-# Link1
+# Link1 - PeRFception-CO3D-v1
 git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-1
-# Link2
+# Link2 - PeRFception-CO3D-v1
 git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-2
-# Link3 
+# Link3 - PeRFception-CO3D-v1
 git clone https://huggingface.co/datasets/YWjimmy/PeRFception-v1-3
+# Link1 - PeRFception-ScanNet
+git clone https://huggingface.co/datasets/YWjimmy/PeRFception-ScanNet
 ```
 ### Downloading specific chunks
 ```
@@ -53,8 +55,14 @@ git pull origin main
 # ex) If you want to download data only from 288_30460_58530
 echo "30/plenoxel_co3d_288_30460_58530" >> .git/info/sparse-checkout
 ```
+### PeRFception-CO3D
 
-### ScanNet (35GB total)
+|Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|CO3D| 18.6K | 1.5M | pcd | C | X | 1.44TB | $$\pm0.00\%$$
+|PeRFception-CO3D| 18.6K | $$\infty$$ | voxel | SH + D | O | 1.33TB | $$-6.94\%$$
+
+### PeRFception-ScanNet 
 
 |Dataset| # Scenes | # Frames | 3D Shape | Features | 3D-BKGD | Memory | Memoery(Rel)
 |:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
