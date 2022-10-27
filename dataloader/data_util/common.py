@@ -1,8 +1,6 @@
 import glob
 import os
 
-import cc3d
-import MinkowskiEngine as ME
 import numpy as np
 import torch
 
@@ -75,6 +73,8 @@ def similarity_from_cameras(c2w):
 
 
 def connected_component_filter(xyz, voxel_size):
+    import cc3d
+    import MinkowskiEngine as ME
     svoxel, idx, idx_inverse = ME.utils.sparse_quantize(
         xyz / voxel_size, return_index=True, return_inverse=True
     )

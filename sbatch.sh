@@ -12,7 +12,7 @@
 
 ##SBTACH --ntasks=1
 ##SBATCH --tasks-per-node=1
-##SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=8
 
 cd $SLURM_SUBMIT_DIR
 

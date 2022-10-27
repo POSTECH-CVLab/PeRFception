@@ -24,6 +24,7 @@ LitPlenoxel.background_brightness = 0.5
 LitPlenoxel.tv_early_only = 0
 LitPlenoxel.tv_decay = 0.5
 LitPlenoxel.quantize = True
+LitPlenoxel.init_grid_with_pcd = False
 
 ResampleCallBack.upsamp_every = 25600
 

@@ -188,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--entity",
         type=str,
-        default=None,
+        default="postech_cvlab",
         help="entity",
     )
     args = parser.parse_args()
@@ -198,6 +198,9 @@ if __name__ == "__main__":
         ginbs.extend(args.ginb)
     logging.info(f"Gin configuration files: {args.ginc}")
     logging.info(f"Gin bindings: {ginbs}")
+
+    if args.ginc is None:
+        args.ginc = ["configs/co3d.gin"]
 
     gin.parse_config_files_and_bindings(args.ginc, ginbs)
     run(

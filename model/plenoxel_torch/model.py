@@ -184,7 +184,7 @@ class LitPlenoxel(LitModel):
         # Render Option
         bkgd_only: bool = False,
         # Scannet specific option
-        init_grid_with_pcd: bool = True,
+        init_grid_with_pcd: bool = False,
         upsample_stride: int = 1,
     ):
         for name, value in vars().items():
@@ -702,7 +702,7 @@ class LitPlenoxel(LitModel):
             image_dir = os.path.join(self.logdir, "render_model")
             os.makedirs(image_dir, exist_ok=True)
             store_util.store_image(image_dir, rgbs)
-            store_util.store_video(self.logdir, rgbs)
+            # store_util.store_video(self.logdir, rgbs)
 
             self.write_stats(
                 os.path.join(self.logdir, "results.json"), psnr, ssim, lpips

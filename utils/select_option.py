@@ -6,7 +6,7 @@ import gdown
 from dataloader.litdata import LitDataCo3D, LitDataScannet
 from model.plenoxel_torch.model import LitPlenoxel, ResampleCallBack
 
-url_co3d_list = "https://drive.google.com/uc?id=1jCDaA41ZddkgPl4Yw2h-XI7mt9o56kb7"
+url_co3d_list = "https://drive.google.com/uc?id=12upOCXxHWds2UUb2uqT60uOCs646ih87"
 
 def select_model(
     model_name: str,

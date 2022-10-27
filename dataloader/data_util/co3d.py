@@ -216,7 +216,6 @@ def load_co3d_data(
         render_poses = random_pose(extrinsics[i_all], 50)
     elif render_scene_interp:
         render_poses = pose_interp(extrinsics[i_all], interp_fac)
-    # render_poses = spherical_poses(sscale * cam_scale_factor * np.eye(4))
     
     near, far = 0., 1.
     ndc_coeffs = (-1., -1.)
