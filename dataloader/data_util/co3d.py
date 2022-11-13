@@ -116,6 +116,10 @@ def load_co3d_data(
         if temporal_data["sequence_name"] == scene_number:
             frame_data.append(temporal_data)
 
+    if len(frame_data) < 100:
+        print("Skipping the scene since not enough frames are given.")
+        quit()
+
     used = []
     for (i, frame) in enumerate(frame_data):
         img = cv2.imread(os.path.join(datadir, frame["image"]["path"]))
