@@ -113,6 +113,8 @@ ScanNet-v2 can be downloaded in [here](http://www.scan-net.org/) and CO3D-v1 can
 
 ## Downstream Tasks
 
+### Codes for downstream tasks: https://github.com/POSTECH-CVLab/NeRF-Downstream
+
 ### 2D object classification (PeRFception-CO3D)
 
 We benchmark several 2D classification models on rendered PeRFception-CO3D. For faster reproducing, we also provide the rendered images from PeRFception-CO3D on the link [link](https://1drv.ms/u/s!AgY2evoYo6FggthVfVngtHinq3czqQ?e=crnTlu). Before running the code, be sure that you had put the  downloaded dataset on `data/perfcepton_2d`. You can easily reproduce the scores using the scripts of `scripts/downstream/2d_cls/[model].sh`. Details for the training pipeline and models are elaborated in the main paper. 
@@ -122,7 +124,6 @@ The pretrained models can be reached with the links below:
 <img src="assets/2D_score.png" alt="2D score"/>
 </div>
 
-For recent updates, you can refer to the leaderboard link [here]().
 
 ### 3D object classification (PeRFception-CO3D)
 
